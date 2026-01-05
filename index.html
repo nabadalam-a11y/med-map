@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Карта ранений</title>
 
-  <!-- jsPDF -->
+  <!-- jsPDF (PDF делаем картинкой, чтобы русский отображался нормально) -->
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
   <style>
@@ -94,7 +94,6 @@
     }
     .bar button:active{ opacity:.85; }
     .bar button:disabled{ opacity:.55; }
-
     #toast{
       position:fixed; left:50%; bottom:16px; transform:translateX(-50%);
       background:rgba(0,0,0,0.85); color:#fff; padding:10px 12px; border-radius:12px;
@@ -165,6 +164,7 @@
 (function(){
   const top = document.getElementById("topStatus");
   const toastEl = document.getElementById("toast");
+
   function setTopBad(msg){ top.className="topStatus bad"; top.textContent=msg; }
   function toast(msg, ms){
     toastEl.textContent = msg;
@@ -181,7 +181,7 @@
   });
 
   const $ = (id)=>document.getElementById(id);
-
+  // ---------- СЛОВАРИ ЗОН ----------
   const BACK = {
     1:"Подошва",2:"Тыльная область стопы",3:"Передняя область голени",4:"Задняя область голени",
     5:"Задняя область колена",6:"Заднепроходная область",7:"Задняя область бедра",8:"Крестцовая область",
@@ -209,6 +209,7 @@
     38:"Передняя голеностопная область",39:"Пяточная область",40:"Тыльная область стопы"
   };
 
+  // ---------- localStorage ключи ----------
   const POINTS_KEY="medmap_points_v2";
   const SEL_FRONT="medmap_sel_front_v2";
   const SEL_BACK="medmap_sel_back_v2";
@@ -253,7 +254,7 @@
     }
     return out;
   }
-
+  // ---------- DOM ----------
   const bodyImage=$("bodyImage");
   const pinsLayer=$("pinsLayer");
   const btnFront=$("btnFront");
@@ -283,6 +284,7 @@
     return {ok: okDt&&okCall&&okComment, missing: miss};
   }
 
+  // ---------- Травмы ----------
   const TRAUMAS=[
     {key:"bullet",label:"Пулевое"},
     {key:"shrapnel",label:"Осколочное"},
@@ -303,8 +305,11 @@
     return "trunk";
   }
   function allowedForClass(cls){
+    // конечности: всё + шина
     if(cls==="limb_upper" || cls==="limb_lower") return {bullet:1,shrapnel:1,mvt:1,burn:1,fracture:1,splint:1};
+    // голова/шея: без перелома и шины
     if(cls==="head" || cls==="neck") return {bullet:1,shrapnel:1,mvt:1,burn:1,fracture:0,splint:0};
+    // туловище: без перелома и шины
     return {bullet:1,shrapnel:1,mvt:1,burn:1,fracture:0,splint:0};
   }
   function traumaSummary(obj){
@@ -317,6 +322,7 @@
     return out;
   }
 
+  // ---------- Пины ----------
   function clearPins(){ pinsLayer.innerHTML=""; }
 
   function addPin(num,x,y,selected){
@@ -342,10 +348,12 @@
 
     clearPins();
 
+    // выбранные сверху
     for(let i=0;i<sel.length;i++){
       const k=sel[i];
       if(map[k]) addPin(k, map[k].x, map[k].y, true);
     }
+    // остальные
     const keys=Object.keys(map);
     for(let i=0;i<keys.length;i++){
       const k=keys[i];
@@ -375,8 +383,9 @@
     t[n][key]=!!val;
     saveTrauma(view,t);
     renderAll(false);
-  }
+}
 
+  // ---------- UI выбранных зон ----------
   function renderZonesUI(){
     const sel=loadSel(view).sort((a,b)=>parseInt(a,10)-parseInt(b,10));
     const trauma=loadTrauma(view);
@@ -457,6 +466,8 @@
       zonesUI.appendChild(card);
     }
   }
+
+  // ---------- Текст отчёта ----------
   function buildTextReport(){
     const dt=(dtEl.value||"").trim();
     const call=(callEl.value||"").trim();
@@ -525,9 +536,6 @@ ${comment || "-"}`
     zoneNumEl.value="";
   }
 
-  // --- FIX: чтобы после "КОПИРОВАТЬ ТЕКСТ" ничего не всплывало снова ---
-  // Мы НЕ используем alert/confirm вообще, только toast.
-
   $("btnCopy").addEventListener("pointerdown", async (e)=>{
     e.preventDefault();
     const v=validateRequired();
@@ -555,241 +563,7 @@ ${comment || "-"}`
   zoneNumEl.addEventListener("keydown",(e)=>{
     if(e.key==="Enter"){ e.preventDefault(); addZoneFromInput(); }
   });
-
-  // -------- PDF (без пароля) --------
-  function fmtHuman(dtLocal){
-    // dtLocal: "2026-01-05T12:55"
-    if(!dtLocal) return "";
-    const [d,t]=dtLocal.split("T");
-    if(!d || !t) return dtLocal;
-    const [Y,M,D]=d.split("-");
-    return `${D}.${M}.${Y}, ${t}`;
-  }
-
-  function mkFileName(){
-    const dt=(dtEl.value||"").trim();
-    const call=(callEl.value||"").trim();
-    const nice=dt ? dt.replace(/[:]/g,"-") : "no-date";
-    const pref = call ? call.trim().slice(0,2).toUpperCase().replace(/[^A-ZА-Я0-9]/g,"") : "XX";
-    return `${nice}_${pref}.pdf`;
-  }
-
-  async function loadImgAsDataURL(src){
-    return new Promise((resolve,reject)=>{
-      const img=new Image();
-      img.crossOrigin="anonymous";
-      img.onload=()=>{
-        try{
-          const c=document.createElement("canvas");
-          c.width=img.naturalWidth;
-          c.height=img.naturalHeight;
-          const ctx=c.getContext("2d");
-          ctx.drawImage(img,0,0);
-          resolve(c.toDataURL("image/png"));
-        }catch(err){ reject(err); }
-      };
-      img.onerror=()=>reject(new Error("Не загрузилась картинка: "+src));
-      img.src=src;
-    });
-  }
-
-  function drawPinsOnCanvas(baseImg, side){
-    // side: "front"|"back"
-    const points=loadPoints();
-    const map = side==="front" ? points.front : points.back;
-    const sel = loadSel(side);
-    const trauma = loadTrauma(side);
-
-    const img=new Image();
-    img.src=baseImg;
-
-    return new Promise((resolve,reject)=>{
-      img.onload=()=>{
-        const c=document.createElement("canvas");
-        c.width=img.naturalWidth;
-        c.height=img.naturalHeight;
-        const ctx=c.getContext("2d");
-
-        // base
-        ctx.drawImage(img,0,0);
-
-        // pins
-        for(let i=0;i<sel.length;i++){
-          const n=sel[i];
-          const p=map[n];
-          if(!p) continue;
-
-          const x = (p.x/100)*c.width;
-          const y = (p.y/100)*c.height;
-
-          const r=18;
-          ctx.beginPath();
-          ctx.arc(x,y,r,0,Math.PI*2);
-
-          if(side==="front"){
-            ctx.fillStyle="rgba(0,120,255,0.90)";
-          }else{
-            ctx.fillStyle="rgba(255,0,0,0.90)";
-          }
-          ctx.fill();
-
-          ctx.lineWidth=3;
-          ctx.strokeStyle="rgba(255,255,255,0.95)";
-          ctx.stroke();
-
-          // number
-          ctx.fillStyle="#fff";
-          ctx.font="bold 16px Arial";
-          ctx.textAlign="center";
-          ctx.textBaseline="middle";
-          ctx.fillText(String(n), x, y);
-
-          // optional: tiny trauma marks (если хочешь — можно убрать)
-          const t=trauma[n]||{};
-          const marks=[];
-          if(t.bullet) marks.push("П");
-          if(t.shrapnel) marks.push("О");
-          if(t.mvt) marks.push("М");
-          if(t.burn) marks.push("Ж");
-          if(t.fracture) marks.push("ПР");
-          if(t.splint) marks.push("Ш");
-          if(marks.length){
-            ctx.fillStyle="rgba(0,0,0,0.75)";
-            ctx.font="bold 12px Arial";
-            ctx.textBaseline="top";
-            ctx.fillText(marks.join(","), x, y+r+4);
-          }
-        }
-
-        resolve(c.toDataURL("image/png"));
-      };
-      img.onerror=()=>reject(new Error("Canvas base img error"));
-    });
-  }
-
-  function addTextBlock(doc, x, y, text, maxWidth, lineHeight){
-    const lines = doc.splitTextToSize(text, maxWidth);
-    doc.text(lines, x, y);
-    return y + lines.length*lineHeight;
-  }
-
-  async function makePDF(){
-    if(pdfBusy) return;
-    const v=validateRequired();
-    if(!v.ok){
-      toast("Не заполнены обязательные поля:\n- " + v.missing.join("\n- "), 3200);
-      return;
-    }
-
-    pdfBusy=true;
-    btnMakePDF.disabled=true;
-    toast("Готовлю PDF...");
-
-    try{
-      const { jsPDF } = window.jspdf;
-
-      // base images
-      const frontBase = await loadImgAsDataURL("body_front.png");
-      const backBase  = await loadImgAsDataURL("body_back.png");
-
-      // with pins
-      const frontWithPins = await drawPinsOnCanvas(frontBase, "front");
-      const backWithPins  = await drawPinsOnCanvas(backBase, "back");
-
-      const dt=(dtEl.value||"").trim();
-      const call=(callEl.value||"").trim();
-      const comment=(commentEl.value||"").trim();
-
-      const selFront=loadSel("front").sort((a,b)=>parseInt(a,10)-parseInt(b,10));
-      const selBack=loadSel("back").sort((a,b)=>parseInt(a,10)-parseInt(b,10));
-      const tf=loadTrauma("front");
-      const tb=loadTrauma("back");
-
-      function linesFor(side, sel, t){
-        const dict=dictFor(side);
-        if(sel.length===0) return ["(нет)"];
-        const out=[];
-        for(let i=0;i<sel.length;i++){
-          const num=sel[i];
-          const name=dict[parseInt(num,10)] || "НЕИЗВЕСТНО";
-          const ts=traumaSummary(t[num]||{});
-          const spl=!!(t[num] && t[num].splint);
-
-          let line=`${num} — ${name}`;
-          if(ts.length) line += `; травмы: ${ts.join(", ")}`;
-          if(spl) line += `; шина: да`;
-          out.push(line);
-        }
-        return out;
-      }
-
-      const textBlock =
-`МЕД ОТЧЁТ
-Дата/время: ${fmtHuman(dt) || "-"}
-Позывной: ${call || "-"}
-
-ПЕРЕД:
-- ${linesFor("front", selFront, tf).join("\n- ")}
-
-СПИНА:
-- ${linesFor("back", selBack, tb).join("\n- ")}
-
-Комментарий:
-${comment || "-"}`;
-
-      // A4 portrait
-      const doc = new jsPDF({orientation:"p", unit:"mm", format:"a4"});
-
-      // Page 1: front image + text
-      doc.setFont("helvetica","bold");
-      doc.setFontSize(14);
-      doc.text("КАРТА РАНЕНИЙ — ПЕРЕД", 14, 14);
-
-      // image fit
-      doc.addImage(frontWithPins, "PNG", 14, 18, 182, 120);
-
-      doc.setFont("helvetica","normal");
-      doc.setFontSize(11);
-
-      let y = 145;
-      y = addTextBlock(doc, 14, y, textBlock, 182, 5);
-
-      // Page 2: back image
-      doc.addPage();
-      doc.setFont("helvetica","bold");
-      doc.setFontSize(14);
-      doc.text("КАРТА РАНЕНИЙ — СПИНА", 14, 14);
-      doc.addImage(backWithPins, "PNG", 14, 18, 182, 120);
-
-      // Save
-      doc.save(mkFileName());
-
-      toast("✅ PDF создан");
-    }catch(err){
-      console.error(err);
-      toast("Ошибка PDF: " + (err.message||err), 4000);
-    }finally{
-      pdfBusy=false;
-      btnMakePDF.disabled=false;
-    }
-  }
-
-  btnMakePDF.addEventListener("pointerdown",(e)=>{
-    e.preventDefault();
-    makePDF();
-  });
-
-  // старт
-  setView("front");
-  finalEl.textContent=buildTextReport();
-
-})();
-</script>
-</body>
-</html>
-
-// -------- PDF (без пароля, с русским текстом как картинка) --------
-
+  // ---------- PDF (без пароля, русский текст как картинка) ----------
   function mkFileName(){
     const dt=(dtEl.value||"").trim();
     const call=(callEl.value||"").trim();
@@ -870,7 +644,7 @@ ${comment || "-"}`;
 
   function makeA4PageCanvas(title, imgCanvas, reportText){
     const page=document.createElement("canvas");
-    page.width=1240; page.height=1754;
+    page.width=1240; page.height=1754; // A4 @ ~150dpi
     const ctx=page.getContext("2d");
 
     ctx.fillStyle="#fff";
@@ -883,13 +657,15 @@ ${comment || "-"}`;
     const imgX=160, imgY=110, imgW=920, imgH=920;
     ctx.drawImage(imgCanvas, imgX, imgY, imgW, imgH);
 
+    ctx.fillStyle="#111";
     ctx.font="22px Arial";
     let y=imgY+imgH+60;
     wrapTextCanvas(ctx, reportText, 60, y, page.width-120, 28);
 
     return page;
   }
-      async function makePDF(){
+
+  async function makePDF(){
     const v=validateRequired();
     if(!v.ok){
       toast("Не заполнены обязательные поля:\n- " + v.missing.join("\n- "), 3200);
@@ -909,7 +685,7 @@ ${comment || "-"}`;
       const frontPins = drawImageWithPins(baseFront, "front");
       const backPins  = drawImageWithPins(baseBack, "back");
 
-      const reportText = buildTextReport(); // русский текст будет нарисован на canvas
+      const reportText = buildTextReport();
 
       const page1 = makeA4PageCanvas("КАРТА РАНЕНИЙ — ПЕРЕД", frontPins, reportText);
       const page2 = makeA4PageCanvas("КАРТА РАНЕНИЙ — СПИНА", backPins, reportText);
@@ -936,13 +712,12 @@ ${comment || "-"}`;
     }
   }
 
-  // кнопка PDF
   btnMakePDF.addEventListener("pointerdown",(e)=>{
     e.preventDefault();
     makePDF();
   });
 
-  // init dt
+  // ---------- Инициализация ----------
   (function initDT(){
     try{
       const d=new Date();
@@ -952,7 +727,6 @@ ${comment || "-"}`;
     }catch(_){}
   })();
 
-  // старт
   setView("front");
   finalEl.textContent=buildTextReport();
   top.textContent="JS: OK (карта готова)";
@@ -960,5 +734,4 @@ ${comment || "-"}`;
 </script>
 
 </body>
-    </html>
-      
+</html>
