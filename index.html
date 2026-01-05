@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Мед-карта</title>
 
+  <!-- jsPDF -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
   <style>
     body{ margin:0; font-family: Arial, sans-serif; background:#fff; color:#111; }
     .title{ padding:10px; text-align:center; font-weight:700; font-size:18px; }
@@ -126,6 +129,15 @@
       background:#fff; margin-top:10px;
     }
 
+    .statusLine{
+      margin-top:10px;
+      font-size:13px;
+      color:#0b6623;
+      font-weight:700;
+      display:none;
+      white-space:pre-wrap;
+    }
+
     .bar{
       display:flex;
       gap:10px;
@@ -145,6 +157,7 @@
       background:#0b6623;
       touch-action: manipulation;
     }
+    .bar button:active{ opacity:.85; }
   </style>
 </head>
 
@@ -169,7 +182,7 @@
         <input id="dt" type="datetime-local"/>
       </div>
       <div class="col">
-        <label>Позывной (обязательно)</label>
+        <label>Позывной (обязательно, он же пароль PDF)</label>
         <input id="call" placeholder="например: БАРС-12"/>
       </div>
     </div>
@@ -189,7 +202,7 @@
     </div>
 
     <div class="hint" style="margin-top:10px;">
-      Выбери зоны (тап по меткам или ввод номера). Ниже появятся чекбоксы травм.
+      Выбери зоны. Ниже появятся чекбоксы травм.
     </div>
 
     <div id="zonesUI"></div>
@@ -198,15 +211,19 @@
     <button class="btn2" id="btnCopy" type="button">КОПИРОВАТЬ ТЕКСТ</button>
 
     <div class="out" id="finalMsg"></div>
+    <div class="statusLine" id="statusLine"></div>
   </div>
 
   <div class="bar">
-    <button id="btnMakePDF" type="button">PDF позже (пока выключен)</button>
+    <button id="btnMakePDF" type="button">СДЕЛАТЬ PDF (С ПАРОЛЕМ)</button>
   </div>
 
 <script>
 (function(){
   const $ = (id)=>document.getElementById(id);
+  const statusLine = $("statusLine");
+  function setStatus(msg){ statusLine.style.display="block"; statusLine.textContent = msg; }
+  function clearStatus(){ statusLine.style.display="none"; statusLine.textContent=""; }
 
   // ===== словари зон =====
   const BACK = {
@@ -236,7 +253,7 @@
     38:"Передняя голеностопная область",39:"Пяточная область",40:"Тыльная область стопы"
   };
 
-  // ===== storage keys (чтобы точки НЕ пропали) =====
+  // ===== storage keys (не меняем) =====
   const POINTS_KEY = "medmap_points_v2";
   const SEL_FRONT  = "medmap_sel_front_v2";
   const SEL_BACK   = "medmap_sel_back_v2";
@@ -292,7 +309,6 @@
   const zoneNumEl = $("zoneNum");
   const zonesUI = $("zonesUI");
   const finalEl = $("finalMsg");
-
   const dtEl = $("dt");
   const callEl = $("call");
   const commentEl = $("comment");
@@ -382,11 +398,9 @@
     const sel = new Set(loadSel(view));
     clearPins();
 
-    // выбранные сверху
     for(const k of Array.from(sel)){
       if(map[k]) addPin(k, map[k].x, map[k].y, true);
     }
-    // остальные
     for(const k of Object.keys(map)){
       if(!sel.has(k)) addPin(k, map[k].x, map[k].y, false);
     }
@@ -567,44 +581,42 @@ ${comment || "-"}`
     zoneNumEl.value="";
   }
 
-  // ===== handlers =====
-  btnFront.addEventListener("pointerdown",(e)=>{ e.preventDefault(); setView("front"); });
-  btnBack .addEventListener("pointerdown",(e)=>{ e.preventDefault(); setView("back"); });
+  // ===== PDF: рисуем 2 страницы в PDF, потом шифруем qpdf =====
+  function firstTwoChars(s){
+    if(!s) return "XX";
+    return Array.from(s).slice(0,2).join("");
+  }
+  function fmtBaseName(){
+    const dt = (dtEl.value||"").trim(); // YYYY-MM-DDTHH:MM
+    const call = (callEl.value||"").trim();
+    const parts = (dt || "0000-00-00T00:00").split("T");
+    const d = parts[0] || "0000-00-00";
+    const t = (parts[1] || "00:00").replace(":","");
+    const xx = firstTwoChars(call);
+    return `MED_${d}_${t}_${xx}`;
+  }
 
-  $("btnAddZone").addEventListener("pointerdown",(e)=>{ e.preventDefault(); addZoneFromInput(); });
-  zoneNumEl.addEventListener("keydown",(e)=>{ if(e.key==="Enter"){ e.preventDefault(); addZoneFromInput(); } });
+  function downloadBlob(blob, filename){
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href=url; a.download=filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
 
-  $("btnRefresh").addEventListener("pointerdown",(e)=>{ e.preventDefault(); finalEl.textContent = buildTextReport(); });
+  async function loadImage(src){
+    return new Promise((resolve, reject)=>{
+      const img = new Image();
+      img.onload=()=>resolve(img);
+      img.onerror=reject;
+      img.src=src;
+    });
+  }
 
-  $("btnCopy").addEventListener("pointerdown", async (e)=>{
-    e.preventDefault();
-    const v = validateRequired();
-    if(!v.ok){
-      alert("Не заполнены обязательные поля:\n- " + v.missing.join("\n- "));
-      return;
-    }
-    const text = buildTextReport();
-    finalEl.textContent = text;
-    try{ await navigator.clipboard.writeText(text); alert("Скопировано."); }
-    catch{ alert("Не смог скопировать. Можно выделить вручную."); }
-  });
+  function sideColor(side){ return side==="front" ? "#0078ff" : "#ff0000"; }
 
-  // обязательные подсветка
-  [dtEl, callEl, commentEl].forEach(el=>{
-    el.addEventListener("input", ()=> el.classList.remove("reqBad"));
-    el.addEventListener("change", ()=> el.classList.remove("reqBad"));
-  });
-
-  $("btnMakePDF").addEventListener("pointerdown",(e)=>{
-    e.preventDefault();
-    alert("PDF вернём следующим шагом, когда подтвердим, что чекбоксы сохраняются.");
-  });
-
-  // init
-  setView("front");
-  finalEl.textContent = buildTextReport();
-
-})();
-</script>
-</body>
-</html>
+  function traumaLineFor(side, num){
+    const t = loadTrauma(side)[String(num)] || {};
+    const part
