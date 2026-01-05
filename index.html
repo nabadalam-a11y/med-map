@@ -36,7 +36,12 @@
 
 <div class="top">КАРТА РАНЕНИЙ</div>
 
-<img src="body_front.png" class="map">
+<div style="display:flex;">
+  <button class="btn" onclick="setFront()">ПЕРЕД</button>
+  <button class="btn" onclick="setBack()">СПИНА</button>
+</div>
+
+<img id="bodyImage" src="body_front.png" class="map">
 
 <button class="btn">ОТПРАВИТЬ</button>
 
