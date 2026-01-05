@@ -1,57 +1,237 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>MED MAP</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Карта ранений</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #fff;
-    }
-    .top {
-      padding: 10px;
-      text-align: center;
-      font-weight: bold;
-      font-size: 18px;
-    }
-    .map {
-      width: 100%;
-      display: block;
-    }
+    body { margin:0; font-family: Arial, sans-serif; background:#fff; }
+    .title { padding:10px; text-align:center; font-weight:700; font-size:18px; }
+    .row { display:flex; gap:0; }
     .btn {
-      width: 100%;
-      padding: 18px;
-      font-size: 20px;
-      border: none;
-      background: #222;
-      color: #fff;
+      width:100%;
+      padding:16px;
+      font-size:18px;
+      border:none;
+      background:#222;
+      color:#fff;
     }
+    .btn:active { opacity:0.85; }
+    .wrap { position:relative; width:100%; }
+    .map { width:100%; display:block; user-select:none; -webkit-user-drag:none; }
+    .zone { position:absolute; background: rgba(255, 0, 0, 0.0); } /* можно сделать 0.08 чтобы видеть зоны */
+    .panel {
+      padding:10px;
+      border-top:1px solid #ddd;
+      font-size:16px;
+      background:#fafafa;
+    }
+    .list { margin:8px 0 0; padding:0 0 0 18px; }
+    .smallbtn {
+      width:100%;
+      padding:12px;
+      font-size:16px;
+      border:1px solid #222;
+      background:#fff;
+      color:#222;
+      margin-top:8px;
+    }
+    .smallbtn:active { opacity:0.85; }
+    .hint { color:#555; font-size:13px; margin-top:6px; }
   </style>
 </head>
-<script>
-function setFront() {
-  document.getElementById('bodyImage').src = 'body_front.png';
-}
-
-function setBack() {
-  document.getElementById('bodyImage').src = 'body_back.png';
-}
-</script>
 <body>
 
-<div class="top">КАРТА РАНЕНИЙ</div>
+<div class="title">КАРТА РАНЕНИЙ</div>
 
-<div style="display:flex;">
+<div class="row">
   <button class="btn" onclick="setFront()">ПЕРЕД</button>
   <button class="btn" onclick="setBack()">СПИНА</button>
 </div>
 
-<img id="bodyImage" src="body_front.png" class="map">
+<div class="wrap" id="wrap">
+  <img id="bodyImage" src="body_front.png" class="map" alt="body">
 
-<button class="btn">ОТПРАВИТЬ</button>
+  <!-- =========================
+       ЗОНЫ ДЛЯ ПЕРЕДА (front)
+       Координаты в % от картинки
+       ========================= -->
+
+  <!-- ГОЛОВА -->
+  <div class="zone front" style="top:7%; left:44%; width:12%; height:10%;" onclick="selectZone('ГОЛОВА (ПЕРЕД)')"></div>
+  <!-- ШЕЯ -->
+  <div class="zone front" style="top:17%; left:46%; width:8%; height:5%;" onclick="selectZone('ШЕЯ (ПЕРЕД)')"></div>
+  <!-- ГРУДЬ -->
+  <div class="zone front" style="top:22%; left:35%; width:30%; height:14%;" onclick="selectZone('ГРУДЬ (ПЕРЕД)')"></div>
+  <!-- ЖИВОТ -->
+  <div class="zone front" style="top:36%; left:38%; width:24%; height:12%;" onclick="selectZone('ЖИВОТ (ПЕРЕД)')"></div>
+  <!-- ТАЗ/ПАХ -->
+  <div class="zone front" style="top:48%; left:40%; width:20%; height:10%;" onclick="selectZone('ТАЗ/ПАХ (ПЕРЕД)')"></div>
+
+  <!-- РУКА ЛЕВАЯ (для наблюдателя слева — это ЛЕВАЯ пострадавшего на ПЕРЕДЕ) -->
+  <!-- Плечо 1/3 -->
+  <div class="zone front" style="top:25%; left:20%; width:10%; height:8%;" onclick="selectZone('Л: ПЛЕЧО 1/3 (ПЕРЕД)')"></div>
+  <!-- Плечо 2/3 -->
+  <div class="zone front" style="top:33%; left:20%; width:10%; height:8%;" onclick="selectZone('Л: ПЛЕЧО 2/3 (ПЕРЕД)')"></div>
+  <!-- Плечо 3/3 -->
+  <div class="zone front" style="top:41%; left:20%; width:10%; height:8%;" onclick="selectZone('Л: ПЛЕЧО 3/3 (ПЕРЕД)')"></div>
+
+  <!-- Предплечье 1/3 -->
+  <div class="zone front" style="top:49%; left:16%; width:10%; height:8%;" onclick="selectZone('Л: ПРЕДПЛЕЧЬЕ 1/3 (ПЕРЕД)')"></div>
+  <!-- Предплечье 2/3 -->
+  <div class="zone front" style="top:57%; left:16%; width:10%; height:8%;" onclick="selectZone('Л: ПРЕДПЛЕЧЬЕ 2/3 (ПЕРЕД)')"></div>
+  <!-- Предплечье 3/3 -->
+  <div class="zone front" style="top:65%; left:16%; width:10%; height:8%;" onclick="selectZone('Л: ПРЕДПЛЕЧЬЕ 3/3 (ПЕРЕД)')"></div>
+
+  <!-- КИСТЬ -->
+  <div class="zone front" style="top:73%; left:12%; width:10%; height:10%;" onclick="selectZone('Л: КИСТЬ (ПЕРЕД)')"></div>
+
+  <!-- РУКА ПРАВАЯ (на картинке справа) -->
+  <div class="zone front" style="top:25%; left:70%; width:10%; height:8%;" onclick="selectZone('П: ПЛЕЧО 1/3 (ПЕРЕД)')"></div>
+  <div class="zone front" style="top:33%; left:70%; width:10%; height:8%;" onclick="selectZone('П: ПЛЕЧО 2/3 (ПЕРЕД)')"></div>
+  <div class="zone front" style="top:41%; left:70%; width:10%; height:8%;" onclick="selectZone('П: ПЛЕЧО 3/3 (ПЕРЕД)')"></div>
+
+  <div class="zone front" style="top:49%; left:74%; width:10%; height:8%;" onclick="selectZone('П: ПРЕДПЛЕЧЬЕ 1/3 (ПЕРЕД)')"></div>
+  <div class="zone front" style="top:57%; left:74%; width:10%; height:8%;" onclick="selectZone('П: ПРЕДПЛЕЧЬЕ 2/3 (ПЕРЕД)')"></div>
+  <div class="zone front" style="top:65%; left:74%; width:10%; height:8%;" onclick="selectZone('П: ПРЕДПЛЕЧЬЕ 3/3 (ПЕРЕД)')"></div>
+
+  <div class="zone front" style="top:73%; left:78%; width:10%; height:10%;" onclick="selectZone('П: КИСТЬ (ПЕРЕД)')"></div>
+
+  <!-- НОГА ЛЕВАЯ -->
+  <div class="zone front" style="top:58%; left:42%; width:10%; height:10%;" onclick="selectZone('Л: БЕДРО 1/3 (ПЕРЕД)')"></div>
+  <div class="zone front" style="top:68%; left:42%; width:10%; height:10%;" onclick="selectZone('Л: БЕДРО 2/3 (ПЕРЕД)')"></div>
+  <div class="zone front" style="top:78%; left:42%; width:10%; height:8%;" onclick="selectZone('Л: БЕДРО 3/3 (ПЕРЕД)')"></div>
+
+  <div class="zone front" style="top:86%; left:42%; width:10%; height:6%;" onclick="selectZone('Л: ГОЛЕНЬ 1/3 (ПЕРЕД)')"></div>
+  <div class="zone front" style="top:92%; left:42%; width:10%; height:5%;" onclick="selectZone('Л: ГОЛЕНЬ 2/3 (ПЕРЕД)')"></div>
+  <div class="zone front" style="top:97%; left:42%; width:10%; height:3%;" onclick="selectZone('Л: ГОЛЕНЬ 3/3 (ПЕРЕД)')"></div>
+
+  <div class="zone front" style="top:97%; left:37%; width:8%; height:3%;" onclick="selectZone('Л: СТОПА (ПЕРЕД)')"></div>
+
+  <!-- НОГА ПРАВАЯ -->
+  <div class="zone front" style="top:58%; left:48%; width:10%; height:10%;" onclick="selectZone('П: БЕДРО 1/3 (ПЕРЕД)')"></div>
+  <div class="zone front" style="top:68%; left:48%; width:10%; height:10%;" onclick="selectZone('П: БЕДРО 2/3 (ПЕРЕД)')"></div>
+  <div class="zone front" style="top:78%; left:48%; width:10%; height:8%;" onclick="selectZone('П: БЕДРО 3/3 (ПЕРЕД)')"></div>
+
+  <div class="zone front" style="top:86%; left:48%; width:10%; height:6%;" onclick="selectZone('П: ГОЛЕНЬ 1/3 (ПЕРЕД)')"></div>
+  <div class="zone front" style="top:92%; left:48%; width:10%; height:5%;" onclick="selectZone('П: ГОЛЕНЬ 2/3 (ПЕРЕД)')"></div>
+  <div class="zone front" style="top:97%; left:48%; width:10%; height:3%;" onclick="selectZone('П: ГОЛЕНЬ 3/3 (ПЕРЕД)')"></div>
+
+  <div class="zone front" style="top:97%; left:55%; width:8%; height:3%;" onclick="selectZone('П: СТОПА (ПЕРЕД)')"></div>
+
+  <!-- =========================
+       ЗОНЫ ДЛЯ СПИНЫ (back)
+       Скрыты по умолчанию
+       ========================= -->
+
+  <!-- СПИНА верх -->
+  <div class="zone back" style="top:22%; left:35%; width:30%; height:18%;" onclick="selectZone('СПИНА (СПИНА)')"></div>
+  <!-- ЯГОДИЦЫ -->
+  <div class="zone back" style="top:45%; left:38%; width:24%; height:12%;" onclick="selectZone('ЯГОДИЦЫ (СПИНА)')"></div>
+  <!-- ГОЛОВА/ШЕЯ сзади -->
+  <div class="zone back" style="top:8%; left:44%; width:12%; height:9%;" onclick="selectZone('ГОЛОВА (СПИНА)')"></div>
+  <div class="zone back" style="top:17%; left:46%; width:8%; height:5%;" onclick="selectZone('ШЕЯ (СПИНА)')"></div>
+
+  <!-- (Конечности со спины можно добавить позже — пока оставил базовый минимум) -->
+
+</div>
+
+<div class="panel">
+  <div><b>Выбрано:</b> <span id="count">0</span></div>
+  <ul class="list" id="list"></ul>
+
+  <button class="smallbtn" onclick="undoLast()">Отмена последнего</button>
+  <button class="smallbtn" onclick="clearAll()">Очистить всё</button>
+
+  <div class="hint">
+    Тапай по зоне → она добавится в список. Нажми «Отправить» внизу.
+  </div>
+</div>
+
+<button class="btn" onclick="send()">ОТПРАВИТЬ</button>
+
+<script>
+  const tg = window.Telegram?.WebApp;
+
+  // Расширяем мини-апп внутри Telegram (если он там)
+  if (tg) tg.expand();
+
+  let mode = 'front'; // 'front' or 'back'
+  let selected = [];
+
+  function setFront() {
+    mode = 'front';
+    document.getElementById('bodyImage').src = 'body_front.png';
+    showZones();
+  }
+
+  function setBack() {
+    mode = 'back';
+    document.getElementById('bodyImage').src = 'body_back.png';
+    showZones();
+  }
+
+  function showZones() {
+    const fronts = document.querySelectorAll('.zone.front');
+    const backs  = document.querySelectorAll('.zone.back');
+    fronts.forEach(z => z.style.display = (mode === 'front') ? 'block' : 'none');
+    backs.forEach(z  => z.style.display = (mode === 'back')  ? 'block' : 'none');
+  }
+
+  function selectZone(name) {
+    selected.push(name);
+    renderList();
+  }
+
+  function undoLast() {
+    selected.pop();
+    renderList();
+  }
+
+  function clearAll() {
+    selected = [];
+    renderList();
+  }
+
+  function renderList() {
+    const ul = document.getElementById('list');
+    ul.innerHTML = '';
+    selected.forEach((s) => {
+      const li = document.createElement('li');
+      li.textContent = s;
+      ul.appendChild(li);
+    });
+    document.getElementById('count').textContent = String(selected.length);
+  }
+
+  function buildMessage() {
+    if (selected.length === 0) return 'РАНЕНИЯ: нет данных';
+    return 'РАНЕНИЯ:\n' + selected.map(s => '• ' + s).join('\n');
+  }
+
+  async function send() {
+    const msg = buildMessage();
+
+    // Если открыто внутри Telegram Mini App — отправляем данные боту
+    if (tg) {
+      tg.sendData(msg);
+      return;
+    }
+
+    // Если открыто в обычном браузере — покажем и попробуем скопировать
+    try {
+      await navigator.clipboard.writeText(msg);
+      alert('Скопировано в буфер:\n\n' + msg);
+    } catch (e) {
+      alert(msg);
+    }
+  }
+
+  // старт
+  showZones();
+  renderList();
+</script>
 
 </body>
 </html>
