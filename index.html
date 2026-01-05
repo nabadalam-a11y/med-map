@@ -3,8 +3,11 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Мед-карта (номера + кликабельные метки)</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <title>Мед-карта (PDF всегда с паролем)</title>
+
+  <!-- jsPDF -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
   <style>
     body{ margin:0; font-family: Arial, sans-serif; background:#fff; color:#111; }
     .title{ padding:10px; text-align:center; font-weight:700; font-size:18px; }
@@ -12,22 +15,31 @@
     .btn{ width:100%; padding:14px; font-size:17px; border:none; background:#222; color:#fff; }
     .btn:active{ opacity:.85; }
     .btn2{
-      width:100%; padding:12px; font-size:16px;
-      border:1px solid #222; background:#fff; color:#222;
-      border-radius:10px; margin-top:10px;
+      width:100%;
+      padding:12px;
+      font-size:16px;
+      border:1px solid #222;
+      background:#fff;
+      color:#222;
+      border-radius:10px;
+      margin-top:10px;
     }
     .btn2:active{ opacity:.85; }
+
     .wrap{ position:relative; width:100%; }
     .map{ width:100%; display:block; user-select:none; -webkit-user-drag:none; }
+
     .panel{ padding:12px; border-top:1px solid #ddd; background:#fafafa; }
     .row{ display:flex; gap:10px; }
     .col{ width:100%; }
     label{ display:block; font-size:13px; color:#444; margin:10px 0 6px; }
     input, textarea{
-      width:100%; box-sizing:border-box; padding:10px; font-size:15px;
+      width:100%; box-sizing:border-box;
+      padding:10px; font-size:15px;
       border:1px solid #ccc; border-radius:10px; background:#fff;
     }
     textarea{ min-height:70px; }
+
     .hint{ font-size:12px; color:#666; margin-top:6px; }
     .out{
       white-space:pre-wrap;
@@ -36,120 +48,146 @@
       padding:10px; border:1px solid #ddd; border-radius:10px;
       background:#fff; margin-top:10px;
     }
-    .sticky{ position:sticky; bottom:0; background:#fafafa; padding:10px 12px; border-top:1px solid #ddd; }
 
+    .bar{
+      display:flex; gap:10px;
+      padding:10px 12px; border-top:1px solid #ddd; background:#fafafa;
+      position:sticky; bottom:0;
+    }
+    .bar .btn{ padding:14px 10px; }
+
+    /* метки */
     .pin{
       position:absolute; transform: translate(-50%,-50%);
       min-width:26px; height:26px; padding:0 6px;
-      border-radius:999px; background: rgba(255,0,0,0.88);
+      border-radius:999px;
+      background: rgba(255,0,0,0.88);
       color:#fff; font-weight:800; font-size:13px;
       display:flex; align-items:center; justify-content:center;
-      z-index: 20; border: 2px solid rgba(255,255,255,0.95);
-      box-shadow: 0 1px 6px rgba(0,0,0,0.18);
+      z-index:20;
+      border:2px solid rgba(255,255,255,0.95);
+      box-shadow:0 1px 6px rgba(0,0,0,0.18);
       pointer-events:auto; cursor:pointer; user-select:none;
     }
     .pin.selected{ background: rgba(0,120,255,0.88); }
 
-    .err{ display:none; padding:10px 12px; background:#fff3f3; border-top:1px solid #f1b5b5; color:#8a1f1f; font-size:13px; white-space:pre-wrap; }
+    .err{
+      display:none;
+      padding:10px 12px;
+      background:#fff3f3;
+      border-top:1px solid #f1b5b5;
+      color:#8a1f1f;
+      font-size:13px;
+      white-space:pre-wrap;
+    }
 
-    /* одноразовый режим */
-    .oneTime{
-      background:#fffbe6;
-      border:1px solid #e6d27a;
-      padding:10px;
-      border-radius:10px;
+    /* обязательные поля подсветка */
+    .reqBad{
+      border-color:#d11 !important;
+      box-shadow:0 0 0 3px rgba(209,17,17,0.15);
+    }
+
+    /* карточки зон */
+    .zoneCard{
+      background:#fff; border:1px solid #ddd; border-radius:12px;
+      padding:10px; margin-top:10px;
+    }
+    .zoneHead{
+      display:flex; justify-content:space-between; gap:10px;
+      align-items:flex-start; font-size:14px; font-weight:700;
+    }
+    .zoneSub{ margin-top:4px; font-size:12px; color:#444; font-weight:400; }
+    .grid{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px; }
+    .chk{
+      display:flex; align-items:center; gap:10px;
+      padding:10px; border:1px solid #eee; border-radius:12px;
+      background:#fafafa; font-size:14px; user-select:none;
+    }
+    .chk input{ width:22px; height:22px; margin:0; }
+    .miniBtn{
+      border:1px solid #222; background:#fff; color:#222;
+      border-radius:10px; padding:6px 10px; font-size:13px; min-width:88px;
+    }
+    .miniBtn:active{ opacity:.85; }
+
+    .statusLine{
       margin-top:10px;
       font-size:13px;
-      color:#3a3100;
-    }
-    .cross {
-      position:absolute;
-      width:18px; height:18px;
-      border:2px solid #0078ff;
-      border-radius:50%;
-      transform: translate(-50%,-50%);
-      pointer-events:none;
-      z-index: 999;
-      background: rgba(0,120,255,.08);
+      color:#0b6623;
+      font-weight:700;
       display:none;
+      white-space:pre-wrap;
     }
-    .cross:before, .cross:after{
-      content:"";
-      position:absolute;
-      left:50%; top:50%;
-      width:18px; height:2px;
-      background:#0078ff;
-      transform: translate(-50%,-50%);
-    }
-    .cross:after{ width:2px; height:18px; }
   </style>
 </head>
 
 <body>
-  <div class="title">КАРТА РАНЕНИЙ (НОМЕРА)</div>
+  <div class="title">КАРТА РАНЕНИЙ</div>
 
   <div class="tabs">
     <button class="btn" id="btnFront">ПЕРЕД</button>
     <button class="btn" id="btnBack">СПИНА</button>
   </div>
 
-  <div class="wrap" id="wrap">
+  <div class="wrap">
     <img id="bodyImage" class="map" src="body_front.png" alt="body">
     <div id="pinsLayer"></div>
-    <div id="cross" class="cross"></div>
   </div>
 
   <div class="err" id="errBox"></div>
 
   <div class="panel">
-    <div id="oneTimeBox" class="oneTime" style="display:none;"></div>
-
     <div class="row">
       <div class="col">
-        <label>Дата/время</label>
+        <label>Дата/время (обязательно)</label>
         <input id="dt" type="datetime-local"/>
-        <div class="hint">Если пусто — поставится автоматически.</div>
+        <div class="hint">Заполни вручную. Без даты/времени PDF не сформируется.</div>
       </div>
       <div class="col">
-        <label>Позывной</label>
+        <label>Позывной (обязательно, он же пароль PDF)</label>
         <input id="call" placeholder="например: БАРС-12"/>
+        <div class="hint">PDF всегда с паролем = позывной (точно как введён).</div>
       </div>
     </div>
 
-    <label>Номера зон (для текущего вида)</label>
-    <textarea id="nums" placeholder="например:
-10 12 28
-36"></textarea>
-    <div class="hint">Тап по метке добавляет/убирает номер ТОЛЬКО на текущей стороне (перед/спина).</div>
+    <label>Комментарий (обязательно)</label>
+    <textarea id="comment" placeholder="кратко: турникет/кровотечение/состояние..."></textarea>
 
-    <label>Комментарий</label>
-    <textarea id="comment" placeholder="например: кровотечение, турникет наложен..."></textarea>
-
-    <button class="btn2" id="btnDecode">РАСШИФРОВАТЬ / ПОКАЗАТЬ</button>
-    <button class="btn2" id="btnClear">ОЧИСТИТЬ (текущая сторона)</button>
-
-    <div class="out" id="decoded">Здесь будет расшифровка…</div>
-    <div class="out" id="finalMsg" style="margin-top:10px;">Здесь будет итоговое сообщение…</div>
-
-    <div class="hint">
-      12 на ПЕРЕДЕ и 12 на СПИНЕ — разные (разные таблицы). Выбор номеров тоже раздельный.
+    <div class="hint" style="margin-top:10px;">
+      Тап по метке = выбор зоны. Для каждой зоны появятся травмы (по логике зоны) + “шина” только для конечностей.
     </div>
+
+    <div id="zonesUI"></div>
+
+    <button class="btn2" id="btnRefresh">ОБНОВИТЬ ТЕКСТ ОТЧЁТА</button>
+    <button class="btn2" id="btnCopy">КОПИРОВАТЬ ТЕКСТ (в чат)</button>
+
+    <div class="out" id="finalMsg">Здесь будет итоговое сообщение…</div>
+    <div class="statusLine" id="statusLine"></div>
   </div>
 
-  <div class="sticky">
-    <button class="btn" id="btnSend">ОТПРАВИТЬ</button>
+  <div class="bar">
+    <button class="btn" id="btnMakePDF" style="background:#0b6623;">СДЕЛАТЬ PDF (С ПАРОЛЕМ)</button>
   </div>
 
-<script>
-(() => {
-  const errBox = document.getElementById("errBox");
+<script type="module">
+  import createQpdfModule from "https://esm.sh/@neslinesli93/qpdf-wasm@0.3.0";
+  const QPDF_WASM_URL = "https://cdn.jsdelivr.net/npm/@neslinesli93/qpdf-wasm@0.3.0/dist/qpdf.wasm";
+  let qpdfPromise = null;
+
+  const $ = (id)=> document.getElementById(id);
+  const errBox = $("errBox");
+  const statusLine = $("statusLine");
+
   function showErr(msg){ errBox.style.display="block"; errBox.textContent=msg; }
-  window.addEventListener("error", (e)=> showErr("Ошибка JS:\n"+(e?.message||e)+"\n"+(e?.filename||"")+":"+ (e?.lineno||"")));
+  function setStatus(msg){ statusLine.style.display="block"; statusLine.textContent=msg; }
+  function clearStatus(){ statusLine.style.display="none"; statusLine.textContent=""; }
 
-  const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
-  if(tg){ try{ tg.expand(); }catch(_){} }
+  window.addEventListener("error", (e)=> {
+    showErr("Ошибка JS:\n" + (e?.message||e) + "\n" + (e?.filename||"") + ":" + (e?.lineno||""));
+  });
 
-  // ===== таблицы =====
+  // ===== словари зон =====
   const BACK = {
     1:"Подошва",2:"Тыльная область стопы",3:"Передняя область голени",4:"Задняя область голени",
     5:"Задняя область колена",6:"Заднепроходная область",7:"Задняя область бедра",8:"Крестцовая область",
@@ -178,293 +216,382 @@
   };
 
   // ===== storage keys =====
-  const POINTS_KEY = "medmap_points_v2"; // твои точки уже тут
-  const SEL_FRONT = "medmap_sel_front_v1";
-  const SEL_BACK  = "medmap_sel_back_v1";
-  const SET41_DONE = "medmap_set41_done_v1"; // чтобы одноразово
+  const POINTS_KEY = "medmap_points_v2";
+  const SEL_FRONT  = "medmap_sel_front_v2";
+  const SEL_BACK   = "medmap_sel_back_v2";
+  const TRAUMA_FRONT = "medmap_trauma_front_v1";
+  const TRAUMA_BACK  = "medmap_trauma_back_v1";
 
-  function loadPoints(){
-    try{
-      const raw = localStorage.getItem(POINTS_KEY);
-      if(!raw) return {front:{}, back:{}};
-      const p = JSON.parse(raw);
-      if(!p.front) p.front = {};
-      if(!p.back) p.back = {};
-      return p;
-    }catch(e){ return {front:{}, back:{}}; }
-  }
-  function savePoints(p){ localStorage.setItem(POINTS_KEY, JSON.stringify(p)); }
-
-  function loadSel(){
-    const key = (view==="front") ? SEL_FRONT : SEL_BACK;
-    try{
-      const raw = localStorage.getItem(key);
-      if(!raw) return [];
-      const arr = JSON.parse(raw);
-      return Array.isArray(arr) ? arr : [];
-    }catch(e){ return []; }
-  }
-  function saveSel(arr){
-    const key = (view==="front") ? SEL_FRONT : SEL_BACK;
-    localStorage.setItem(key, JSON.stringify(arr));
-  }
+  // ===== DOM =====
+  const bodyImage = $("bodyImage");
+  const pinsLayer = $("pinsLayer");
+  const dtEl = $("dt");
+  const callEl = $("call");
+  const commentEl = $("comment");
+  const zonesUI = $("zonesUI");
+  const finalEl = $("finalMsg");
 
   // ===== state =====
   let view = "front";
-  let pendingPoint = null;
 
-  // ===== DOM =====
-  const wrap = document.getElementById("wrap");
-  const bodyImage = document.getElementById("bodyImage");
-  const pinsLayer = document.getElementById("pinsLayer");
-  const cross = document.getElementById("cross");
-  const dtEl = document.getElementById("dt");
-  const callEl = document.getElementById("call");
-  const numsEl = document.getElementById("nums");
-  const commentEl = document.getElementById("comment");
-  const decodedEl = document.getElementById("decoded");
-  const finalEl = document.getElementById("finalMsg");
-  const oneTimeBox = document.getElementById("oneTimeBox");
-
-  // ===== utils =====
-  function ensureDatetime(){
-    if(dtEl.value) return dtEl.value;
-    const d = new Date();
-    const pad = (n)=> String(n).padStart(2,'0');
-    const s = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-    dtEl.value = s;
-    return s;
+  function loadJSON(key, fallback){
+    try{ const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; }
+    catch{ return fallback; }
   }
-  function parseNumbers(text){
-    const m = (text||"").match(/\d+/g);
-    if(!m) return [];
-    const seen=new Set(); const out=[];
-    for(const x of m){
-      const n=parseInt(x,10);
-      if(Number.isFinite(n) && !seen.has(n)){ seen.add(n); out.push(n); }
+  function saveJSON(key, value){ localStorage.setItem(key, JSON.stringify(value)); }
+
+  function loadPoints(){
+    const p = loadJSON(POINTS_KEY, {front:{}, back:{}});
+    if(!p.front) p.front = {};
+    if(!p.back) p.back = {};
+    return p;
+  }
+
+  function loadSel(side){
+    const key = side==="front" ? SEL_FRONT : SEL_BACK;
+    const arr = loadJSON(key, []);
+    return Array.isArray(arr) ? arr.map(String) : [];
+  }
+  function saveSel(side, arr){
+    const key = side==="front" ? SEL_FRONT : SEL_BACK;
+    saveJSON(key, arr);
+  }
+
+  function loadTrauma(side){
+    const key = side==="front" ? TRAUMA_FRONT : TRAUMA_BACK;
+    const obj = loadJSON(key, {});
+    return (obj && typeof obj==="object") ? obj : {};
+  }
+  function saveTrauma(side, obj){
+    const key = side==="front" ? TRAUMA_FRONT : TRAUMA_BACK;
+    saveJSON(key, obj);
+  }
+
+  function dictFor(side){ return side==="front" ? FRONT : BACK; }
+
+  function uniqNums(arr){
+    const seen = new Set();
+    const out = [];
+    for(const x of arr){
+      const n = parseInt(x,10);
+      if(Number.isFinite(n) && !seen.has(n)){
+        seen.add(n);
+        out.push(String(n));
+      }
     }
     return out;
   }
-  function setNumbers(arr){
-    const uniq=[]; const seen=new Set();
-    for(const n of arr){
-      const nn=parseInt(n,10);
-      if(Number.isFinite(nn) && !seen.has(nn)){ seen.add(nn); uniq.push(nn); }
-    }
-    numsEl.value = uniq.join(" ");
-    saveSel(uniq); // ВАЖНО: сохраняем выбор отдельно по стороне
-  }
-  function nameFor(num){
-    const dict = (view==="front") ? FRONT : BACK;
-    return dict[num] || "НЕИЗВЕСТНО";
+
+  // ===== обязательные поля =====
+  function markReq(el, ok){
+    if(ok) el.classList.remove("reqBad");
+    else el.classList.add("reqBad");
   }
 
-  function clearPins(){ pinsLayer.innerHTML=""; }
+  function validateRequired(){
+    // обязательные: дата/время, позывной, комментарий
+    const dt = (dtEl.value||"").trim();
+    const call = (callEl.value||"").trim();
+    const comment = (commentEl.value||"").trim();
+
+    const okDt = !!dt;
+    const okCall = !!call;
+    const okComment = !!comment;
+
+    markReq(dtEl, okDt);
+    markReq(callEl, okCall);
+    markReq(commentEl, okComment);
+
+    const missing = [];
+    if(!okDt) missing.push("Дата/время");
+    if(!okCall) missing.push("Позывной");
+    if(!okComment) missing.push("Комментарий");
+
+    return { ok: okDt && okCall && okComment, missing };
+  }
+
+  // ===== логика чекбоксов =====
+  const TRAUMAS = [
+    { key:"bullet",   label:"Пулевое" },
+    { key:"shrapnel", label:"Осколочное" },
+    { key:"mvt",      label:"МВТ" },
+    { key:"burn",     label:"Ожог" },
+    { key:"fracture", label:"Перелом" },
+  ];
+
+  function zoneClassByName(name){
+    const s = (name||"").toLowerCase();
+    const head = ["лоб","височ","теменн","затыл","скул","глазниц","щёч","нос","рот","подбород"];
+    if(head.some(k=>s.includes(k))) return "head";
+    if(s.includes("шеи") || s.includes("грудино-ключично-сосцевид") || s.includes("поднижнечелюст")) return "neck";
+    const upper = ["плеч","предплеч","локт","кист","ладон","дельтов","акроми","подмыш"];
+    if(upper.some(k=>s.includes(k))) return "limb_upper";
+    const lower = ["бедр","колен","голен","стоп","пят","подошв","голеностоп"];
+    if(lower.some(k=>s.includes(k))) return "limb_lower";
+    return "trunk";
+  }
+
+  function allowedForClass(cls){
+    if(cls==="limb_upper" || cls==="limb_lower"){
+      return { bullet:true, shrapnel:true, mvt:true, burn:true, fracture:true, splint:true };
+    }
+    if(cls==="head" || cls==="neck"){
+      return { bullet:true, shrapnel:true, mvt:true, burn:true, fracture:false, splint:false };
+    }
+    return { bullet:true, shrapnel:true, mvt:true, burn:true, fracture:false, splint:false };
+  }
+
+  function traumaSummary(obj){
+    const out = [];
+    if(obj?.bullet) out.push("пулевое");
+    if(obj?.shrapnel) out.push("осколочное");
+    if(obj?.mvt) out.push("МВТ");
+    if(obj?.burn) out.push("ожог");
+    if(obj?.fracture) out.push("перелом");
+    return out;
+  }
+
+  // ===== pins =====
+  function clearPins(){ pinsLayer.innerHTML = ""; }
 
   function addPin(num, x, y, selected){
-    const pin=document.createElement("div");
-    pin.className="pin"+(selected?" selected":"");
-    pin.style.left=x+"%";
-    pin.style.top=y+"%";
-    pin.textContent=String(num);
-
-    pin.addEventListener("click",(e)=>{
+    const pin = document.createElement("div");
+    pin.className = "pin" + (selected ? " selected" : "");
+    pin.style.left = x + "%";
+    pin.style.top  = y + "%";
+    pin.textContent = String(num);
+    pin.addEventListener("click", (e)=>{
       e.preventDefault(); e.stopPropagation();
-      toggleNumber(num);
+      toggleZone(num);
     });
-
     pinsLayer.appendChild(pin);
   }
 
   function renderPins(){
-    const points=loadPoints();
-    const map = (view==="front") ? points.front : points.back;
-
-    const selected = parseNumbers(numsEl.value).map(n=>String(n));
-    const set = new Set(selected);
-
+    const points = loadPoints();
+    const map = view==="front" ? points.front : points.back;
+    const sel = new Set(loadSel(view));
     clearPins();
 
-    // выбранные
-    for(const k of selected){
+    for(const k of Array.from(sel)){
       if(map[k]) addPin(k, map[k].x, map[k].y, true);
     }
-    // остальные
     for(const k of Object.keys(map)){
-      if(!set.has(k)){
-        addPin(k, map[k].x, map[k].y, false);
-      }
+      if(!sel.has(k)) addPin(k, map[k].x, map[k].y, false);
     }
   }
 
-  function toggleNumber(num){
-    const cur = parseNumbers(numsEl.value);
-    const n = parseInt(num,10);
-    const idx = cur.indexOf(n);
-    if(idx>=0) cur.splice(idx,1); else cur.push(n);
-    setNumbers(cur);
-    decodeAndShow();
+  function toggleZone(num){
+    const n = String(parseInt(num,10));
+    let sel = loadSel(view);
+    const idx = sel.indexOf(n);
+    if(idx>=0) sel.splice(idx,1);
+    else sel.push(n);
+    sel = uniqNums(sel);
+    saveSel(view, sel);
+    renderAll();
   }
 
-  function decodeAndShow(){
-    try{
-      const dt = ensureDatetime();
-      const call=(callEl.value||"").trim();
-      const comment=(commentEl.value||"").trim();
-      const nums=parseNumbers(numsEl.value);
+  function setTrauma(num, key, val){
+    const n = String(parseInt(num,10));
+    const t = loadTrauma(view);
+    if(!t[n]) t[n] = {};
+    t[n][key] = !!val;
+    saveTrauma(view, t);
+    renderAll(false);
+  }
 
-      const points=loadPoints();
-      const map=(view==="front") ? points.front : points.back;
+  function renderZonesUI(){
+    const sel = loadSel(view).sort((a,b)=>parseInt(a,10)-parseInt(b,10));
+    const trauma = loadTrauma(view);
+    const dict = dictFor(view);
 
-      const lines=[];
-      if(nums.length===0){
-        lines.push("Номера не введены.");
-      } else {
-        for(const n of nums){
-          const key=String(n);
-          const nm=nameFor(n);
-          const hasPoint=!!(map && map[key]);
-          lines.push(`${n} — ${nm}${hasPoint?"":" (нет точки)"}`);
-        }
+    zonesUI.innerHTML = "";
+
+    if(sel.length===0){
+      const empty = document.createElement("div");
+      empty.className="hint";
+      empty.textContent="Зоны не выбраны. Тапни по метке на картинке.";
+      zonesUI.appendChild(empty);
+      return;
+    }
+
+    for(const num of sel){
+      const name = dict[parseInt(num,10)] || "НЕИЗВЕСТНО";
+      const cls = zoneClassByName(name);
+      const allow = allowedForClass(cls);
+      const cur = trauma[num] || {};
+
+      const card = document.createElement("div");
+      card.className="zoneCard";
+
+      const head = document.createElement("div");
+      head.className="zoneHead";
+      head.innerHTML = `<div>[${num}] ${name}<div class="zoneSub">Сторона: ${view==="front"?"ПЕРЕД":"СПИНА"}</div></div>`;
+
+      const delBtn = document.createElement("button");
+      delBtn.className="miniBtn";
+      delBtn.textContent="Убрать";
+      delBtn.onclick = ()=> toggleZone(num);
+      head.appendChild(delBtn);
+
+      card.appendChild(head);
+
+      const grid = document.createElement("div");
+      grid.className="grid";
+
+      for(const tr of TRAUMAS){
+        if(!allow[tr.key]) continue;
+        const wrap = document.createElement("label");
+        wrap.className="chk";
+        const inp = document.createElement("input");
+        inp.type="checkbox";
+        inp.checked=!!cur[tr.key];
+        inp.onchange=()=> setTrauma(num, tr.key, inp.checked);
+        const span=document.createElement("span");
+        span.textContent=tr.label;
+        wrap.appendChild(inp);
+        wrap.appendChild(span);
+        grid.appendChild(wrap);
       }
 
-      decodedEl.textContent = `ВИД: ${view==="front"?"ПЕРЕД":"СПИНА"}\n` + lines.join("\n");
+      if(allow.splint){
+        const wrap = document.createElement("label");
+        wrap.className="chk";
+        const inp = document.createElement("input");
+        inp.type="checkbox";
+        inp.checked=!!cur.splint;
+        inp.onchange=()=> setTrauma(num, "splint", inp.checked);
+        const span=document.createElement("span");
+        span.textContent="Шина наложена";
+        wrap.appendChild(inp);
+        wrap.appendChild(span);
+        grid.appendChild(wrap);
+      }
 
-      finalEl.textContent =
-`ОТЧЁТ МЕДИКА
-Дата/время: ${dt}
+      card.appendChild(grid);
+      zonesUI.appendChild(card);
+    }
+  }
+
+  // ===== текст отчёта =====
+  function buildTextReport(){
+    const dt = (dtEl.value||"").trim();
+    const call = (callEl.value||"").trim();
+    const comment = (commentEl.value||"").trim();
+
+    const selFront = loadSel("front").sort((a,b)=>parseInt(a,10)-parseInt(b,10));
+    const selBack  = loadSel("back").sort((a,b)=>parseInt(a,10)-parseInt(b,10));
+    const tf = loadTrauma("front");
+    const tb = loadTrauma("back");
+
+    function linesFor(side, sel, t){
+      const dict = dictFor(side);
+      if(sel.length===0) return ["(нет)"];
+      const out=[];
+      for(const num of sel){
+        const name = dict[parseInt(num,10)] || "НЕИЗВЕСТНО";
+        const ts = traumaSummary(t[num]||{});
+        const spl = !!(t[num]?.splint);
+        let line = `• ${num} — ${name}`;
+        if(ts.length) line += `\n  Травмы: ${ts.join(", ")}`;
+        if(spl) line += `\n  Шина: да`;
+        out.push(line);
+      }
+      return out;
+    }
+
+    return (
+`МЕД ОТЧЁТ
+Дата/время: ${dt || "-"}
 Позывной: ${call || "-"}
-Вид: ${view==="front"?"ПЕРЕД":"СПИНА"}
 
-Зоны:
-${lines.map(l=>"• "+l).join("\n")}
+ПЕРЕД:
+${linesFor("front", selFront, tf).join("\n")}
+
+СПИНА:
+${linesFor("back", selBack, tb).join("\n")}
 
 Комментарий:
-${comment || "-"}`;
-
-      renderPins();
-    }catch(e){
-      showErr("Ошибка:\n"+(e?.message||e));
-    }
+${comment || "-"}`
+    );
   }
 
-  function setView(next){
-    view=next;
-    bodyImage.src = (view==="front") ? "body_front.png" : "body_back.png";
-
-    // грузим выбор для этой стороны
-    const sel = loadSel();
-    numsEl.value = sel.join(" ");
-
-    pendingPoint=null;
-    cross.style.display="none";
-
-    updateOneTimeUI();
-    decodeAndShow();
+  // ===== имя файла =====
+  function firstTwoChars(s){
+    if(!s) return "XX";
+    return Array.from(s).slice(0,2).join("");
+  }
+  function fmtBaseName(){
+    const dt = (dtEl.value||"").trim(); // YYYY-MM-DDTHH:MM
+    const call = (callEl.value||"").trim();
+    const [d,t] = (dt || "0000-00-00T0000").split("T");
+    const hhmm = (t || "0000").replace(":","");
+    const xx = firstTwoChars(call);
+    return `MED_${d}_${hhmm}_${xx}`;
   }
 
-  function clearCurrentSide(){
-    setNumbers([]);
-    commentEl.value = commentEl.value; // не трогаем
-    decodeAndShow();
+  // ===== рендер страницы в PNG =====
+  async function loadImage(src){
+    return new Promise((resolve, reject)=>{
+      const img = new Image();
+      img.onload=()=>resolve(img);
+      img.onerror=reject;
+      img.src=src;
+    });
+  }
+  function sideColor(side){ return side==="front" ? "#0078ff" : "#ff0000"; }
+
+  function traumaLineFor(side, num){
+    const t = loadTrauma(side)[String(num)] || {};
+    const parts=[];
+    if(t.bullet) parts.push("Пулевое");
+    if(t.shrapnel) parts.push("Осколочное");
+    if(t.mvt) parts.push("МВТ");
+    if(t.burn) parts.push("Ожог");
+    if(t.fracture) parts.push("Перелом");
+    return parts.join(", ");
   }
 
-  async function send(){
-    decodeAndShow();
-    const msg=finalEl.textContent;
-    if(tg){ tg.sendData(msg); return; }
-    try{ await navigator.clipboard.writeText(msg); alert("Скопировано."); }
-    catch(e){ alert(msg); }
-  }
+  async function renderPagePNG(side){
+    const W=1240, H=1754;
+    const canvas=document.createElement("canvas");
+    canvas.width=W; canvas.height=H;
+    const ctx=canvas.getContext("2d");
 
-  // ======= ONE-TIME SET41 =======
-  const params = new URLSearchParams(location.search);
-  const wantsSet41 = params.get("set41")==="1";
-  function set41Done(){ return localStorage.getItem(SET41_DONE)==="true"; }
-  function markSet41Done(){ localStorage.setItem(SET41_DONE,"true"); }
+    ctx.fillStyle="#fff"; ctx.fillRect(0,0,W,H);
 
-  function updateOneTimeUI(){
-    // показываем блок только если:
-    // - открыт ?set41=1
-    // - ещё не сделано
-    // - текущий вид = back (спина)
-    if(wantsSet41 && !set41Done() && view==="back"){
-      oneTimeBox.style.display="block";
-      oneTimeBox.innerHTML = `
-        <b>ОДНОРАЗОВАЯ НАСТРОЙКА:</b> поставить точку №41 на СПИНЕ.<br>
-        1) Тапни на место 41 (пятка) → появится прицел.<br>
-        2) Нажми кнопку ниже: <b>СОХРАНИТЬ 41</b>.<br>
-        После сохранения функция исчезнет навсегда.
-        <button class="btn2" id="btnSave41">СОХРАНИТЬ 41</button>
-      `;
-      setTimeout(()=>{
-        const btn = document.getElementById("btnSave41");
-        if(btn){
-          btn.addEventListener("click", ()=>{
-            if(!pendingPoint){ alert("Сначала тапни по картинке в точку 41 (появится прицел)."); return; }
-            const points = loadPoints();
-            points.back["41"] = { x: pendingPoint.x, y: pendingPoint.y };
-            savePoints(points);
-            markSet41Done();
+    const dt = (dtEl.value||"").trim();
+    const call = (callEl.value||"").trim();
+    const comment = (commentEl.value||"").trim();
+    const title = side==="front" ? "ПЕРЕД" : "СПИНА";
+    const color = sideColor(side);
 
-            oneTimeBox.innerHTML = "<b>Готово.</b> Точка №41 сохранена. Режим настройки отключён.";
-            setTimeout(()=>{ oneTimeBox.style.display="none"; }, 1200);
+    ctx.fillStyle="#111";
+    ctx.font="bold 34px Arial";
+    ctx.fillText(`МЕД ОТЧЁТ — ${title}`, 60, 70);
+    ctx.font="22px Arial";
+    ctx.fillText(`Позывной: ${call || "-"}`, 60, 110);
+    ctx.fillText(`Дата/время: ${dt || "-"}`, 60, 145);
 
-            pendingPoint=null;
-            cross.style.display="none";
-            decodeAndShow();
-          });
-        }
-      },0);
-    } else {
-      oneTimeBox.style.display="none";
-      oneTimeBox.innerHTML="";
-    }
-  }
+    const imgSrc = side==="front" ? "body_front.png" : "body_back.png";
+    const img = await loadImage(imgSrc);
 
-  // в режиме set41 ловим тап по картинке (только на спине)
-  wrap.addEventListener("click",(e)=>{
-    if(!(wantsSet41 && !set41Done() && view==="back")) return;
+    const marginX=60, topY=180;
+    const imgW=W - marginX*2;
+    const imgH=Math.round(img.height*(imgW/img.width));
+    const maxImgH=980;
+    const drawH=Math.min(imgH, maxImgH);
+    const drawW=Math.round(imgW*(drawH/imgH));
+    const imgX=Math.round((W - drawW)/2);
+    const imgY=topY;
 
-    const rect = wrap.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    ctx.drawImage(img, imgX, imgY, drawW, drawH);
 
-    const xp = Math.round((x / rect.width) * 1000)/10;
-    const yp = Math.round((y / rect.height) * 1000)/10;
+    const points = loadPoints();
+    const map = side==="front" ? points.front : points.back;
+    const sel = loadSel(side);
 
-    pendingPoint = { x: xp, y: yp };
-    cross.style.display="block";
-    cross.style.left = xp + "%";
-    cross.style.top  = yp + "%";
-  }, true);
-
-  // ===== wiring =====
-  document.getElementById("btnFront").addEventListener("click", ()=> setView("front"));
-  document.getElementById("btnBack").addEventListener("click", ()=> setView("back"));
-  document.getElementById("btnDecode").addEventListener("click", decodeAndShow);
-  document.getElementById("btnClear").addEventListener("click", clearCurrentSide);
-  document.getElementById("btnSend").addEventListener("click", send);
-
-  // при ручном вводе — сохраняем выбор отдельно по стороне
-  function syncFromTextarea(){
-    const arr = parseNumbers(numsEl.value);
-    saveSel(arr);
-    decodeAndShow();
-  }
-  numsEl.addEventListener("input", syncFromTextarea);
-  numsEl.addEventListener("change", syncFromTextarea);
-
-  ["input","change"].forEach(evt=>{
-    dtEl.addEventListener(evt, decodeAndShow);
-    callEl.addEventListener(evt, decodeAndShow);
-    commentEl.addEventListener(evt, decodeAndShow);
-  });
-
-  // init
-  ensureDatetime();
-  setView("front");
-})();
-</script>
-</body>
-</html>
+    ctx.textAlign="center";
+    ctx.textBaseline="middle";
+    ctx.font="bol
