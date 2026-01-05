@@ -9,20 +9,12 @@
     body{ margin:0; font-family: Arial, sans-serif; background:#fff; color:#111; }
     .title{ padding:10px; text-align:center; font-weight:700; font-size:18px; }
     .tabs{ display:flex; }
-    .btn{
-      width:100%; padding:14px; font-size:17px;
-      border:none; background:#222; color:#fff;
-    }
+    .btn{ width:100%; padding:14px; font-size:17px; border:none; background:#222; color:#fff; }
     .btn:active{ opacity:.85; }
     .btn2{
-      width:100%;
-      padding:12px;
-      font-size:16px;
-      border:1px solid #222;
-      background:#fff;
-      color:#222;
-      border-radius:10px;
-      margin-top:10px;
+      width:100%; padding:12px; font-size:16px;
+      border:1px solid #222; background:#fff; color:#222;
+      border-radius:10px; margin-top:10px;
     }
     .btn2:active{ opacity:.85; }
     .wrap{ position:relative; width:100%; }
@@ -32,8 +24,7 @@
     .col{ width:100%; }
     label{ display:block; font-size:13px; color:#444; margin:10px 0 6px; }
     input, textarea{
-      width:100%; box-sizing:border-box;
-      padding:10px; font-size:15px;
+      width:100%; box-sizing:border-box; padding:10px; font-size:15px;
       border:1px solid #ccc; border-radius:10px; background:#fff;
     }
     textarea{ min-height:70px; }
@@ -42,48 +33,55 @@
       white-space:pre-wrap;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
       font-size:12px;
-      padding:10px;
-      border:1px solid #ddd;
-      border-radius:10px;
-      background:#fff;
-      margin-top:10px;
+      padding:10px; border:1px solid #ddd; border-radius:10px;
+      background:#fff; margin-top:10px;
     }
     .sticky{ position:sticky; bottom:0; background:#fafafa; padding:10px 12px; border-top:1px solid #ddd; }
 
-    /* Метки кликабельные */
     .pin{
-      position:absolute;
-      transform: translate(-50%,-50%);
-      min-width:26px;
-      height:26px;
-      padding:0 6px;
-      border-radius:999px;
-      background: rgba(255,0,0,0.88);
-      color:#fff;
-      font-weight:800;
-      font-size:13px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      z-index: 20;
-      border: 2px solid rgba(255,255,255,0.95);
+      position:absolute; transform: translate(-50%,-50%);
+      min-width:26px; height:26px; padding:0 6px;
+      border-radius:999px; background: rgba(255,0,0,0.88);
+      color:#fff; font-weight:800; font-size:13px;
+      display:flex; align-items:center; justify-content:center;
+      z-index: 20; border: 2px solid rgba(255,255,255,0.95);
       box-shadow: 0 1px 6px rgba(0,0,0,0.18);
-      pointer-events:auto;
-      cursor:pointer;
-      user-select:none;
+      pointer-events:auto; cursor:pointer; user-select:none;
     }
     .pin.selected{ background: rgba(0,120,255,0.88); }
 
-    /* блок ошибок */
-    .err{
-      display:none;
-      padding:10px 12px;
-      background:#fff3f3;
-      border-top:1px solid #f1b5b5;
-      color:#8a1f1f;
+    .err{ display:none; padding:10px 12px; background:#fff3f3; border-top:1px solid #f1b5b5; color:#8a1f1f; font-size:13px; white-space:pre-wrap; }
+
+    /* одноразовый режим */
+    .oneTime{
+      background:#fffbe6;
+      border:1px solid #e6d27a;
+      padding:10px;
+      border-radius:10px;
+      margin-top:10px;
       font-size:13px;
-      white-space:pre-wrap;
+      color:#3a3100;
     }
+    .cross {
+      position:absolute;
+      width:18px; height:18px;
+      border:2px solid #0078ff;
+      border-radius:50%;
+      transform: translate(-50%,-50%);
+      pointer-events:none;
+      z-index: 999;
+      background: rgba(0,120,255,.08);
+      display:none;
+    }
+    .cross:before, .cross:after{
+      content:"";
+      position:absolute;
+      left:50%; top:50%;
+      width:18px; height:2px;
+      background:#0078ff;
+      transform: translate(-50%,-50%);
+    }
+    .cross:after{ width:2px; height:18px; }
   </style>
 </head>
 
@@ -98,11 +96,14 @@
   <div class="wrap" id="wrap">
     <img id="bodyImage" class="map" src="body_front.png" alt="body">
     <div id="pinsLayer"></div>
+    <div id="cross" class="cross"></div>
   </div>
 
   <div class="err" id="errBox"></div>
 
   <div class="panel">
+    <div id="oneTimeBox" class="oneTime" style="display:none;"></div>
+
     <div class="row">
       <div class="col">
         <label>Дата/время</label>
@@ -115,23 +116,23 @@
       </div>
     </div>
 
-    <label>Номера зон (можно: 1 2 3 / 1,2,3 / с новой строки)</label>
+    <label>Номера зон (для текущего вида)</label>
     <textarea id="nums" placeholder="например:
 10 12 28
 36"></textarea>
-    <div class="hint">Тап по метке на карте добавляет/убирает номер из этого поля.</div>
+    <div class="hint">Тап по метке добавляет/убирает номер ТОЛЬКО на текущей стороне (перед/спина).</div>
 
     <label>Комментарий</label>
     <textarea id="comment" placeholder="например: кровотечение, турникет наложен..."></textarea>
 
     <button class="btn2" id="btnDecode">РАСШИФРОВАТЬ / ПОКАЗАТЬ</button>
-    <button class="btn2" id="btnClear">ОЧИСТИТЬ</button>
+    <button class="btn2" id="btnClear">ОЧИСТИТЬ (текущая сторона)</button>
 
     <div class="out" id="decoded">Здесь будет расшифровка…</div>
     <div class="out" id="finalMsg" style="margin-top:10px;">Здесь будет итоговое сообщение…</div>
 
     <div class="hint">
-      Важно: <b>12 на ПЕРЕДЕ и 12 на СПИНЕ</b> разные — берём из разных таблиц.
+      12 на ПЕРЕДЕ и 12 на СПИНЕ — разные (разные таблицы). Выбор номеров тоже раздельный.
     </div>
   </div>
 
@@ -142,18 +143,13 @@
 <script>
 (() => {
   const errBox = document.getElementById("errBox");
-  function showErr(msg){
-    errBox.style.display = "block";
-    errBox.textContent = msg;
-  }
-  window.addEventListener("error", (e) => {
-    showErr("Ошибка JS:\n" + (e?.message || e) + "\n" + (e?.filename || "") + ":" + (e?.lineno || ""));
-  });
+  function showErr(msg){ errBox.style.display="block"; errBox.textContent=msg; }
+  window.addEventListener("error", (e)=> showErr("Ошибка JS:\n"+(e?.message||e)+"\n"+(e?.filename||"")+":"+ (e?.lineno||"")));
 
   const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
-  if (tg) { try { tg.expand(); } catch(_){} }
+  if(tg){ try{ tg.expand(); }catch(_){} }
 
-  // ==== твои таблицы ====
+  // ===== таблицы =====
   const BACK = {
     1:"Подошва",2:"Тыльная область стопы",3:"Передняя область голени",4:"Задняя область голени",
     5:"Задняя область колена",6:"Заднепроходная область",7:"Задняя область бедра",8:"Крестцовая область",
@@ -181,8 +177,11 @@
     38:"Передняя голеностопная область",39:"Пяточная область",40:"Тыльная область стопы"
   };
 
-  // ==== точки (оставляю ключ тот же, чтобы твои не пропали) ====
-  const POINTS_KEY = "medmap_points_v2";
+  // ===== storage keys =====
+  const POINTS_KEY = "medmap_points_v2"; // твои точки уже тут
+  const SEL_FRONT = "medmap_sel_front_v1";
+  const SEL_BACK  = "medmap_sel_back_v1";
+  const SET41_DONE = "medmap_set41_done_v1"; // чтобы одноразово
 
   function loadPoints(){
     try{
@@ -192,208 +191,280 @@
       if(!p.front) p.front = {};
       if(!p.back) p.back = {};
       return p;
-    }catch(e){
-      return {front:{}, back:{}};
-    }
+    }catch(e){ return {front:{}, back:{}}; }
+  }
+  function savePoints(p){ localStorage.setItem(POINTS_KEY, JSON.stringify(p)); }
+
+  function loadSel(){
+    const key = (view==="front") ? SEL_FRONT : SEL_BACK;
+    try{
+      const raw = localStorage.getItem(key);
+      if(!raw) return [];
+      const arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr : [];
+    }catch(e){ return []; }
+  }
+  function saveSel(arr){
+    const key = (view==="front") ? SEL_FRONT : SEL_BACK;
+    localStorage.setItem(key, JSON.stringify(arr));
   }
 
-  // ==== состояние ====
-  let view = "front"; // front/back
+  // ===== state =====
+  let view = "front";
+  let pendingPoint = null;
 
-  // ==== DOM ====
+  // ===== DOM =====
+  const wrap = document.getElementById("wrap");
   const bodyImage = document.getElementById("bodyImage");
   const pinsLayer = document.getElementById("pinsLayer");
+  const cross = document.getElementById("cross");
   const dtEl = document.getElementById("dt");
   const callEl = document.getElementById("call");
   const numsEl = document.getElementById("nums");
   const commentEl = document.getElementById("comment");
   const decodedEl = document.getElementById("decoded");
   const finalEl = document.getElementById("finalMsg");
+  const oneTimeBox = document.getElementById("oneTimeBox");
 
-  // ==== helpers ====
+  // ===== utils =====
   function ensureDatetime(){
-    if (dtEl.value) return dtEl.value;
+    if(dtEl.value) return dtEl.value;
     const d = new Date();
     const pad = (n)=> String(n).padStart(2,'0');
     const s = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     dtEl.value = s;
     return s;
   }
-
   function parseNumbers(text){
-    const m = (text || "").match(/\d+/g);
+    const m = (text||"").match(/\d+/g);
     if(!m) return [];
-    const seen = new Set();
-    const out = [];
+    const seen=new Set(); const out=[];
     for(const x of m){
-      const n = parseInt(x,10);
-      if(Number.isFinite(n) && !seen.has(n)){
-        seen.add(n);
-        out.push(n);
-      }
+      const n=parseInt(x,10);
+      if(Number.isFinite(n) && !seen.has(n)){ seen.add(n); out.push(n); }
     }
     return out;
   }
-
   function setNumbers(arr){
-    const uniq = [];
-    const seen = new Set();
+    const uniq=[]; const seen=new Set();
     for(const n of arr){
-      const nn = parseInt(n,10);
-      if(Number.isFinite(nn) && !seen.has(nn)){
-        seen.add(nn);
-        uniq.push(nn);
-      }
+      const nn=parseInt(n,10);
+      if(Number.isFinite(nn) && !seen.has(nn)){ seen.add(nn); uniq.push(nn); }
     }
     numsEl.value = uniq.join(" ");
+    saveSel(uniq); // ВАЖНО: сохраняем выбор отдельно по стороне
+  }
+  function nameFor(num){
+    const dict = (view==="front") ? FRONT : BACK;
+    return dict[num] || "НЕИЗВЕСТНО";
+  }
+
+  function clearPins(){ pinsLayer.innerHTML=""; }
+
+  function addPin(num, x, y, selected){
+    const pin=document.createElement("div");
+    pin.className="pin"+(selected?" selected":"");
+    pin.style.left=x+"%";
+    pin.style.top=y+"%";
+    pin.textContent=String(num);
+
+    pin.addEventListener("click",(e)=>{
+      e.preventDefault(); e.stopPropagation();
+      toggleNumber(num);
+    });
+
+    pinsLayer.appendChild(pin);
+  }
+
+  function renderPins(){
+    const points=loadPoints();
+    const map = (view==="front") ? points.front : points.back;
+
+    const selected = parseNumbers(numsEl.value).map(n=>String(n));
+    const set = new Set(selected);
+
+    clearPins();
+
+    // выбранные
+    for(const k of selected){
+      if(map[k]) addPin(k, map[k].x, map[k].y, true);
+    }
+    // остальные
+    for(const k of Object.keys(map)){
+      if(!set.has(k)){
+        addPin(k, map[k].x, map[k].y, false);
+      }
+    }
   }
 
   function toggleNumber(num){
     const cur = parseNumbers(numsEl.value);
     const n = parseInt(num,10);
     const idx = cur.indexOf(n);
-    if(idx >= 0) cur.splice(idx,1);
-    else cur.push(n);
+    if(idx>=0) cur.splice(idx,1); else cur.push(n);
     setNumbers(cur);
     decodeAndShow();
-  }
-
-  function nameFor(num){
-    const dict = (view === "front") ? FRONT : BACK;
-    return dict[num] || "НЕИЗВЕСТНО";
-  }
-
-  function clearPins(){
-    pinsLayer.innerHTML = "";
-  }
-
-  function addPin(num, x, y, selected){
-    const pin = document.createElement("div");
-    pin.className = "pin" + (selected ? " selected" : "");
-    pin.style.left = x + "%";
-    pin.style.top  = y + "%";
-    pin.textContent = String(num);
-    pin.addEventListener("click", (e)=>{
-      e.preventDefault();
-      e.stopPropagation();
-      toggleNumber(num);
-    });
-    pinsLayer.appendChild(pin);
-  }
-
-  function renderPins(){
-    const points = loadPoints();
-    const map = (view === "front") ? points.front : points.back;
-
-    const selectedNums = parseNumbers(numsEl.value).map(n=>String(n));
-    const selectedSet = new Set(selectedNums);
-
-    clearPins();
-
-    // Сначала выбранные (синие)
-    for(const k of selectedNums){
-      if(map[k]) addPin(k, map[k].x, map[k].y, true);
-    }
-    // Потом все остальные привязанные (красные, но тоже кликабельные)
-    const allKeys = Object.keys(map || {});
-    for(const k of allKeys){
-      if(!selectedSet.has(k)){
-        addPin(k, map[k].x, map[k].y, false);
-      }
-    }
   }
 
   function decodeAndShow(){
     try{
       const dt = ensureDatetime();
-      const call = (callEl.value || "").trim();
-      const comment = (commentEl.value || "").trim();
-      const nums = parseNumbers(numsEl.value);
+      const call=(callEl.value||"").trim();
+      const comment=(commentEl.value||"").trim();
+      const nums=parseNumbers(numsEl.value);
 
-      const points = loadPoints();
-      const map = (view === "front") ? points.front : points.back;
+      const points=loadPoints();
+      const map=(view==="front") ? points.front : points.back;
 
-      let lines = [];
-      if(nums.length === 0){
+      const lines=[];
+      if(nums.length===0){
         lines.push("Номера не введены.");
       } else {
         for(const n of nums){
-          const key = String(n);
-          const nm = nameFor(n);
-          const hasPoint = !!(map && map[key]);
-          lines.push(`${n} — ${nm}${hasPoint ? "" : " (нет точки)"}`);
+          const key=String(n);
+          const nm=nameFor(n);
+          const hasPoint=!!(map && map[key]);
+          lines.push(`${n} — ${nm}${hasPoint?"":" (нет точки)"}`);
         }
       }
 
-      decodedEl.textContent = `ВИД: ${view === "front" ? "ПЕРЕД" : "СПИНА"}\n` + lines.join("\n");
+      decodedEl.textContent = `ВИД: ${view==="front"?"ПЕРЕД":"СПИНА"}\n` + lines.join("\n");
 
       finalEl.textContent =
 `ОТЧЁТ МЕДИКА
 Дата/время: ${dt}
 Позывной: ${call || "-"}
-Вид: ${view === "front" ? "ПЕРЕД" : "СПИНА"}
+Вид: ${view==="front"?"ПЕРЕД":"СПИНА"}
 
 Зоны:
-${lines.map(l=>"• " + l).join("\n")}
+${lines.map(l=>"• "+l).join("\n")}
 
 Комментарий:
 ${comment || "-"}`;
 
       renderPins();
     }catch(e){
-      showErr("Ошибка отчёта:\n" + (e?.message || e));
+      showErr("Ошибка:\n"+(e?.message||e));
     }
   }
 
   function setView(next){
-    view = next;
-    bodyImage.src = (view === "front") ? "body_front.png" : "body_back.png";
+    view=next;
+    bodyImage.src = (view==="front") ? "body_front.png" : "body_back.png";
+
+    // грузим выбор для этой стороны
+    const sel = loadSel();
+    numsEl.value = sel.join(" ");
+
+    pendingPoint=null;
+    cross.style.display="none";
+
+    updateOneTimeUI();
     decodeAndShow();
   }
 
-  function clearReport(){
-    numsEl.value = "";
-    commentEl.value = "";
-    decodedEl.textContent = "Здесь будет расшифровка…";
-    finalEl.textContent = "Здесь будет итоговое сообщение…";
-    renderPins();
+  function clearCurrentSide(){
+    setNumbers([]);
+    commentEl.value = commentEl.value; // не трогаем
+    decodeAndShow();
   }
 
   async function send(){
     decodeAndShow();
-    const msg = finalEl.textContent;
+    const msg=finalEl.textContent;
+    if(tg){ tg.sendData(msg); return; }
+    try{ await navigator.clipboard.writeText(msg); alert("Скопировано."); }
+    catch(e){ alert(msg); }
+  }
 
-    if(tg){
-      tg.sendData(msg);
-      return;
-    }
-    try{
-      await navigator.clipboard.writeText(msg);
-      alert("Скопировано:\n\n" + msg);
-    }catch(e){
-      alert(msg);
+  // ======= ONE-TIME SET41 =======
+  const params = new URLSearchParams(location.search);
+  const wantsSet41 = params.get("set41")==="1";
+  function set41Done(){ return localStorage.getItem(SET41_DONE)==="true"; }
+  function markSet41Done(){ localStorage.setItem(SET41_DONE,"true"); }
+
+  function updateOneTimeUI(){
+    // показываем блок только если:
+    // - открыт ?set41=1
+    // - ещё не сделано
+    // - текущий вид = back (спина)
+    if(wantsSet41 && !set41Done() && view==="back"){
+      oneTimeBox.style.display="block";
+      oneTimeBox.innerHTML = `
+        <b>ОДНОРАЗОВАЯ НАСТРОЙКА:</b> поставить точку №41 на СПИНЕ.<br>
+        1) Тапни на место 41 (пятка) → появится прицел.<br>
+        2) Нажми кнопку ниже: <b>СОХРАНИТЬ 41</b>.<br>
+        После сохранения функция исчезнет навсегда.
+        <button class="btn2" id="btnSave41">СОХРАНИТЬ 41</button>
+      `;
+      setTimeout(()=>{
+        const btn = document.getElementById("btnSave41");
+        if(btn){
+          btn.addEventListener("click", ()=>{
+            if(!pendingPoint){ alert("Сначала тапни по картинке в точку 41 (появится прицел)."); return; }
+            const points = loadPoints();
+            points.back["41"] = { x: pendingPoint.x, y: pendingPoint.y };
+            savePoints(points);
+            markSet41Done();
+
+            oneTimeBox.innerHTML = "<b>Готово.</b> Точка №41 сохранена. Режим настройки отключён.";
+            setTimeout(()=>{ oneTimeBox.style.display="none"; }, 1200);
+
+            pendingPoint=null;
+            cross.style.display="none";
+            decodeAndShow();
+          });
+        }
+      },0);
+    } else {
+      oneTimeBox.style.display="none";
+      oneTimeBox.innerHTML="";
     }
   }
 
-  // ==== wiring ====
+  // в режиме set41 ловим тап по картинке (только на спине)
+  wrap.addEventListener("click",(e)=>{
+    if(!(wantsSet41 && !set41Done() && view==="back")) return;
+
+    const rect = wrap.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const xp = Math.round((x / rect.width) * 1000)/10;
+    const yp = Math.round((y / rect.height) * 1000)/10;
+
+    pendingPoint = { x: xp, y: yp };
+    cross.style.display="block";
+    cross.style.left = xp + "%";
+    cross.style.top  = yp + "%";
+  }, true);
+
+  // ===== wiring =====
   document.getElementById("btnFront").addEventListener("click", ()=> setView("front"));
   document.getElementById("btnBack").addEventListener("click", ()=> setView("back"));
   document.getElementById("btnDecode").addEventListener("click", decodeAndShow);
-  document.getElementById("btnClear").addEventListener("click", clearReport);
+  document.getElementById("btnClear").addEventListener("click", clearCurrentSide);
   document.getElementById("btnSend").addEventListener("click", send);
+
+  // при ручном вводе — сохраняем выбор отдельно по стороне
+  function syncFromTextarea(){
+    const arr = parseNumbers(numsEl.value);
+    saveSel(arr);
+    decodeAndShow();
+  }
+  numsEl.addEventListener("input", syncFromTextarea);
+  numsEl.addEventListener("change", syncFromTextarea);
 
   ["input","change"].forEach(evt=>{
     dtEl.addEventListener(evt, decodeAndShow);
     callEl.addEventListener(evt, decodeAndShow);
-    numsEl.addEventListener(evt, decodeAndShow);
     commentEl.addEventListener(evt, decodeAndShow);
   });
 
   // init
   ensureDatetime();
-  decodeAndShow();
+  setView("front");
 })();
 </script>
-
 </body>
 </html>
