@@ -29,6 +29,16 @@
     .wrap{ position:relative; width:100%; }
     .map{ width:100%; display:block; user-select:none; -webkit-user-drag:none; }
 
+    /* ВАЖНО: слой меток растянут по картинке */
+    #pinsLayer{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      pointer-events:none; /* слой не ловит клики, ловят сами .pin */
+      z-index: 10;
+    }
+
     .panel{ padding:12px; border-top:1px solid #ddd; background:#fafafa; }
     .row{ display:flex; gap:10px; }
     .col{ width:100%; }
@@ -58,16 +68,19 @@
 
     /* метки */
     .pin{
-      position:absolute; transform: translate(-50%,-50%);
+      position:absolute;
+      transform: translate(-50%,-50%);
       min-width:26px; height:26px; padding:0 6px;
       border-radius:999px;
       background: rgba(255,0,0,0.88);
       color:#fff; font-weight:800; font-size:13px;
       display:flex; align-items:center; justify-content:center;
-      z-index:20;
-      border:2px solid rgba(255,255,255,0.95);
-      box-shadow:0 1px 6px rgba(0,0,0,0.18);
-      pointer-events:auto; cursor:pointer; user-select:none;
+      z-index: 20;
+      border: 2px solid rgba(255,255,255,0.95);
+      box-shadow: 0 1px 6px rgba(0,0,0,0.18);
+      pointer-events:auto; /* ВАЖНО: метка кликабельна */
+      cursor:pointer;
+      user-select:none;
     }
     .pin.selected{ background: rgba(0,120,255,0.88); }
 
@@ -141,17 +154,26 @@
       <div class="col">
         <label>Дата/время (обязательно)</label>
         <input id="dt" type="datetime-local"/>
-        <div class="hint">Заполни вручную. Без даты/времени PDF не сформируется.</div>
       </div>
       <div class="col">
         <label>Позывной (обязательно, он же пароль PDF)</label>
         <input id="call" placeholder="например: БАРС-12"/>
-        <div class="hint">PDF всегда с паролем = позывной (точно как введён).</div>
       </div>
     </div>
 
     <label>Комментарий (обязательно)</label>
     <textarea id="comment" placeholder="кратко: турникет/кровотечение/состояние..."></textarea>
+
+    <div class="row" style="margin-top:10px;">
+      <div class="col">
+        <label>Ввести номер зоны вручную (для текущей стороны)</label>
+        <input id="zoneNum" type="number" inputmode="numeric" placeholder="например: 12"/>
+        <div class="hint">Сторона берётся сверху (ПЕРЕД или СПИНА). Нажми “Добавить/убрать”.</div>
+      </div>
+      <div class="col" style="display:flex; align-items:flex-end;">
+        <button class="btn2" id="btnAddZone" style="margin-top:0;">ДОБАВИТЬ / УБРАТЬ</button>
+      </div>
+    </div>
 
     <div class="hint" style="margin-top:10px;">
       Тап по метке = выбор зоны. Для каждой зоны появятся травмы (по логике зоны) + “шина” только для конечностей.
@@ -178,14 +200,9 @@
   const $ = (id)=> document.getElementById(id);
   const errBox = $("errBox");
   const statusLine = $("statusLine");
-
   function showErr(msg){ errBox.style.display="block"; errBox.textContent=msg; }
   function setStatus(msg){ statusLine.style.display="block"; statusLine.textContent=msg; }
   function clearStatus(){ statusLine.style.display="none"; statusLine.textContent=""; }
-
-  window.addEventListener("error", (e)=> {
-    showErr("Ошибка JS:\n" + (e?.message||e) + "\n" + (e?.filename||"") + ":" + (e?.lineno||""));
-  });
 
   // ===== словари зон =====
   const BACK = {
@@ -216,7 +233,7 @@
   };
 
   // ===== storage keys =====
-  const POINTS_KEY = "medmap_points_v2";
+  const POINTS_KEY = "medmap_points_v2";   // твои координаты (front/back)
   const SEL_FRONT  = "medmap_sel_front_v2";
   const SEL_BACK   = "medmap_sel_back_v2";
   const TRAUMA_FRONT = "medmap_trauma_front_v1";
@@ -228,6 +245,7 @@
   const dtEl = $("dt");
   const callEl = $("call");
   const commentEl = $("comment");
+  const zoneNumEl = $("zoneNum");
   const zonesUI = $("zonesUI");
   const finalEl = $("finalMsg");
 
@@ -283,13 +301,9 @@
   }
 
   // ===== обязательные поля =====
-  function markReq(el, ok){
-    if(ok) el.classList.remove("reqBad");
-    else el.classList.add("reqBad");
-  }
+  function markReq(el, ok){ ok ? el.classList.remove("reqBad") : el.classList.add("reqBad"); }
 
   function validateRequired(){
-    // обязательные: дата/время, позывной, комментарий
     const dt = (dtEl.value||"").trim();
     const call = (callEl.value||"").trim();
     const comment = (commentEl.value||"").trim();
@@ -310,7 +324,7 @@
     return { ok: okDt && okCall && okComment, missing };
   }
 
-  // ===== логика чекбоксов =====
+  // ===== травмы по логике =====
   const TRAUMAS = [
     { key:"bullet",   label:"Пулевое" },
     { key:"shrapnel", label:"Осколочное" },
@@ -373,9 +387,11 @@
     const sel = new Set(loadSel(view));
     clearPins();
 
+    // выбранные сверху
     for(const k of Array.from(sel)){
       if(map[k]) addPin(k, map[k].x, map[k].y, true);
     }
+    // остальные
     for(const k of Object.keys(map)){
       if(!sel.has(k)) addPin(k, map[k].x, map[k].y, false);
     }
@@ -411,7 +427,7 @@
     if(sel.length===0){
       const empty = document.createElement("div");
       empty.className="hint";
-      empty.textContent="Зоны не выбраны. Тапни по метке на картинке.";
+      empty.textContent="Зоны не выбраны. Тапни по метке на картинке или введи номер вручную.";
       zonesUI.appendChild(empty);
       return;
     }
@@ -474,7 +490,7 @@
     }
   }
 
-  // ===== текст отчёта =====
+  // ===== отчёт текст =====
   function buildTextReport(){
     const dt = (dtEl.value||"").trim();
     const call = (callEl.value||"").trim();
@@ -523,7 +539,7 @@ ${comment || "-"}`
     return Array.from(s).slice(0,2).join("");
   }
   function fmtBaseName(){
-    const dt = (dtEl.value||"").trim(); // YYYY-MM-DDTHH:MM
+    const dt = (dtEl.value||"").trim();
     const call = (callEl.value||"").trim();
     const [d,t] = (dt || "0000-00-00T0000").split("T");
     const hhmm = (t || "0000").replace(":","");
@@ -531,7 +547,7 @@ ${comment || "-"}`
     return `MED_${d}_${hhmm}_${xx}`;
   }
 
-  // ===== рендер страницы в PNG =====
+  // ===== рендер PNG страниц =====
   async function loadImage(src){
     return new Promise((resolve, reject)=>{
       const img = new Image();
@@ -577,21 +593,4 @@ ${comment || "-"}`
     const imgSrc = side==="front" ? "body_front.png" : "body_back.png";
     const img = await loadImage(imgSrc);
 
-    const marginX=60, topY=180;
-    const imgW=W - marginX*2;
-    const imgH=Math.round(img.height*(imgW/img.width));
-    const maxImgH=980;
-    const drawH=Math.min(imgH, maxImgH);
-    const drawW=Math.round(imgW*(drawH/imgH));
-    const imgX=Math.round((W - drawW)/2);
-    const imgY=topY;
-
-    ctx.drawImage(img, imgX, imgY, drawW, drawH);
-
-    const points = loadPoints();
-    const map = side==="front" ? points.front : points.back;
-    const sel = loadSel(side);
-
-    ctx.textAlign="center";
-    ctx.textBaseline="middle";
-    ctx.font="bol
+    co
