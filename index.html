@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Мед-карта (PDF всегда с паролем)</title>
+  <title>Мед-карта (PDF с паролем)</title>
 
   <!-- jsPDF -->
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
@@ -15,27 +15,22 @@
     .btn{ width:100%; padding:14px; font-size:17px; border:none; background:#222; color:#fff; }
     .btn:active{ opacity:.85; }
     .btn2{
-      width:100%;
-      padding:12px;
-      font-size:16px;
-      border:1px solid #222;
-      background:#fff;
-      color:#222;
-      border-radius:10px;
-      margin-top:10px;
+      width:100%; padding:12px; font-size:16px;
+      border:1px solid #222; background:#fff; color:#222;
+      border-radius:10px; margin-top:10px;
     }
     .btn2:active{ opacity:.85; }
 
     .wrap{ position:relative; width:100%; }
     .map{ width:100%; display:block; user-select:none; -webkit-user-drag:none; }
 
-    /* ВАЖНО: слой меток растянут по картинке */
+    /* слой меток поверх картинки */
     #pinsLayer{
       position:absolute;
       inset:0;
       width:100%;
       height:100%;
-      pointer-events:none; /* слой не ловит клики, ловят сами .pin */
+      pointer-events:none; /* клики ловят только .pin */
       z-index: 10;
     }
 
@@ -66,23 +61,22 @@
     }
     .bar .btn{ padding:14px 10px; }
 
-    /* метки */
     .pin{
-      position:absolute;
-      transform: translate(-50%,-50%);
+      position:absolute; transform: translate(-50%,-50%);
       min-width:26px; height:26px; padding:0 6px;
       border-radius:999px;
-      background: rgba(255,0,0,0.88);
+      background: rgba(255,0,0,0.88); /* спина красная */
       color:#fff; font-weight:800; font-size:13px;
       display:flex; align-items:center; justify-content:center;
       z-index: 20;
       border: 2px solid rgba(255,255,255,0.95);
       box-shadow: 0 1px 6px rgba(0,0,0,0.18);
-      pointer-events:auto; /* ВАЖНО: метка кликабельна */
+      pointer-events:auto;
       cursor:pointer;
       user-select:none;
     }
-    .pin.selected{ background: rgba(0,120,255,0.88); }
+    .pin.front { background: rgba(0,120,255,0.88); } /* перед синий */
+    .pin.selected { outline: 3px solid rgba(255,255,255,0.9); }
 
     .err{
       display:none;
@@ -94,13 +88,11 @@
       white-space:pre-wrap;
     }
 
-    /* обязательные поля подсветка */
     .reqBad{
       border-color:#d11 !important;
       box-shadow:0 0 0 3px rgba(209,17,17,0.15);
     }
 
-    /* карточки зон */
     .zoneCard{
       background:#fff; border:1px solid #ddd; border-radius:12px;
       padding:10px; margin-top:10px;
@@ -121,7 +113,6 @@
       border:1px solid #222; background:#fff; color:#222;
       border-radius:10px; padding:6px 10px; font-size:13px; min-width:88px;
     }
-    .miniBtn:active{ opacity:.85; }
 
     .statusLine{
       margin-top:10px;
@@ -168,7 +159,7 @@
       <div class="col">
         <label>Ввести номер зоны вручную (для текущей стороны)</label>
         <input id="zoneNum" type="number" inputmode="numeric" placeholder="например: 12"/>
-        <div class="hint">Сторона берётся сверху (ПЕРЕД или СПИНА). Нажми “Добавить/убрать”.</div>
+        <div class="hint">Сторона берётся сверху (ПЕРЕД/СПИНА). “Добавить/убрать” работает как переключатель.</div>
       </div>
       <div class="col" style="display:flex; align-items:flex-end;">
         <button class="btn2" id="btnAddZone" style="margin-top:0;">ДОБАВИТЬ / УБРАТЬ</button>
@@ -176,7 +167,7 @@
     </div>
 
     <div class="hint" style="margin-top:10px;">
-      Тап по метке = выбор зоны. Для каждой зоны появятся травмы (по логике зоны) + “шина” только для конечностей.
+      Тап по метке = выбор зоны. Для каждой зоны: травмы по логике зоны + “шина” только конечности.
     </div>
 
     <div id="zonesUI"></div>
@@ -192,17 +183,14 @@
     <button class="btn" id="btnMakePDF" style="background:#0b6623;">СДЕЛАТЬ PDF (С ПАРОЛЕМ)</button>
   </div>
 
-<script type="module">
-  import createQpdfModule from "https://esm.sh/@neslinesli93/qpdf-wasm@0.3.0";
-  const QPDF_WASM_URL = "https://cdn.jsdelivr.net/npm/@neslinesli93/qpdf-wasm@0.3.0/dist/qpdf.wasm";
-  let qpdfPromise = null;
-
+<script>
+(() => {
   const $ = (id)=> document.getElementById(id);
   const errBox = $("errBox");
   const statusLine = $("statusLine");
-  function showErr(msg){ errBox.style.display="block"; errBox.textContent=msg; }
-  function setStatus(msg){ statusLine.style.display="block"; statusLine.textContent=msg; }
-  function clearStatus(){ statusLine.style.display="none"; statusLine.textContent=""; }
+  const showErr = (msg)=>{ errBox.style.display="block"; errBox.textContent=msg; };
+  const setStatus = (msg)=>{ statusLine.style.display="block"; statusLine.textContent=msg; };
+  const clearStatus = ()=>{ statusLine.style.display="none"; statusLine.textContent=""; };
 
   // ===== словари зон =====
   const BACK = {
@@ -233,7 +221,7 @@
   };
 
   // ===== storage keys =====
-  const POINTS_KEY = "medmap_points_v2";   // твои координаты (front/back)
+  const POINTS_KEY = "medmap_points_v2";
   const SEL_FRONT  = "medmap_sel_front_v2";
   const SEL_BACK   = "medmap_sel_back_v2";
   const TRAUMA_FRONT = "medmap_trauma_front_v1";
@@ -257,6 +245,8 @@
     catch{ return fallback; }
   }
   function saveJSON(key, value){ localStorage.setItem(key, JSON.stringify(value)); }
+
+  function dictFor(side){ return side==="front" ? FRONT : BACK; }
 
   function loadPoints(){
     const p = loadJSON(POINTS_KEY, {front:{}, back:{}});
@@ -285,8 +275,6 @@
     saveJSON(key, obj);
   }
 
-  function dictFor(side){ return side==="front" ? FRONT : BACK; }
-
   function uniqNums(arr){
     const seen = new Set();
     const out = [];
@@ -302,25 +290,20 @@
 
   // ===== обязательные поля =====
   function markReq(el, ok){ ok ? el.classList.remove("reqBad") : el.classList.add("reqBad"); }
-
   function validateRequired(){
     const dt = (dtEl.value||"").trim();
     const call = (callEl.value||"").trim();
     const comment = (commentEl.value||"").trim();
 
-    const okDt = !!dt;
-    const okCall = !!call;
-    const okComment = !!comment;
-
+    const okDt = !!dt, okCall = !!call, okComment = !!comment;
     markReq(dtEl, okDt);
     markReq(callEl, okCall);
     markReq(commentEl, okComment);
 
-    const missing = [];
+    const missing=[];
     if(!okDt) missing.push("Дата/время");
     if(!okCall) missing.push("Позывной");
     if(!okComment) missing.push("Комментарий");
-
     return { ok: okDt && okCall && okComment, missing };
   }
 
@@ -344,7 +327,6 @@
     if(lower.some(k=>s.includes(k))) return "limb_lower";
     return "trunk";
   }
-
   function allowedForClass(cls){
     if(cls==="limb_upper" || cls==="limb_lower"){
       return { bullet:true, shrapnel:true, mvt:true, burn:true, fracture:true, splint:true };
@@ -354,7 +336,6 @@
     }
     return { bullet:true, shrapnel:true, mvt:true, burn:true, fracture:false, splint:false };
   }
-
   function traumaSummary(obj){
     const out = [];
     if(obj?.bullet) out.push("пулевое");
@@ -365,12 +346,12 @@
     return out;
   }
 
-  // ===== pins =====
-  function clearPins(){ pinsLayer.innerHTML = ""; }
+  // ===== метки =====
+  function clearPins(){ pinsLayer.innerHTML=""; }
 
   function addPin(num, x, y, selected){
     const pin = document.createElement("div");
-    pin.className = "pin" + (selected ? " selected" : "");
+    pin.className = "pin " + (view==="front" ? "front" : "back") + (selected ? " selected" : "");
     pin.style.left = x + "%";
     pin.style.top  = y + "%";
     pin.textContent = String(num);
@@ -427,7 +408,7 @@
     if(sel.length===0){
       const empty = document.createElement("div");
       empty.className="hint";
-      empty.textContent="Зоны не выбраны. Тапни по метке на картинке или введи номер вручную.";
+      empty.textContent="Зоны не выбраны. Тапни по метке или введи номер вручную.";
       zonesUI.appendChild(empty);
       return;
     }
@@ -490,7 +471,6 @@
     }
   }
 
-  // ===== отчёт текст =====
   function buildTextReport(){
     const dt = (dtEl.value||"").trim();
     const call = (callEl.value||"").trim();
@@ -533,7 +513,6 @@ ${comment || "-"}`
     );
   }
 
-  // ===== имя файла =====
   function firstTwoChars(s){
     if(!s) return "XX";
     return Array.from(s).slice(0,2).join("");
@@ -547,7 +526,33 @@ ${comment || "-"}`
     return `MED_${d}_${hhmm}_${xx}`;
   }
 
-  // ===== рендер PNG страниц =====
+  function renderAll(updateText=true){
+    renderPins();
+    renderZonesUI();
+    if(updateText) finalEl.textContent = buildTextReport();
+  }
+
+  function setView(side){
+    view = side;
+    bodyImage.src = (view==="front") ? "body_front.png" : "body_back.png";
+    renderAll();
+  }
+
+  // ===== ручной ввод номера зоны =====
+  function addZoneFromInput(){
+    const raw = (zoneNumEl.value||"").trim();
+    const n = parseInt(raw, 10);
+    if(!Number.isFinite(n)){ alert("Введи номер зоны."); return; }
+    const dict = dictFor(view);
+    if(!dict[n]){
+      alert(`Для стороны "${view==="front"?"ПЕРЕД":"СПИНА"}" нет зоны №${n}.`);
+      return;
+    }
+    toggleZone(n);
+    zoneNumEl.value = "";
+  }
+
+  // ===== PDF PNG render =====
   async function loadImage(src){
     return new Promise((resolve, reject)=>{
       const img = new Image();
@@ -556,6 +561,7 @@ ${comment || "-"}`
       img.src=src;
     });
   }
+
   function sideColor(side){ return side==="front" ? "#0078ff" : "#ff0000"; }
 
   function traumaLineFor(side, num){
@@ -585,12 +591,4 @@ ${comment || "-"}`
 
     ctx.fillStyle="#111";
     ctx.font="bold 34px Arial";
-    ctx.fillText(`МЕД ОТЧЁТ — ${title}`, 60, 70);
-    ctx.font="22px Arial";
-    ctx.fillText(`Позывной: ${call || "-"}`, 60, 110);
-    ctx.fillText(`Дата/время: ${dt || "-"}`, 60, 145);
-
-    const imgSrc = side==="front" ? "body_front.png" : "body_back.png";
-    const img = await loadImage(imgSrc);
-
-    co
+    ctx.fillTe
