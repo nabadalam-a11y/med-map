@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Карта ранений (номера + привязка)</title>
+  <title>Карта ранений (номера + кликабельные метки)</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     body{ margin:0; font-family: Arial, sans-serif; background:#fff; color:#111; }
@@ -27,9 +27,8 @@
     .btn2:active{ opacity:.85; }
 
     .wrap{ position:relative; width:100%; }
-    .map{
-      width:100%; display:block; user-select:none; -webkit-user-drag:none;
-    }
+    .map{ width:100%; display:block; user-select:none; -webkit-user-drag:none; }
+
     .panel{ padding:12px; border-top:1px solid #ddd; background:#fafafa; }
     .row{ display:flex; gap:10px; }
     .col{ width:100%; }
@@ -54,7 +53,7 @@
     }
     .sticky{ position:sticky; bottom:0; background:#fafafa; padding:10px 12px; border-top:1px solid #ddd; }
 
-    /* Метки (пины) на карте */
+    /* ===== Метки (ВАЖНО: теперь кликабельные) ===== */
     .pin{
       position:absolute;
       transform: translate(-50%,-50%);
@@ -71,17 +70,17 @@
       justify-content:center;
       z-index: 20;
       border: 2px solid rgba(255,255,255,0.95);
-      pointer-events:none;
       box-shadow: 0 1px 6px rgba(0,0,0,0.18);
+
+      pointer-events:auto;   /* КЛИКАБЕЛЬНО */
+      cursor:pointer;
+      user-select:none;
     }
-    .pinSub{
-      font-weight:700;
-      font-size:11px;
-      opacity:.95;
-      margin-left:6px;
+    .pin.selected{
+      background: rgba(0,120,255,0.88);
     }
 
-    /* Маленький прицел (кружок + крестик) */
+    /* Маленький прицел для привязки */
     .cross {
       position:absolute;
       width:18px;
@@ -109,17 +108,9 @@
       height:18px;
     }
 
-    .smallRow{
-      display:flex;
-      gap:10px;
-      margin-top:10px;
-    }
+    .smallRow{ display:flex; gap:10px; margin-top:10px; }
     .smallRow > *{ width:100%; }
-
-    .danger{
-      border-color:#b00020;
-      color:#b00020;
-    }
+    .danger{ border-color:#b00020; color:#b00020; }
 
     .pill{
       display:inline-block;
@@ -130,7 +121,6 @@
       background:#fff;
       color:#333;
     }
-
     .listBox{
       margin-top:10px;
       border:1px solid #ddd;
@@ -170,7 +160,7 @@
     <button class="btn" onclick="setView('back')">СПИНА</button>
   </div>
 
-  <!-- РЕЖИМЫ (ОТЧЁТ / ПРИВЯЗКА) -->
+  <!-- РЕЖИМЫ -->
   <div class="tabs" id="modeTabs"></div>
 
   <!-- КАРТА -->
@@ -196,11 +186,12 @@
 
     <label>Номера зон (можно: 1 2 3 / 1,2,3 / с новой строки)</label>
     <textarea id="nums" placeholder="например:
-10 28 34
+10 12 28
 36"></textarea>
+    <div class="hint">Можно добавлять номера ТАПОМ по метке на схеме (если точка настроена).</div>
 
     <label>Комментарий</label>
-    <textarea id="comment" placeholder="например: кровотечение, турникет наложен, сознание ясное..."></textarea>
+    <textarea id="comment" placeholder="например: кровотечение, турникет наложен..."></textarea>
 
     <button class="btn2" onclick="decodeAndShow()">РАСШИФРОВАТЬ / ПОКАЗАТЬ</button>
     <button class="btn2" onclick="clearReport()">ОЧИСТИТЬ</button>
@@ -209,7 +200,7 @@
     <div class="out" id="finalMsg" style="margin-top:10px;">Здесь будет итоговое сообщение…</div>
 
     <div class="hint">
-      Если для номера не настроена точка — он всё равно расшифруется, но метка на карте не появится.
+      Важно: <b>12 на ПЕРЕДЕ и 12 на СПИНЕ</b> — расшифровываются по разным таблицам (как ты просил).
     </div>
   </div>
 
@@ -218,11 +209,10 @@
     <div class="pill" id="lockStatePill"></div>
 
     <label>Номер зоны для привязки</label>
-    <input id="bindNum" inputmode="numeric" placeholder="например: 28"/>
+    <input id="bindNum" inputmode="numeric" placeholder="например: 12"/>
 
     <div class="hint">
-      1) Введи номер → 2) Тапни на картинке в нужное место → 3) Нажми “СОХРАНИТЬ ТОЧКУ”.
-      Прицел маленький (кружок+крестик).
+      1) Введи номер → 2) Тапни на картинке → 3) “СОХРАНИТЬ ТОЧКУ”.
     </div>
 
     <button class="btn2" onclick="savePoint()">СОХРАНИТЬ ТОЧКУ</button>
@@ -238,13 +228,8 @@
     </div>
 
     <div class="out" id="bindHelp">Тапни по картинке — появится прицел и координаты.</div>
-
-    <div class="hint">
-      После “ЗАФИКСИРОВАТЬ” режим привязки исчезнет для пользователей. Вернуть можно только с <b>?admin=1</b>.
-    </div>
   </div>
 
-  <!-- ОТПРАВИТЬ -->
   <div class="sticky">
     <button class="btn" onclick="send()">ОТПРАВИТЬ</button>
   </div>
@@ -253,109 +238,43 @@
   const tg = window.Telegram?.WebApp;
   if (tg) tg.expand();
 
-  // ====== ВАШИ СЛОВАРИ НОМЕРОВ ======
-
+  // ====== СЛОВАРИ НОМЕРОВ (12 разные на перед/спина — ОК) ======
   const BACK = {
-    1:"Подошва",
-    2:"Тыльная область стопы",
-    3:"Передняя область голени",
-    4:"Задняя область голени",
-    5:"Задняя область колена",
-    6:"Заднепроходная область",
-    7:"Задняя область бедра",
-    8:"Крестцовая область",
-    9:"Ягодичная область",
-    10:"Боковая область живота",
-    11:"Поясничная область",
-    12:"Позвоночная область",
-    13:"Подлопаточная область",
-    14:"Задняя локтевая область",
-    15:"Задняя область плеча",
-    16:"Задняя область предплечья",
-    17:"Передняя область плеча",
-    18:"Тыл кисти",
-    19:"Надлопаточная область",
-    20:"Задняя область шеи",
-    21:"Затылочная область",
-    22:"Скуловая область",
-    23:"Теменная область",
-    24:"Височная область",
-    25:"Лобная область",
-    26:"Глазница",
-    27:"Щёчная область",
-    28:"Поднижнечелюстной треугольник",
-    29:"Грудино-ключично-сосцевидная область",
-    30:"Акромиальная область",
-    31:"Межлопаточная область",
-    32:"Дельтовидная область",
-    33:"Лопаточная область",
-    34:"Задняя область плеча",
-    35:"Латеральная область груди",
-    36:"Задняя локтевая область",
-    37:"Задняя область предплечья",
-    38:"Передняя область предплечья",
-    39:"Кисть, ладонь",
-    40:"Подрёберная область",
-    41:"Пяточная область"
+    1:"Подошва",2:"Тыльная область стопы",3:"Передняя область голени",4:"Задняя область голени",
+    5:"Задняя область колена",6:"Заднепроходная область",7:"Задняя область бедра",8:"Крестцовая область",
+    9:"Ягодичная область",10:"Боковая область живота",11:"Поясничная область",12:"Позвоночная область",
+    13:"Подлопаточная область",14:"Задняя локтевая область",15:"Задняя область плеча",16:"Задняя область предплечья",
+    17:"Передняя область плеча",18:"Тыл кисти",19:"Надлопаточная область",20:"Задняя область шеи",
+    21:"Затылочная область",22:"Скуловая область",23:"Теменная область",24:"Височная область",
+    25:"Лобная область",26:"Глазница",27:"Щёчная область",28:"Поднижнечелюстной треугольник",
+    29:"Грудино-ключично-сосцевидная область",30:"Акромиальная область",31:"Межлопаточная область",
+    32:"Дельтовидная область",33:"Лопаточная область",34:"Задняя область плеча",35:"Латеральная область груди",
+    36:"Задняя локтевая область",37:"Задняя область предплечья",38:"Передняя область предплечья",
+    39:"Кисть, ладонь",40:"Подрёберная область",41:"Пяточная область"
   };
-
   const FRONT = {
-    1:"Пупочная область",
-    2:"Подчревная (лобковая) область",
-    3:"Передняя область предплечья",
-    4:"Тыл кисти",
-    5:"Предплечье",
-    6:"Задняя область предплечья",
-    7:"Задняя локтевая область",
-    8:"Передняя область плеча",
-    9:"Грудная область",
-    10:"Дельтовидная область",
-    11:"Ключично-грудной треугольник",
-    12:"Грудино-ключично-сосцевидная область",
-    13:"Область рта",
-    14:"Область носа",
-    15:"Височная область",
-    16:"Глазница",
-    17:"Лобная область",
-    18:"Теменная область",
-    19:"Передняя область шеи",
-    20:"Подбородочная область",
-    21:"Латеральная область шеи",
-    22:"Область ключицы",
-    23:"Подключичная ямка",
-    24:"Ладонь",
-    25:"Передняя локтевая область",
-    26:"Задняя область плеча",
-    27:"Подмышечная область",
-    28:"Грудная область",
-    29:"Подрёберная область",
-    30:"Надчревная область",
-    31:"Боковая область живота",
-    32:"Паховая область",
-    33:"Бедренный треугольник",
-    34:"Передняя область бедра",
-    35:"Передняя область колена",
-    36:"Задняя область голени",
-    37:"Передняя область голени",
-    38:"Передняя голеностопная область",
-    39:"Пяточная область",
-    40:"Тыльная область стопы"
+    1:"Пупочная область",2:"Подчревная (лобковая) область",3:"Передняя область предплечья",4:"Тыл кисти",
+    5:"Предплечье",6:"Задняя область предплечья",7:"Задняя локтевая область",8:"Передняя область плеча",
+    9:"Грудная область",10:"Дельтовидная область",11:"Ключично-грудной треугольник",
+    12:"Грудино-ключично-сосцевидная область",13:"Область рта",14:"Область носа",
+    15:"Височная область",16:"Глазница",17:"Лобная область",18:"Теменная область",
+    19:"Передняя область шеи",20:"Подбородочная область",21:"Латеральная область шеи",22:"Область ключицы",
+    23:"Подключичная ямка",24:"Ладонь",25:"Передняя локтевая область",26:"Задняя область плеча",
+    27:"Подмышечная область",28:"Грудная область",29:"Подрёберная область",30:"Надчревная область",
+    31:"Боковая область живота",32:"Паховая область",33:"Бедренный треугольник",34:"Передняя область бедра",
+    35:"Передняя область колена",36:"Задняя область голени",37:"Передняя область голени",
+    38:"Передняя голеностопная область",39:"Пяточная область",40:"Тыльная область стопы"
   };
 
-  // ====== ПРИВЯЗКА: ХРАНЕНИЕ ======
-  // points: { front: { "28": {x:52.3,y:31.9} }, back: {...} }
+  // ====== ХРАНЕНИЕ ТОЧЕК (НЕ МЕНЯЮ, ЧТОБЫ ТВОИ НЕ ПРОПАЛИ) ======
   const POINTS_KEY = "medmap_points_v2";
   const LOCK_KEY   = "medmap_lock_v2";
 
   const params = new URLSearchParams(location.search);
   const isAdmin = params.get("admin") === "1";
 
-  function isLocked(){
-    return localStorage.getItem(LOCK_KEY) === "true";
-  }
-  function lockNow(){
-    localStorage.setItem(LOCK_KEY, "true");
-  }
+  function isLocked(){ return localStorage.getItem(LOCK_KEY) === "true"; }
+  function lockNow(){ localStorage.setItem(LOCK_KEY, "true"); }
 
   function loadPoints(){
     try{
@@ -369,194 +288,21 @@
       return {front:{}, back:{}};
     }
   }
-  function savePoints(p){
-    localStorage.setItem(POINTS_KEY, JSON.stringify(p));
-  }
+  function savePoints(p){ localStorage.setItem(POINTS_KEY, JSON.stringify(p)); }
 
-  // ====== UI STATE ======
+  // ====== STATE ======
   let view = "front";   // front/back
   let mode = "report";  // report/bind
-  let pendingPoint = null; // {x,y} в %
+  let pendingPoint = null;
 
   const wrap = document.getElementById("wrap");
   const bodyImage = document.getElementById("bodyImage");
   const pinsLayer = document.getElementById("pinsLayer");
   const cross = document.getElementById("cross");
 
-  function setView(v){
-    view = v;
-    bodyImage.src = (v === "front") ? "body_front.png" : "body_back.png";
-    pendingPoint = null;
-    cross.style.display = "none";
-    if(mode === "bind") updateBindHelp("Тапни по картинке — появится прицел и координаты.");
-    decodeAndShow();
-    renderPointsList();
-  }
-
-  function setMode(m){
-    mode = m;
-    document.getElementById("reportPanel").style.display = (m === "report") ? "block" : "none";
-    document.getElementById("bindPanel").style.display = (m === "bind") ? "block" : "none";
-    pendingPoint = null;
-    cross.style.display = "none";
-    pinsLayer.innerHTML = ""; // чтобы не мешались
-    if(m === "report"){
-      decodeAndShow();
-    }else{
-      updateLockPill();
-      renderPointsList();
-      updateBindHelp("Тапни по картинке — появится прицел и координаты.");
-    }
-  }
-
-  function buildModeTabs(){
-    const allowBind = isAdmin || !isLocked();
-    const el = document.getElementById("modeTabs");
-    el.innerHTML = "";
-
-    const b1 = document.createElement("button");
-    b1.className = "btn";
-    b1.textContent = "ОТЧЁТ";
-    b1.onclick = ()=> setMode("report");
-
-    el.appendChild(b1);
-
-    if(allowBind){
-      const b2 = document.createElement("button");
-      b2.className = "btn";
-      b2.textContent = "ПРИВЯЗКА";
-      b2.onclick = ()=> setMode("bind");
-      el.appendChild(b2);
-    }
-  }
-
-  function updateLockPill(){
-    const pill = document.getElementById("lockStatePill");
-    const locked = isLocked();
-    if(locked && !isAdmin){
-      pill.textContent = "Привязка ЗАКРЫТА (пользовательский режим)";
-    }else if(locked && isAdmin){
-      pill.textContent = "Привязка ЗАКРЫТА, но ты в admin=1 (можно править)";
-    }else{
-      pill.textContent = "Привязка ОТКРЫТА (можно настроить)";
-    }
-  }
-
-  function updateBindHelp(text){
-    document.getElementById("bindHelp").textContent = text;
-  }
-
-  // ====== ТАП ПО КАРТЕ В РЕЖИМЕ ПРИВЯЗКИ ======
-  wrap.addEventListener("click", (e)=>{
-    if(mode !== "bind") return;
-
-    const rect = wrap.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    const xp = (x / rect.width) * 100;
-    const yp = (y / rect.height) * 100;
-
-    pendingPoint = { x: round1(xp), y: round1(yp) };
-
-    cross.style.display = "block";
-    cross.style.left = pendingPoint.x + "%";
-    cross.style.top  = pendingPoint.y + "%";
-
-    updateBindHelp(`Поймал точку: x=${pendingPoint.x}% y=${pendingPoint.y}% (теперь нажми "СОХРАНИТЬ ТОЧКУ")`);
-  }, true);
-
+  // ====== UTIL ======
   function round1(n){ return Math.round(n * 10) / 10; }
 
-  // ====== СОХРАНИТЬ/УДАЛИТЬ ТОЧКУ ======
-  function savePoint(){
-    const n = (document.getElementById("bindNum").value || "").trim();
-    if(!n.match(/^\d+$/)){
-      alert("Введи номер (только цифры).");
-      return;
-    }
-    const num = String(parseInt(n,10));
-    if(!pendingPoint){
-      alert("Сначала тапни по картинке — поймай точку прицелом.");
-      return;
-    }
-
-    const points = loadPoints();
-    points[view][num] = { x: pendingPoint.x, y: pendingPoint.y };
-    savePoints(points);
-
-    renderPointsList();
-    updateBindHelp(`Сохранено: №${num} → x=${pendingPoint.x}% y=${pendingPoint.y}%`);
-  }
-
-  function removePoint(){
-    const n = (document.getElementById("bindNum").value || "").trim();
-    if(!n.match(/^\d+$/)){
-      alert("Введи номер (только цифры).");
-      return;
-    }
-    const num = String(parseInt(n,10));
-    const points = loadPoints();
-    if(points[view] && points[view][num]){
-      delete points[view][num];
-      savePoints(points);
-      renderPointsList();
-      updateBindHelp(`Удалено: №${num}`);
-      return;
-    }
-    alert("Для этого номера точки нет.");
-  }
-
-  function lockBinding(){
-    if(!confirm("Зафиксировать? После этого режим привязки исчезнет для пользователей.")) return;
-    lockNow();
-    updateLockPill();
-    buildModeTabs();
-    // если не админ — выкидываем в отчет
-    if(!isAdmin){
-      setMode("report");
-      alert("Привязка закрыта. Обычный пользователь больше не увидит этот режим.");
-    }else{
-      alert("Привязка закрыта. Но ты в admin=1 — можешь продолжать правки.");
-    }
-  }
-
-  function renderPointsList(){
-    if(mode !== "bind") return;
-    const box = document.getElementById("pointsList");
-    const points = loadPoints();
-    const m = points[view] || {};
-    const keys = Object.keys(m).sort((a,b)=>parseInt(a,10)-parseInt(b,10));
-
-    if(keys.length === 0){
-      box.textContent = "Пока пусто.";
-      return;
-    }
-
-    box.innerHTML = "";
-    keys.forEach(k=>{
-      const line = document.createElement("div");
-      line.className = "item";
-      const left = document.createElement("div");
-      left.textContent = `№${k} → x=${m[k].x}% y=${m[k].y}%`;
-      const btn = document.createElement("button");
-      btn.className = "miniBtn";
-      btn.textContent = "Показать";
-      btn.onclick = ()=>{
-        pendingPoint = {x:m[k].x, y:m[k].y};
-        cross.style.display = "block";
-        cross.style.left = pendingPoint.x + "%";
-        cross.style.top  = pendingPoint.y + "%";
-        document.getElementById("bindNum").value = k;
-        updateBindHelp(`Показ: №${k} → x=${m[k].x}% y=${m[k].y}%`);
-      };
-      line.appendChild(left);
-      line.appendChild(btn);
-      box.appendChild(line);
-    });
-  }
-
-  // ====== ОТЧЁТ: ПАРС НОМЕРОВ / РАСШИФРОВКА / ПИНЫ ======
   function ensureDatetime(){
     const el = document.getElementById('dt');
     if (el.value) return el.value;
@@ -582,61 +328,258 @@
     return out;
   }
 
+  function setNumbers(arr){
+    const uniq = [];
+    const seen = new Set();
+    arr.forEach(n=>{
+      const nn = parseInt(n,10);
+      if(Number.isFinite(nn) && !seen.has(nn)){
+        seen.add(nn); uniq.push(nn);
+      }
+    });
+    document.getElementById("nums").value = uniq.join(" ");
+  }
+
+  function toggleNumber(num){
+    const cur = parseNumbers(document.getElementById("nums").value);
+    const n = parseInt(num,10);
+    const idx = cur.indexOf(n);
+    if(idx >= 0) cur.splice(idx,1);
+    else cur.push(n);
+    setNumbers(cur);
+    decodeAndShow();
+  }
+
   function nameFor(num){
     const dict = (view === "front") ? FRONT : BACK;
     return dict[num] || "НЕИЗВЕСТНО";
   }
 
-  function clearPins(){
-    pinsLayer.innerHTML = "";
-  }
+  function clearPins(){ pinsLayer.innerHTML = ""; }
 
-  function addPin(num, x, y){
+  // ====== PINS: кликабельные и “selected” ======
+  function addPin(num, x, y, selected){
     const pin = document.createElement("div");
-    pin.className = "pin";
+    pin.className = "pin" + (selected ? " selected" : "");
     pin.style.left = x + "%";
     pin.style.top  = y + "%";
-    pin.innerHTML = `${num}<span class="pinSub"></span>`;
+    pin.textContent = String(num);
+
+    // ТАП ПО МЕТКЕ -> добавляет/убирает номер в отчёт
+    pin.addEventListener("click", (e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      toggleNumber(num);
+    });
+
     pinsLayer.appendChild(pin);
   }
 
-  function decodeAndShow(){
-    // не мешаем привязке
-    if(mode !== "report") return;
+  // ====== MODE TABS ======
+  function buildModeTabs(){
+    const allowBind = isAdmin || !isLocked();
+    const el = document.getElementById("modeTabs");
+    el.innerHTML = "";
 
-    const dt = ensureDatetime();
-    const call = (document.getElementById("call").value || "").trim();
-    const comment = (document.getElementById("comment").value || "").trim();
-    const numsText = document.getElementById("nums").value || "";
+    const b1 = document.createElement("button");
+    b1.className = "btn";
+    b1.textContent = "ОТЧЁТ";
+    b1.onclick = ()=> setMode("report");
+    el.appendChild(b1);
 
-    const nums = parseNumbers(numsText);
-    const points = loadPoints();
-    const map = points[view] || {};
+    if(allowBind){
+      const b2 = document.createElement("button");
+      b2.className = "btn";
+      b2.textContent = "ПРИВЯЗКА";
+      b2.onclick = ()=> setMode("bind");
+      el.appendChild(b2);
+    }
+  }
 
-    let lines = [];
+  function updateLockPill(){
+    const pill = document.getElementById("lockStatePill");
+    const locked = isLocked();
+    if(locked && !isAdmin) pill.textContent = "Привязка ЗАКРЫТА (пользовательский режим)";
+    else if(locked && isAdmin) pill.textContent = "Привязка ЗАКРЫТА, но ты admin=1 (можно править)";
+    else pill.textContent = "Привязка ОТКРЫТА (можно настроить)";
+  }
+
+  // ====== VIEW / MODE ======
+  function setView(v){
+    view = v;
+    bodyImage.src = (v === "front") ? "body_front.png" : "body_back.png";
+    pendingPoint = null;
+    cross.style.display = "none";
+    decodeAndShow();
+    if(mode === "bind") renderPointsList();
+  }
+
+  function setMode(m){
+    mode = m;
+    document.getElementById("reportPanel").style.display = (m === "report") ? "block" : "none";
+    document.getElementById("bindPanel").style.display = (m === "bind") ? "block" : "none";
+    pendingPoint = null;
+    cross.style.display = "none";
     clearPins();
 
-    if(nums.length === 0){
-      lines.push("Номера не введены.");
+    if(m === "report"){
+      decodeAndShow();
     }else{
-      for(const n of nums){
-        const nm = nameFor(n);
-        const hasPoint = !!map[String(n)];
-        lines.push(`${n} — ${nm}${hasPoint ? "" : " (нет точки)"}`);
+      updateLockPill();
+      renderPointsList();
+      document.getElementById("bindHelp").textContent = "Тапни по картинке — появится прицел и координаты.";
+      // в привязке тоже удобно видеть точки как пины (и кликабельность не мешает)
+      decodeAndShow();
+    }
+  }
 
-        if(hasPoint){
-          addPin(String(n), map[String(n)].x, map[String(n)].y);
+  // ====== BIND MODE: TAP ======
+  wrap.addEventListener("click", (e)=>{
+    if(mode !== "bind") return;
+
+    const rect = wrap.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const xp = (x / rect.width) * 100;
+    const yp = (y / rect.height) * 100;
+
+    pendingPoint = { x: round1(xp), y: round1(yp) };
+
+    cross.style.display = "block";
+    cross.style.left = pendingPoint.x + "%";
+    cross.style.top  = pendingPoint.y + "%";
+
+    document.getElementById("bindHelp").textContent =
+      `Поймал точку: x=${pendingPoint.x}% y=${pendingPoint.y}% → нажми "СОХРАНИТЬ ТОЧКУ"`;
+  }, true);
+
+  function savePoint(){
+    const n = (document.getElementById("bindNum").value || "").trim();
+    if(!n.match(/^\d+$/)){ alert("Введи номер (только цифры)."); return; }
+    if(!pendingPoint){ alert("Сначала тапни по картинке — поймай точку прицелом."); return; }
+
+    const num = String(parseInt(n,10));
+    const points = loadPoints();
+    points[view][num] = { x: pendingPoint.x, y: pendingPoint.y };
+    savePoints(points);
+
+    renderPointsList();
+    document.getElementById("bindHelp").textContent =
+      `Сохранено: №${num} → x=${pendingPoint.x}% y=${pendingPoint.y}%`;
+
+    // чтобы сразу увидеть пин
+    decodeAndShow();
+  }
+
+  function removePoint(){
+    const n = (document.getElementById("bindNum").value || "").trim();
+    if(!n.match(/^\d+$/)){ alert("Введи номер (только цифры)."); return; }
+    const num = String(parseInt(n,10));
+    const points = loadPoints();
+    if(points[view] && points[view][num]){
+      delete points[view][num];
+      savePoints(points);
+      renderPointsList();
+      document.getElementById("bindHelp").textContent = `Удалено: №${num}`;
+      decodeAndShow();
+      return;
+    }
+    alert("Для этого номера точки нет.");
+  }
+
+  function lockBinding(){
+    if(!confirm("Зафиксировать? После этого режим привязки исчезнет для пользователей.")) return;
+    lockNow();
+    updateLockPill();
+    buildModeTabs();
+    if(!isAdmin){
+      setMode("report");
+      alert("Привязка закрыта. Обычный пользователь больше не увидит этот режим.");
+    }else{
+      alert("Привязка закрыта. Но ты admin=1 — можешь править.");
+    }
+  }
+
+  function renderPointsList(){
+    const box = document.getElementById("pointsList");
+    const points = loadPoints();
+    const m = points[view] || {};
+    const keys = Object.keys(m).sort((a,b)=>parseInt(a,10)-parseInt(b,10));
+
+    if(keys.length === 0){ box.textContent = "Пока пусто."; return; }
+
+    box.innerHTML = "";
+    keys.forEach(k=>{
+      const line = document.createElement("div");
+      line.className = "item";
+
+      const left = document.createElement("div");
+      left.textContent = `№${k} → x=${m[k].x}% y=${m[k].y}%`;
+
+      const btn = document.createElement("button");
+      btn.className = "miniBtn";
+      btn.textContent = "Показать";
+      btn.onclick = ()=>{
+        pendingPoint = {x:m[k].x, y:m[k].y};
+        cross.style.display = "block";
+        cross.style.left = pendingPoint.x + "%";
+        cross.style.top  = pendingPoint.y + "%";
+        document.getElementById("bindNum").value = k;
+        document.getElementById("bindHelp").textContent =
+          `Показ: №${k} → x=${m[k].x}% y=${m[k].y}%`;
+      };
+
+      line.appendChild(left);
+      line.appendChild(btn);
+      box.appendChild(line);
+    });
+  }
+
+  // ====== REPORT: decode + pins + message ======
+  function decodeAndShow(){
+    try{
+      const dt = ensureDatetime();
+      const call = (document.getElementById("call").value || "").trim();
+      const comment = (document.getElementById("comment").value || "").trim();
+      const numsText = document.getElementById("nums").value || "";
+
+      const nums = parseNumbers(numsText);                 // выбранные номера (общие)
+      const points = loadPoints();
+      const map = points[view] || {};                      // точки именно для текущего вида
+      const selectedSet = new Set(nums.map(n=>String(n)));
+
+      let lines = [];
+      clearPins();
+
+      if(nums.length === 0){
+        lines.push("Номера не введены.");
+      }else{
+        for(const n of nums){
+          const nm = nameFor(n);
+          const key = String(n);
+          const hasPoint = !!map[key];
+          lines.push(`${n} — ${nm}${hasPoint ? "" : " (нет точки)"}`);
+          if(hasPoint){
+            addPin(key, map[key].x, map[key].y, true); // выбранные подсвечиваем
+          }
         }
       }
-    }
 
-    const decoded =
-`ВИД: ${view === "front" ? "ПЕРЕД" : "СПИНА"}
-` + lines.join("\n");
+      // также покажем ВСЕ привязанные точки текущего вида (чтобы можно было тыкать по ним),
+      // даже если их номера не в отчёте:
+      // (это удобно: тапнул по пину — номер добавился в отчёт)
+      const allKeys = Object.keys(map);
+      for(const k of allKeys){
+        if(!selectedSet.has(k)){
+          addPin(k, map[k].x, map[k].y, false);
+        }
+      }
 
-    document.getElementById("decoded").textContent = decoded;
+      document.getElementById("decoded").textContent =
+        `ВИД: ${view === "front" ? "ПЕРЕД" : "СПИНА"}\n` + lines.join("\n");
 
-    const msg =
+      document.getElementById("finalMsg").textContent =
 `ОТЧЁТ МЕДИКА
 Дата/время: ${dt}
 Позывной: ${call || "-"}
@@ -648,7 +591,10 @@ ${lines.map(l=>"• " + l).join("\n")}
 Комментарий:
 ${comment || "-"}`;
 
-    document.getElementById("finalMsg").textContent = msg;
+    }catch(e){
+      document.getElementById("decoded").textContent = "Ошибка отчёта: " + e.message;
+      document.getElementById("finalMsg").textContent = "Ошибка отчёта: " + e.message;
+    }
   }
 
   function clearReport(){
@@ -657,39 +603,11 @@ ${comment || "-"}`;
     clearPins();
     document.getElementById("decoded").textContent = "Здесь будет расшифровка…";
     document.getElementById("finalMsg").textContent = "Здесь будет итоговое сообщение…";
+    decodeAndShow();
   }
 
   async function send(){
-    if(mode !== "report"){
-      // если кто-то нажал отправить в режиме привязки — переключим на отчет
-      setMode("report");
-    }
     decodeAndShow();
     const msg = document.getElementById("finalMsg").textContent;
 
     if(tg){
-      tg.sendData(msg);
-      return;
-    }
-    try{
-      await navigator.clipboard.writeText(msg);
-      alert("Скопировано:\n\n" + msg);
-    }catch(e){
-      alert(msg);
-    }
-  }
-
-  // ====== INIT ======
-  function init(){
-    buildModeTabs();
-    ensureDatetime();
-    setMode("report");
-    setView("front");
-    decodeAndShow();
-  }
-
-  init();
-</script>
-
-</body>
-</html>
