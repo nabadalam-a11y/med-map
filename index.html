@@ -1,245 +1,604 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Карта ранений</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    body { margin:0; font-family: Arial, sans-serif; background:#fff; }
-    .title { padding:10px; text-align:center; font-weight:700; font-size:18px; }
-    .row { display:flex; gap:0; }
-    .btn {
-      width:100%;
-      padding:16px;
-      font-size:18px;
-      border:none;
-      background:#222;
-      color:#fff;
+    :root{
+      --bg:#fff; --fg:#111; --muted:#666; --line:#ddd; --btn:#222; --btnfg:#fff;
+      --zone: rgba(255,0,0,.12);
+      --zoneBorder: rgba(255,0,0,.25);
+      --zoneHit: rgba(0,0,0,0);
+      --pick: rgba(0,120,255,.22);
     }
-    .btn:active { opacity:0.85; }
-    .wrap { position:relative; width:100%; }
-    .map {
-  width: 100%;
-  display: block;
-  user-select: none;
-  -webkit-user-drag: none;
-  pointer-events: none; /* картинка не перехватывает нажатия */
+    body{ margin:0; font-family: Arial, sans-serif; background:var(--bg); color:var(--fg); }
+    .title{ padding:10px; text-align:center; font-weight:700; font-size:18px; }
+    .tabs{ display:flex; gap:0; }
+    .btn{
+      width:100%; padding:14px; font-size:17px; border:none; background:var(--btn); color:var(--btnfg);
     }
-  position: absolute;
-  background: rgba(255, 0, 0, 0.12); /* видно зоны */
-  z-index: 5;                        /* поверх картинки */
+    .btn:active{ opacity:.85; }
+    .btn2{
+      width:100%; padding:12px; font-size:16px; border:1px solid #222; background:#fff; color:#222;
     }
-    .panel {
-      padding:10px;
-      border-top:1px solid #ddd;
+    .btn2:active{ opacity:.85; }
+    .wrap{ position:relative; width:100%; }
+    .map{
+      width:100%; display:block; user-select:none; -webkit-user-drag:none;
+      pointer-events:none; /* чтобы клики ловили зоны */
+    }
+    .zone{
+      position:absolute;
+      background: var(--zoneHit);
+      z-index: 5;
+    }
+    body.showZones .zone{
+      background: var(--zone);
+      outline: 1px solid var(--zoneBorder);
+    }
+    .panel{
+      padding:10px; border-top:1px solid var(--line); background:#fafafa;
       font-size:16px;
-      background:#fafafa;
     }
-    .list { margin:8px 0 0; padding:0 0 0 18px; }
-    .smallbtn {
-      width:100%;
-      padding:12px;
-      font-size:16px;
-      border:1px solid #222;
+    .hint{ color:var(--muted); font-size:13px; margin-top:6px; }
+    .list{ margin:8px 0 0; padding:0 0 0 18px; }
+    .row{ display:flex; gap:8px; }
+    .pill{
+      display:inline-block; padding:6px 10px; border:1px solid #ccc; border-radius:999px; font-size:13px; color:#333;
       background:#fff;
-      color:#222;
-      margin-top:8px;
     }
-    .smallbtn:active { opacity:0.85; }
-    .hint { color:#555; font-size:13px; margin-top:6px; }
+    .stickySend{ position:sticky; bottom:0; }
+    .hr{ height:1px; background:var(--line); margin:10px 0; }
+    .small{ font-size:13px; color:var(--muted); }
+    .input, .ta{
+      width:100%; box-sizing:border-box; padding:10px; font-size:15px; border:1px solid #ccc; border-radius:8px; background:#fff;
+    }
+    .ta{ min-height:110px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size:12px; }
+    .kbd{ font-family: ui-monospace, monospace; background:#eee; padding:2px 6px; border-radius:6px; }
+    .editorBox{
+      border:1px dashed #bbb; padding:10px; border-radius:10px; background:#fff;
+    }
+    .cursor{
+      position:absolute; width:18px; height:18px; border:2px solid #0078ff; border-radius:50%;
+      transform: translate(-50%,-50%); pointer-events:none; z-index: 999; display:none;
+      background: rgba(0,120,255,.08);
+    }
+    .draft{
+      position:absolute; border:2px solid #0078ff; background: rgba(0,120,255,.10);
+      z-index: 900; display:none;
+    }
+    .tag{
+      position:absolute; transform: translate(0,-110%); font-size:12px; background:#0078ff; color:#fff;
+      padding:2px 6px; border-radius:6px; white-space:nowrap; pointer-events:none; display:none; z-index: 950;
+    }
   </style>
 </head>
-<body>
 
-<div class="title">КАРТА РАНЕНИЙ</div>
+<body class="showZones">
+  <div class="title">КАРТА РАНЕНИЙ</div>
 
-<div class="row">
-  <button class="btn" onclick="setFront()">ПЕРЕД</button>
-  <button class="btn" onclick="setBack()">СПИНА</button>
-</div>
-
-<div class="wrap" id="wrap">
-  <img id="bodyImage" src="body_front.png" class="map" alt="body">
-
-  <!-- =========================
-       ЗОНЫ ДЛЯ ПЕРЕДА (front)
-       Координаты в % от картинки
-       ========================= -->
-
-  <!-- ГОЛОВА -->
-  <div class="zone front" style="top:7%; left:44%; width:12%; height:10%;" onclick="selectZone('ГОЛОВА (ПЕРЕД)')"></div>
-  <!-- ШЕЯ -->
-  <div class="zone front" style="top:17%; left:46%; width:8%; height:5%;" onclick="selectZone('ШЕЯ (ПЕРЕД)')"></div>
-  <!-- ГРУДЬ -->
-  <div class="zone front" style="top:22%; left:35%; width:30%; height:14%;" onclick="selectZone('ГРУДЬ (ПЕРЕД)')"></div>
-  <!-- ЖИВОТ -->
-  <div class="zone front" style="top:36%; left:38%; width:24%; height:12%;" onclick="selectZone('ЖИВОТ (ПЕРЕД)')"></div>
-  <!-- ТАЗ/ПАХ -->
-  <div class="zone front" style="top:48%; left:40%; width:20%; height:10%;" onclick="selectZone('ТАЗ/ПАХ (ПЕРЕД)')"></div>
-
-  <!-- РУКА ЛЕВАЯ (для наблюдателя слева — это ЛЕВАЯ пострадавшего на ПЕРЕДЕ) -->
-  <!-- Плечо 1/3 -->
-  <div class="zone front" style="top:25%; left:20%; width:10%; height:8%;" onclick="selectZone('Л: ПЛЕЧО 1/3 (ПЕРЕД)')"></div>
-  <!-- Плечо 2/3 -->
-  <div class="zone front" style="top:33%; left:20%; width:10%; height:8%;" onclick="selectZone('Л: ПЛЕЧО 2/3 (ПЕРЕД)')"></div>
-  <!-- Плечо 3/3 -->
-  <div class="zone front" style="top:41%; left:20%; width:10%; height:8%;" onclick="selectZone('Л: ПЛЕЧО 3/3 (ПЕРЕД)')"></div>
-
-  <!-- Предплечье 1/3 -->
-  <div class="zone front" style="top:49%; left:16%; width:10%; height:8%;" onclick="selectZone('Л: ПРЕДПЛЕЧЬЕ 1/3 (ПЕРЕД)')"></div>
-  <!-- Предплечье 2/3 -->
-  <div class="zone front" style="top:57%; left:16%; width:10%; height:8%;" onclick="selectZone('Л: ПРЕДПЛЕЧЬЕ 2/3 (ПЕРЕД)')"></div>
-  <!-- Предплечье 3/3 -->
-  <div class="zone front" style="top:65%; left:16%; width:10%; height:8%;" onclick="selectZone('Л: ПРЕДПЛЕЧЬЕ 3/3 (ПЕРЕД)')"></div>
-
-  <!-- КИСТЬ -->
-  <div class="zone front" style="top:73%; left:12%; width:10%; height:10%;" onclick="selectZone('Л: КИСТЬ (ПЕРЕД)')"></div>
-
-  <!-- РУКА ПРАВАЯ (на картинке справа) -->
-  <div class="zone front" style="top:25%; left:70%; width:10%; height:8%;" onclick="selectZone('П: ПЛЕЧО 1/3 (ПЕРЕД)')"></div>
-  <div class="zone front" style="top:33%; left:70%; width:10%; height:8%;" onclick="selectZone('П: ПЛЕЧО 2/3 (ПЕРЕД)')"></div>
-  <div class="zone front" style="top:41%; left:70%; width:10%; height:8%;" onclick="selectZone('П: ПЛЕЧО 3/3 (ПЕРЕД)')"></div>
-
-  <div class="zone front" style="top:49%; left:74%; width:10%; height:8%;" onclick="selectZone('П: ПРЕДПЛЕЧЬЕ 1/3 (ПЕРЕД)')"></div>
-  <div class="zone front" style="top:57%; left:74%; width:10%; height:8%;" onclick="selectZone('П: ПРЕДПЛЕЧЬЕ 2/3 (ПЕРЕД)')"></div>
-  <div class="zone front" style="top:65%; left:74%; width:10%; height:8%;" onclick="selectZone('П: ПРЕДПЛЕЧЬЕ 3/3 (ПЕРЕД)')"></div>
-
-  <div class="zone front" style="top:73%; left:78%; width:10%; height:10%;" onclick="selectZone('П: КИСТЬ (ПЕРЕД)')"></div>
-
-  <!-- НОГА ЛЕВАЯ -->
-  <div class="zone front" style="top:58%; left:42%; width:10%; height:10%;" onclick="selectZone('Л: БЕДРО 1/3 (ПЕРЕД)')"></div>
-  <div class="zone front" style="top:68%; left:42%; width:10%; height:10%;" onclick="selectZone('Л: БЕДРО 2/3 (ПЕРЕД)')"></div>
-  <div class="zone front" style="top:78%; left:42%; width:10%; height:8%;" onclick="selectZone('Л: БЕДРО 3/3 (ПЕРЕД)')"></div>
-
-  <div class="zone front" style="top:86%; left:42%; width:10%; height:6%;" onclick="selectZone('Л: ГОЛЕНЬ 1/3 (ПЕРЕД)')"></div>
-  <div class="zone front" style="top:92%; left:42%; width:10%; height:5%;" onclick="selectZone('Л: ГОЛЕНЬ 2/3 (ПЕРЕД)')"></div>
-  <div class="zone front" style="top:97%; left:42%; width:10%; height:3%;" onclick="selectZone('Л: ГОЛЕНЬ 3/3 (ПЕРЕД)')"></div>
-
-  <div class="zone front" style="top:97%; left:37%; width:8%; height:3%;" onclick="selectZone('Л: СТОПА (ПЕРЕД)')"></div>
-
-  <!-- НОГА ПРАВАЯ -->
-  <div class="zone front" style="top:58%; left:48%; width:10%; height:10%;" onclick="selectZone('П: БЕДРО 1/3 (ПЕРЕД)')"></div>
-  <div class="zone front" style="top:68%; left:48%; width:10%; height:10%;" onclick="selectZone('П: БЕДРО 2/3 (ПЕРЕД)')"></div>
-  <div class="zone front" style="top:78%; left:48%; width:10%; height:8%;" onclick="selectZone('П: БЕДРО 3/3 (ПЕРЕД)')"></div>
-
-  <div class="zone front" style="top:86%; left:48%; width:10%; height:6%;" onclick="selectZone('П: ГОЛЕНЬ 1/3 (ПЕРЕД)')"></div>
-  <div class="zone front" style="top:92%; left:48%; width:10%; height:5%;" onclick="selectZone('П: ГОЛЕНЬ 2/3 (ПЕРЕД)')"></div>
-  <div class="zone front" style="top:97%; left:48%; width:10%; height:3%;" onclick="selectZone('П: ГОЛЕНЬ 3/3 (ПЕРЕД)')"></div>
-
-  <div class="zone front" style="top:97%; left:55%; width:8%; height:3%;" onclick="selectZone('П: СТОПА (ПЕРЕД)')"></div>
-
-  <!-- =========================
-       ЗОНЫ ДЛЯ СПИНЫ (back)
-       Скрыты по умолчанию
-       ========================= -->
-
-  <!-- СПИНА верх -->
-  <div class="zone back" style="top:22%; left:35%; width:30%; height:18%;" onclick="selectZone('СПИНА (СПИНА)')"></div>
-  <!-- ЯГОДИЦЫ -->
-  <div class="zone back" style="top:45%; left:38%; width:24%; height:12%;" onclick="selectZone('ЯГОДИЦЫ (СПИНА)')"></div>
-  <!-- ГОЛОВА/ШЕЯ сзади -->
-  <div class="zone back" style="top:8%; left:44%; width:12%; height:9%;" onclick="selectZone('ГОЛОВА (СПИНА)')"></div>
-  <div class="zone back" style="top:17%; left:46%; width:8%; height:5%;" onclick="selectZone('ШЕЯ (СПИНА)')"></div>
-
-  <!-- (Конечности со спины можно добавить позже — пока оставил базовый минимум) -->
-
-</div>
-
-<div class="panel">
-  <div><b>Выбрано:</b> <span id="count">0</span></div>
-  <ul class="list" id="list"></ul>
-
-  <button class="smallbtn" onclick="undoLast()">Отмена последнего</button>
-  <button class="smallbtn" onclick="clearAll()">Очистить всё</button>
-
-  <div class="hint">
-    Тапай по зоне → она добавится в список. Нажми «Отправить» внизу.
+  <!-- ПЕРЕД/СПИНА -->
+  <div class="tabs">
+    <button class="btn" onclick="setView('front')">ПЕРЕД</button>
+    <button class="btn" onclick="setView('back')">СПИНА</button>
   </div>
-</div>
 
-<button class="btn" onclick="send()">ОТПРАВИТЬ</button>
+  <!-- РЕЖИМ: ОТМЕТКА / НАСТРОЙКА -->
+  <div class="tabs">
+    <button class="btn" id="modePickBtn" onclick="setMode('pick')">ОТМЕТКА</button>
+    <button class="btn" id="modeEditBtn" onclick="setMode('edit')">НАСТРОЙКА</button>
+  </div>
+
+  <div class="wrap" id="wrap">
+    <img id="bodyImage" src="body_front.png" class="map" alt="body">
+    <div class="cursor" id="cursor"></div>
+    <div class="draft" id="draft"></div>
+    <div class="tag" id="tag"></div>
+
+    <!-- зоны рендерятся сюда -->
+    <div id="zonesLayer"></div>
+  </div>
+
+  <div class="panel" id="pickPanel">
+    <div class="row" style="align-items:center; justify-content:space-between;">
+      <span class="pill">Режим: <b>ОТМЕТКА</b></span>
+      <button class="btn2" onclick="toggleShowZones()">Показать/скрыть зоны</button>
+    </div>
+
+    <div style="margin-top:10px;"><b>Выбрано:</b> <span id="count">0</span></div>
+    <ul class="list" id="list"></ul>
+
+    <div class="row" style="margin-top:10px;">
+      <button class="btn2" onclick="undoLast()">Отмена последнего</button>
+      <button class="btn2" onclick="clearAll()">Очистить всё</button>
+    </div>
+
+    <div class="hint">
+      Тап по области → добавляется в список. Если не попадает — переключись в <b>НАСТРОЙКА</b> и подгони зоны пальцем.
+    </div>
+  </div>
+
+  <div class="panel" id="editPanel" style="display:none;">
+    <div class="row" style="align-items:center; justify-content:space-between;">
+      <span class="pill">Режим: <b>НАСТРОЙКА</b></span>
+      <button class="btn2" onclick="toggleShowZones()">Показать/скрыть зоны</button>
+    </div>
+
+    <div class="hr"></div>
+
+    <div class="editorBox">
+      <div class="small">
+        <b>Как подгонять:</b><br>
+        1) Тапни по картинке — появится синий прямоугольник (заготовка зоны).<br>
+        2) Ползунками выставь ширину/высоту.<br>
+        3) Впиши название (например: <span class="kbd">Л: ПЛЕЧО 2/3 — ПЕРЕД</span>)<br>
+        4) Нажми <b>СОХРАНИТЬ ЗОНУ</b>.<br>
+        (Зону можно потом удалить из списка ниже.)
+      </div>
+
+      <div class="hr"></div>
+
+      <label class="small">Название зоны</label>
+      <input class="input" id="zoneName" placeholder="Напр: П: ГОЛЕНЬ 2/3 — ПЕРЕД"/>
+
+      <div class="row" style="margin-top:8px;">
+        <div style="width:100%;">
+          <label class="small">Ширина (%)</label>
+          <input class="input" type="number" id="wPct" value="12" step="0.5" min="2" max="60"/>
+        </div>
+        <div style="width:100%;">
+          <label class="small">Высота (%)</label>
+          <input class="input" type="number" id="hPct" value="8" step="0.5" min="2" max="60"/>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:8px;">
+        <button class="btn2" onclick="nudge(-0.5,0)">←</button>
+        <button class="btn2" onclick="nudge(0.5,0)">→</button>
+        <button class="btn2" onclick="nudge(0,-0.5)">↑</button>
+        <button class="btn2" onclick="nudge(0,0.5)">↓</button>
+      </div>
+
+      <div class="row" style="margin-top:8px;">
+        <button class="btn2" onclick="saveDraft()">СОХРАНИТЬ ЗОНУ</button>
+        <button class="btn2" onclick="clearDraft()">СБРОС ЗАГОТОВКИ</button>
+      </div>
+
+      <div class="hint">
+        Подсказка: в режиме НАСТРОЙКА можно “ловить” зоны даже без точности — главное, чтобы попадание было удобным пальцем.
+      </div>
+    </div>
+
+    <div class="hr"></div>
+
+    <div>
+      <b>Твои зоны (для текущего вида)</b>
+      <div class="hint">Нажми “Удалить” напротив лишней зоны.</div>
+      <div id="zonesList"></div>
+    </div>
+
+    <div class="hr"></div>
+
+    <div>
+      <b>Экспорт/Импорт зон</b>
+      <div class="hint">Если надо перенести/сохранить — скопируй JSON. Импортом можно восстановить.</div>
+      <textarea class="ta" id="jsonBox" placeholder="Тут будет JSON…"></textarea>
+      <div class="row" style="margin-top:8px;">
+        <button class="btn2" onclick="exportJSON()">ЭКСПОРТ</button>
+        <button class="btn2" onclick="importJSON()">ИМПОРТ</button>
+        <button class="btn2" onclick="resetToDefaults()">СБРОС К ДЕФОЛТУ</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="stickySend">
+    <button class="btn" onclick="send()">ОТПРАВИТЬ</button>
+  </div>
 
 <script>
   const tg = window.Telegram?.WebApp;
-
-  // Расширяем мини-апп внутри Telegram (если он там)
   if (tg) tg.expand();
 
-  let mode = 'front'; // 'front' or 'back'
+  // ======= DEFAULT ZONES (стартовые, чтобы работало сразу) =======
+  // Это “примерная сетка”. Точность на твоих картинках добивается в режиме НАСТРОЙКА.
+  const DEFAULTS = {
+    front: [
+      z('ГОЛОВА — ПЕРЕД', 6, 44, 12, 11),
+      z('ШЕЯ — ПЕРЕД', 17, 45, 10, 5),
+      z('ГРУДЬ — ПЕРЕД', 22, 34, 32, 14),
+      z('ЖИВОТ — ПЕРЕД', 36, 37, 26, 12),
+      z('ТАЗ/ПАХ — ПЕРЕД', 48, 39, 22, 10),
+
+      // Л рука
+      z('Л: ПЛЕЧО 1/3 — ПЕРЕД', 24, 19, 12, 7),
+      z('Л: ПЛЕЧО 2/3 — ПЕРЕД', 31, 19, 12, 7),
+      z('Л: ПЛЕЧО 3/3 — ПЕРЕД', 38, 19, 12, 7),
+      z('Л: ПРЕДПЛЕЧЬЕ 1/3 — ПЕРЕД', 46, 15, 12, 7),
+      z('Л: ПРЕДПЛЕЧЬЕ 2/3 — ПЕРЕД', 53, 14, 12, 7),
+      z('Л: ПРЕДПЛЕЧЬЕ 3/3 — ПЕРЕД', 60, 13, 12, 7),
+      z('Л: КИСТЬ — ПЕРЕД', 68, 10, 14, 10),
+
+      // П рука
+      z('П: ПЛЕЧО 1/3 — ПЕРЕД', 24, 69, 12, 7),
+      z('П: ПЛЕЧО 2/3 — ПЕРЕД', 31, 69, 12, 7),
+      z('П: ПЛЕЧО 3/3 — ПЕРЕД', 38, 69, 12, 7),
+      z('П: ПРЕДПЛЕЧЬЕ 1/3 — ПЕРЕД', 46, 73, 12, 7),
+      z('П: ПРЕДПЛЕЧЬЕ 2/3 — ПЕРЕД', 53, 74, 12, 7),
+      z('П: ПРЕДПЛЕЧЬЕ 3/3 — ПЕРЕД', 60, 75, 12, 7),
+      z('П: КИСТЬ — ПЕРЕД', 68, 78, 14, 10),
+
+      // Ноги (перед)
+      z('Л: БЕДРО 1/3 — ПЕРЕД', 57, 41, 10, 8),
+      z('Л: БЕДРО 2/3 — ПЕРЕД', 65, 41, 10, 8),
+      z('Л: БЕДРО 3/3 — ПЕРЕД', 73, 41, 10, 8),
+      z('Л: ГОЛЕНЬ 1/3 — ПЕРЕД', 81, 41, 10, 6),
+      z('Л: ГОЛЕНЬ 2/3 — ПЕРЕД', 87, 41, 10, 6),
+      z('Л: ГОЛЕНЬ 3/3 — ПЕРЕД', 93, 41, 10, 6),
+      z('Л: СТОПА — ПЕРЕД', 96, 37, 12, 4),
+
+      z('П: БЕДРО 1/3 — ПЕРЕД', 57, 49, 10, 8),
+      z('П: БЕДРО 2/3 — ПЕРЕД', 65, 49, 10, 8),
+      z('П: БЕДРО 3/3 — ПЕРЕД', 73, 49, 10, 8),
+      z('П: ГОЛЕНЬ 1/3 — ПЕРЕД', 81, 49, 10, 6),
+      z('П: ГОЛЕНЬ 2/3 — ПЕРЕД', 87, 49, 10, 6),
+      z('П: ГОЛЕНЬ 3/3 — ПЕРЕД', 93, 49, 10, 6),
+      z('П: СТОПА — ПЕРЕД', 96, 52, 12, 4)
+    ],
+    back: [
+      z('ГОЛОВА — СПИНА', 6, 44, 12, 11),
+      z('ШЕЯ — СПИНА', 17, 45, 10, 5),
+      z('СПИНА — ВЕРХ', 22, 34, 32, 20),
+      z('СПИНА — НИЗ', 42, 34, 32, 14),
+      z('ЯГОДИЦЫ', 56, 36, 28, 12),
+
+      // На спине Л/П зеркально относительно картинки:
+      // слева на экране = П сторона пострадавшего, справа = Л
+      z('П: РУКА — СПИНА', 24, 19, 12, 26),
+      z('Л: РУКА — СПИНА', 24, 69, 12, 26),
+      z('П: НОГА — СПИНА', 57, 41, 10, 30),
+      z('Л: НОГА — СПИНА', 57, 49, 10, 30),
+    ]
+  };
+
+  function z(name, top, left, width, height){
+    return { id: cryptoId(), name, top, left, width, height };
+  }
+  function cryptoId(){
+    return Math.random().toString(16).slice(2) + Date.now().toString(16);
+  }
+
+  // ======= STATE =======
+  let view = 'front';      // front/back
+  let mode = 'pick';       // pick/edit
   let selected = [];
+  let draft = null;        // {top,left,width,height}
 
-  function setFront() {
-    mode = 'front';
-    document.getElementById('bodyImage').src = 'body_front.png';
-    showZones();
+  const wrap = document.getElementById('wrap');
+  const bodyImage = document.getElementById('bodyImage');
+  const zonesLayer = document.getElementById('zonesLayer');
+  const zonesList = document.getElementById('zonesList');
+  const jsonBox = document.getElementById('jsonBox');
+
+  const cursor = document.getElementById('cursor');
+  const draftBox = document.getElementById('draft');
+  const tag = document.getElementById('tag');
+
+  const zoneName = document.getElementById('zoneName');
+  const wPct = document.getElementById('wPct');
+  const hPct = document.getElementById('hPct');
+
+  // ======= STORAGE =======
+  const KEY = 'medmap_zones_v1';
+
+  function loadAll(){
+    try{
+      const raw = localStorage.getItem(KEY);
+      if(!raw) return null;
+      const parsed = JSON.parse(raw);
+      if(!parsed.front || !parsed.back) return null;
+      return parsed;
+    }catch(e){ return null; }
+  }
+  function saveAll(all){
+    localStorage.setItem(KEY, JSON.stringify(all));
+  }
+  function getAllZones(){
+    let all = loadAll();
+    if(!all){
+      all = { front: DEFAULTS.front, back: DEFAULTS.back };
+      saveAll(all);
+    }
+    return all;
+  }
+  function setAllZones(all){
+    saveAll(all);
+    render();
+  }
+  function getZonesForView(v){
+    const all = getAllZones();
+    return all[v] || [];
+  }
+  function setZonesForView(v, zones){
+    const all = getAllZones();
+    all[v] = zones;
+    saveAll(all);
+    render();
   }
 
-  function setBack() {
-    mode = 'back';
-    document.getElementById('bodyImage').src = 'body_back.png';
-    showZones();
+  // ======= UI =======
+  function setView(v){
+    view = v;
+    bodyImage.src = (v === 'front') ? 'body_front.png' : 'body_back.png';
+    clearDraft();
+    render();
+  }
+  function setMode(m){
+    mode = m;
+    document.getElementById('pickPanel').style.display = (m === 'pick') ? 'block' : 'none';
+    document.getElementById('editPanel').style.display = (m === 'edit') ? 'block' : 'none';
+    // визуально активность кнопок (просто подсказка)
+    document.getElementById('modePickBtn').style.opacity = (m === 'pick') ? '1' : '0.75';
+    document.getElementById('modeEditBtn').style.opacity = (m === 'edit') ? '1' : '0.75';
+    clearDraft();
+    render();
+  }
+  function toggleShowZones(){
+    document.body.classList.toggle('showZones');
   }
 
-  function showZones() {
-    const fronts = document.querySelectorAll('.zone.front');
-    const backs  = document.querySelectorAll('.zone.back');
-    fronts.forEach(z => z.style.display = (mode === 'front') ? 'block' : 'none');
-    backs.forEach(z  => z.style.display = (mode === 'back')  ? 'block' : 'none');
+  function render(){
+    renderZones();
+    renderPickList();
+    renderZonesManager();
   }
 
-  function selectZone(name) {
-    selected.push(name);
-    renderList();
+  function renderZones(){
+    zonesLayer.innerHTML = '';
+    const zones = getZonesForView(view);
+
+    zones.forEach(zone => {
+      const d = document.createElement('div');
+      d.className = 'zone';
+      d.style.top = zone.top + '%';
+      d.style.left = zone.left + '%';
+      d.style.width = zone.width + '%';
+      d.style.height = zone.height + '%';
+
+      d.addEventListener('click', (e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        if(mode === 'pick'){
+          selectZone(zone.name);
+        }else{
+          // в режиме редактирования: по тапу по зоне — подставим имя в поле
+          zoneName.value = zone.name;
+          // и подсветим "курсор"
+          showCursorAt(zone.left + zone.width/2, zone.top + zone.height/2, zone.name);
+        }
+      }, true);
+
+      zonesLayer.appendChild(d);
+    });
   }
 
-  function undoLast() {
-    selected.pop();
-    renderList();
-  }
-
-  function clearAll() {
-    selected = [];
-    renderList();
-  }
-
-  function renderList() {
+  function renderPickList(){
+    document.getElementById('count').textContent = String(selected.length);
     const ul = document.getElementById('list');
     ul.innerHTML = '';
-    selected.forEach((s) => {
+    selected.forEach(s=>{
       const li = document.createElement('li');
       li.textContent = s;
       ul.appendChild(li);
     });
-    document.getElementById('count').textContent = String(selected.length);
   }
 
-  function buildMessage() {
-    if (selected.length === 0) return 'РАНЕНИЯ: нет данных';
-    return 'РАНЕНИЯ:\n' + selected.map(s => '• ' + s).join('\n');
+  function renderZonesManager(){
+    if(mode !== 'edit') return;
+    const zones = getZonesForView(view);
+    zonesList.innerHTML = '';
+
+    zones.forEach((z, idx)=>{
+      const row = document.createElement('div');
+      row.style.display = 'flex';
+      row.style.gap = '8px';
+      row.style.alignItems = 'center';
+      row.style.marginBottom = '8px';
+
+      const name = document.createElement('div');
+      name.style.flex = '1';
+      name.style.fontSize = '14px';
+      name.textContent = (idx+1) + '. ' + z.name;
+
+      const del = document.createElement('button');
+      del.className = 'btn2';
+      del.textContent = 'Удалить';
+      del.style.width = '120px';
+      del.onclick = ()=>{
+        const next = zones.filter(x => x.id !== z.id);
+        setZonesForView(view, next);
+      };
+
+      row.appendChild(name);
+      row.appendChild(del);
+      zonesList.appendChild(row);
+    });
   }
 
-  async function send() {
+  // ======= PICK MODE =======
+  function selectZone(name){
+    selected.push(name);
+    renderPickList();
+  }
+  function undoLast(){
+    selected.pop();
+    renderPickList();
+  }
+  function clearAll(){
+    selected = [];
+    renderPickList();
+  }
+
+  // ======= SEND =======
+  function buildMessage(){
+    if(selected.length === 0) return 'РАНЕНИЯ: нет данных';
+    return 'РАНЕНИЯ:\n' + selected.map(s=>'• ' + s).join('\n');
+  }
+  async function send(){
     const msg = buildMessage();
 
-    // Если открыто внутри Telegram Mini App — отправляем данные боту
-    if (tg) {
+    if(tg){
       tg.sendData(msg);
       return;
     }
-
-    // Если открыто в обычном браузере — покажем и попробуем скопировать
-    try {
+    try{
       await navigator.clipboard.writeText(msg);
-      alert('Скопировано в буфер:\n\n' + msg);
-    } catch (e) {
+      alert('Скопировано:\n\n' + msg);
+    }catch(e){
       alert(msg);
     }
   }
 
-  // старт
-  showZones();
-  renderList();
+  // ======= EDIT MODE: draft creation by tap =======
+  function rectFromCenter(centerLeft, centerTop, width, height){
+    return {
+      left: centerLeft - width/2,
+      top: centerTop - height/2,
+      width, height
+    };
+  }
+
+  function clampRect(r){
+    // не даём улететь за пределы картинки
+    r.left = Math.max(0, Math.min(100 - r.width, r.left));
+    r.top  = Math.max(0, Math.min(100 - r.height, r.top));
+    r.width = Math.max(1, Math.min(100, r.width));
+    r.height = Math.max(1, Math.min(100, r.height));
+    return r;
+  }
+
+  function showDraft(){
+    if(!draft){
+      draftBox.style.display = 'none';
+      return;
+    }
+    draftBox.style.display = 'block';
+    draftBox.style.left = draft.left + '%';
+    draftBox.style.top = draft.top + '%';
+    draftBox.style.width = draft.width + '%';
+    draftBox.style.height = draft.height + '%';
+  }
+
+  function showCursorAt(leftPct, topPct, text){
+    cursor.style.display = 'block';
+    cursor.style.left = leftPct + '%';
+    cursor.style.top = topPct + '%';
+    if(text){
+      tag.style.display = 'block';
+      tag.style.left = leftPct + '%';
+      tag.style.top = topPct + '%';
+      tag.textContent = text;
+    }else{
+      tag.style.display = 'none';
+    }
+  }
+
+  function hideCursor(){
+    cursor.style.display = 'none';
+    tag.style.display = 'none';
+  }
+
+  function clearDraft(){
+    draft = null;
+    showDraft();
+    hideCursor();
+  }
+
+  function saveDraft(){
+    if(!draft){
+      alert('Сначала тапни по картинке — появится заготовка зоны.');
+      return;
+    }
+    const name = (zoneName.value || '').trim();
+    if(!name){
+      alert('Впиши название зоны.');
+      return;
+    }
+    const zones = getZonesForView(view);
+    const newZone = { id: cryptoId(), name, top: draft.top, left: draft.left, width: draft.width, height: draft.height };
+    zones.push(newZone);
+    setZonesForView(view, zones);
+    // оставим заготовку, чтобы удобно делать следующую рядом
+    showCursorAt(draft.left + draft.width/2, draft.top + draft.height/2, 'Сохранено');
+  }
+
+  function nudge(dx, dy){
+    if(!draft) return;
+    draft.left += dx;
+    draft.top += dy;
+    clampRect(draft);
+    showDraft();
+  }
+
+  function exportJSON(){
+    const all = getAllZones();
+    jsonBox.value = JSON.stringify(all, null, 2);
+  }
+
+  function importJSON(){
+    try{
+      const v = JSON.parse(jsonBox.value);
+      if(!v.front || !v.back) throw new Error('Нет front/back');
+      setAllZones(v);
+      alert('Импортировано.');
+    }catch(e){
+      alert('Ошибка JSON: ' + e.message);
+    }
+  }
+
+  function resetToDefaults(){
+    if(!confirm('Сбросить зоны к дефолту?')) return;
+    setAllZones({ front: DEFAULTS.front, back: DEFAULTS.back });
+    alert('Сброшено.');
+  }
+
+  // ТАП по картинке в режиме НАСТРОЙКА = ставим заготовку по центру
+  wrap.addEventListener('click', (e)=>{
+    if(mode !== 'edit') return;
+
+    // вычисляем координаты в % относительно wrap
+    const r = wrap.getBoundingClientRect();
+    const x = e.clientX - r.left;
+    const y = e.clientY - r.top;
+    const leftPct = (x / r.width) * 100;
+    const topPct  = (y / r.height) * 100;
+
+    const w = parseFloat(wPct.value || '12');
+    const h = parseFloat(hPct.value || '8');
+    draft = clampRect(rectFromCenter(leftPct, topPct, w, h));
+    showDraft();
+    showCursorAt(leftPct, topPct, `left=${leftPct.toFixed(1)} top=${topPct.toFixed(1)}`);
+  }, true);
+
+  // изменение размеров заготовки
+  function syncDraftSize(){
+    if(!draft) return;
+    const w = parseFloat(wPct.value || '12');
+    const h = parseFloat(hPct.value || '8');
+    // сохраняем центр
+    const cx = draft.left + draft.width/2;
+    const cy = draft.top + draft.height/2;
+    draft = clampRect(rectFromCenter(cx, cy, w, h));
+    showDraft();
+  }
+  wPct.addEventListener('input', syncDraftSize);
+  hPct.addEventListener('input', syncDraftSize);
+
+  // ======= INIT =======
+  setView('front');
+  setMode('pick');
+  render();
 </script>
 
 </body>
