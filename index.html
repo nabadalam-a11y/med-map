@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Мед-карта (стабильная)</title>
+  <title>Карта ранений</title>
+
+  <!-- jsPDF (без модулей, чтобы не ломать запуск) -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
   <style>
     body{ margin:0; font-family: Arial, sans-serif; background:#fff; color:#111; }
@@ -12,12 +15,11 @@
     .topStatus{
       padding:10px 12px;
       font-size:14px;
-      background:#fff7cc;
-      border-bottom:1px solid #e7d48a;
+      background:#dff7df;
+      border-bottom:1px solid #a9d9a9;
       color:#333;
       white-space:pre-wrap;
     }
-    .topStatus.ok{ background:#dff7df; border-bottom:1px solid #a9d9a9; }
     .topStatus.bad{ background:#ffe1e1; border-bottom:1px solid #f0a6a6; color:#8a1f1f; }
 
     .tabs{ display:flex; }
@@ -59,8 +61,8 @@
       touch-action: manipulation;
       -webkit-tap-highlight-color: rgba(0,0,0,0);
     }
-    .pin.front{ background: rgba(0,120,255,0.88); }
-    .pin.back{  background: rgba(255,0,0,0.88); }
+    .pin.front{ background: rgba(0,120,255,0.90); } /* ПЕРЕД — синий */
+    .pin.back{  background: rgba(255,0,0,0.90); }  /* СПИНА — красный */
     .pin.selected{ outline:3px solid rgba(255,255,255,0.95); }
 
     .panel{ padding:12px; border-top:1px solid #ddd; background:#fafafa; }
@@ -70,7 +72,7 @@
       padding:10px; font-size:15px;
       border:1px solid #ccc; border-radius:10px; background:#fff;
     }
-    textarea{ min-height:60px; }
+    textarea{ min-height:55px; }
 
     .row{ display:flex; gap:10px; }
     .col{ width:100%; }
@@ -87,6 +89,7 @@
       touch-action: manipulation;
     }
     .btn2:active{ opacity:.85; }
+    .btn2:disabled{ opacity:.55; }
 
     .hint{ font-size:12px; color:#666; margin-top:6px; }
 
@@ -119,6 +122,7 @@
       border-radius:10px; padding:6px 10px; font-size:13px; min-width:88px;
       touch-action: manipulation;
     }
+    .miniBtn:active{ opacity:.85; }
 
     .out{
       white-space:pre-wrap;
@@ -127,12 +131,52 @@
       padding:10px; border:1px solid #ddd; border-radius:10px;
       background:#fff; margin-top:10px;
     }
+
+    .bar{
+      display:flex;
+      gap:10px;
+      padding:10px 12px;
+      border-top:1px solid #ddd;
+      background:#fafafa;
+      position:sticky;
+      bottom:0;
+      z-index:30;
+    }
+    .bar button{
+      width:100%;
+      padding:14px;
+      font-size:16px;
+      border:none;
+      border-radius:10px;
+      color:#fff;
+      background:#0b6623;
+      touch-action: manipulation;
+    }
+    .bar button:active{ opacity:.85; }
+    .bar button:disabled{ opacity:.55; }
+
+    /* Toast */
+    #toast{
+      position:fixed;
+      left:50%;
+      bottom:16px;
+      transform:translateX(-50%);
+      background:rgba(0,0,0,0.85);
+      color:#fff;
+      padding:10px 12px;
+      border-radius:12px;
+      font-size:14px;
+      max-width:92%;
+      z-index:9999;
+      display:none;
+      white-space:pre-wrap;
+    }
   </style>
 </head>
 
 <body>
   <div class="title">КАРТА РАНЕНИЙ</div>
-  <div id="topStatus" class="topStatus">JS: загрузка…</div>
+  <div id="topStatus" class="topStatus">JS: OK</div>
 
   <div class="tabs">
     <button class="tab" id="btnFront" type="button">ПЕРЕД</button>
@@ -151,7 +195,7 @@
         <input id="dt" type="datetime-local"/>
       </div>
       <div class="col">
-        <label>Позывной (обязательно)</label>
+        <label>Позывной (обязательно, он же пароль PDF)</label>
         <input id="call" placeholder="например: БАРС-12"/>
       </div>
     </div>
@@ -171,7 +215,7 @@
     </div>
 
     <div class="hint" style="margin-top:10px;">
-      Выбери зоны. Ниже появятся чекбоксы травм.
+      Выбери зоны. Ниже появятся чекбоксы травм. Для головы/шеи перелом и шина не показываются.
     </div>
 
     <div id="zonesUI"></div>
@@ -182,15 +226,27 @@
     <div class="out" id="finalMsg"></div>
   </div>
 
+  <div class="bar">
+    <button id="btnMakePDF" type="button">СДЕЛАТЬ PDF (С ПАРОЛЕМ)</button>
+  </div>
+
+  <div id="toast"></div>
+
 <script>
 (function(){
   const top = document.getElementById("topStatus");
-  function setTopOK(msg){ top.className="topStatus ok"; top.textContent=msg; }
+  const toastEl = document.getElementById("toast");
   function setTopBad(msg){ top.className="topStatus bad"; top.textContent=msg; }
+  function toast(msg, ms){
+    toastEl.textContent = msg;
+    toastEl.style.display = "block";
+    clearTimeout(toastEl._t);
+    toastEl._t = setTimeout(()=>{ toastEl.style.display="none"; }, ms || 2200);
+  }
 
-  // Ловим любые ошибки и показываем
+  // Показ любых JS ошибок на экране (чтобы не гадать)
   window.addEventListener("error", (e)=>{
-    setTopBad("JS ОШИБКА:\n" + (e.message || e.type || "unknown") + "\n" + (e.filename||"") + ":" + (e.lineno||""));
+    setTopBad("JS ОШИБКА:\n" + (e.message || "unknown") + "\n" + (e.filename||"") + ":" + (e.lineno||""));
   });
   window.addEventListener("unhandledrejection", (e)=>{
     setTopBad("JS PROMISE ОШИБКА:\n" + (e.reason && (e.reason.message || e.reason) || "unknown"));
@@ -198,13 +254,35 @@
 
   const $ = (id)=>document.getElementById(id);
 
-  setTopOK("JS: OK (эта версия должна быть кликабельной)");
+  // ===== словари зон (как ты дал) =====
+  const BACK = {
+    1:"Подошва",2:"Тыльная область стопы",3:"Передняя область голени",4:"Задняя область голени",
+    5:"Задняя область колена",6:"Заднепроходная область",7:"Задняя область бедра",8:"Крестцовая область",
+    9:"Ягодичная область",10:"Боковая область живота",11:"Поясничная область",12:"Позвоночная область",
+    13:"Подлопаточная область",14:"Задняя локтевая область",15:"Задняя область плеча",16:"Задняя область предплечья",
+    17:"Передняя область плеча",18:"Тыл кисти",19:"Надлопаточная область",20:"Задняя область шеи",
+    21:"Затылочная область",22:"Скуловая область",23:"Теменная область",24:"Височная область",
+    25:"Лобная область",26:"Глазница",27:"Щёчная область",28:"Поднижнечелюстной треугольник",
+    29:"Грудино-ключично-сосцевидная область",30:"Акромиальная область",31:"Межлопаточная область",
+    32:"Дельтовидная область",33:"Лопаточная область",34:"Задняя область плеча",35:"Латеральная область груди",
+    36:"Задняя локтевая область",37:"Задняя область предплечья",38:"Передняя область предплечья",
+    39:"Кисть, ладонь",40:"Подрёберная область",41:"Пяточная область"
+  };
+  const FRONT = {
+    1:"Пупочная область",2:"Подчревная (лобковая) область",3:"Передняя область предплечья",4:"Тыл кисти",
+    5:"Предплечье",6:"Задняя область предплечья",7:"Задняя локтевая область",8:"Передняя область плеча",
+    9:"Грудная область",10:"Дельтовидная область",11:"Ключично-грудной треугольник",
+    12:"Грудино-ключично-сосцевидная область",13:"Область рта",14:"Область носа",
+    15:"Височная область",16:"Глазница",17:"Лобная область",18:"Теменная область",
+    19:"Передняя область шеи",20:"Подбородочная область",21:"Латеральная область шеи",22:"Область ключицы",
+    23:"Подключичная ямка",24:"Ладонь",25:"Передняя локтевая область",26:"Задняя область плеча",
+    27:"Подмышечная область",28:"Грудная область",29:"Подрёберная область",30:"Надчревная область",
+    31:"Боковая область живота",32:"Паховая область",33:"Бедренный треугольник",34:"Передняя область бедра",
+    35:"Передняя область колена",36:"Задняя область голени",37:"Передняя область голени",
+    38:"Передняя голеностопная область",39:"Пяточная область",40:"Тыльная область стопы"
+  };
 
-  // ===== зоны =====
-  const BACK = {1:"Подошва",2:"Тыльная область стопы",3:"Передняя область голени",4:"Задняя область голени",5:"Задняя область колена",6:"Заднепроходная область",7:"Задняя область бедра",8:"Крестцовая область",9:"Ягодичная область",10:"Боковая область живота",11:"Поясничная область",12:"Позвоночная область",13:"Подлопаточная область",14:"Задняя локтевая область",15:"Задняя область плеча",16:"Задняя область предплечья",17:"Передняя область плеча",18:"Тыл кисти",19:"Надлопаточная область",20:"Задняя область шеи",21:"Затылочная область",22:"Скуловая область",23:"Теменная область",24:"Височная область",25:"Лобная область",26:"Глазница",27:"Щёчная область",28:"Поднижнечелюстной треугольник",29:"Грудино-ключично-сосцевидная область",30:"Акромиальная область",31:"Межлопаточная область",32:"Дельтовидная область",33:"Лопаточная область",34:"Задняя область плеча",35:"Латеральная область груди",36:"Задняя локтевая область",37:"Задняя область предплечья",38:"Передняя область предплечья",39:"Кисть, ладонь",40:"Подрёберная область",41:"Пяточная область"};
-  const FRONT = {1:"Пупочная область",2:"Подчревная (лобковая) область",3:"Передняя область предплечья",4:"Тыл кисти",5:"Предплечье",6:"Задняя область предплечья",7:"Задняя локтевая область",8:"Передняя область плеча",9:"Грудная область",10:"Дельтовидная область",11:"Ключично-грудной треугольник",12:"Грудино-ключично-сосцевидная область",13:"Область рта",14:"Область носа",15:"Височная область",16:"Глазница",17:"Лобная область",18:"Теменная область",19:"Передняя область шеи",20:"Подбородочная область",21:"Латеральная область шеи",22:"Область ключицы",23:"Подключичная ямка",24:"Ладонь",25:"Передняя локтевая область",26:"Задняя область плеча",27:"Подмышечная область",28:"Грудная область",29:"Подрёберная область",30:"Надчревная область",31:"Боковая область живота",32:"Паховая область",33:"Бедренный треугольник",34:"Передняя область бедра",35:"Передняя область колена",36:"Задняя область голени",37:"Передняя область голени",38:"Передняя голеностопная область",39:"Пяточная область",40:"Тыльная область стопы"};
-
-  // ===== storage keys (НЕ меняем) =====
+  // ===== ключи localStorage (не меняем — твои точки сохраняются) =====
   const POINTS_KEY="medmap_points_v2";
   const SEL_FRONT="medmap_sel_front_v2";
   const SEL_BACK="medmap_sel_back_v2";
@@ -261,10 +339,13 @@
   const dtEl=$("dt");
   const callEl=$("call");
   const commentEl=$("comment");
+  const btnMakePDF=$("btnMakePDF");
+  const btnCopy=$("btnCopy");
 
   let view="front";
+  let pdfBusy=false;
 
-  // required
+  // ===== обязательные поля =====
   function markReq(el, ok){ if(ok) el.classList.remove("reqBad"); else el.classList.add("reqBad"); }
   function validateRequired(){
     const dt=(dtEl.value||"").trim();
@@ -279,7 +360,7 @@
     return {ok: okDt&&okCall&&okComment, missing: miss};
   }
 
-  // травмы
+  // ===== чекбоксы/логика =====
   const TRAUMAS=[{key:"bullet",label:"Пулевое"},{key:"shrapnel",label:"Осколочное"},{key:"mvt",label:"МВТ"},{key:"burn",label:"Ожог"},{key:"fracture",label:"Перелом"}];
 
   function zoneClassByName(name){
@@ -308,7 +389,7 @@
     return out;
   }
 
-  // pins
+  // ===== метки =====
   function clearPins(){ pinsLayer.innerHTML=""; }
   function addPin(num,x,y,selected){
     const pin=document.createElement("div");
@@ -325,16 +406,17 @@
   function renderPins(){
     const points=loadPoints();
     const map=view==="front"?points.front:points.back;
-    const selSet={};
     const sel=loadSel(view);
-    for(let i=0;i<sel.length;i++) selSet[sel[i]]=1;
+    const selSet={}; for(let i=0;i<sel.length;i++) selSet[sel[i]]=1;
 
     clearPins();
 
+    // selected first
     for(let i=0;i<sel.length;i++){
       const k=sel[i];
       if(map[k]) addPin(k, map[k].x, map[k].y, true);
     }
+    // then other points
     const keys=Object.keys(map);
     for(let i=0;i<keys.length;i++){
       const k=keys[i];
@@ -371,7 +453,7 @@
     if(sel.length===0){
       const empty=document.createElement("div");
       empty.className="hint";
-      empty.textContent="Зоны не выбраны. Тапни по меткам или введи номер.";
+      empty.textContent="Зоны не выбраны. Тапни по метке или введи номер.";
       zonesUI.appendChild(empty);
       return;
     }
@@ -440,6 +522,7 @@
     }
   }
 
+  // ===== текст отчёта =====
   function buildTextReport(){
     const dt=(dtEl.value||"").trim();
     const call=(callEl.value||"").trim();
@@ -500,47 +583,11 @@ ${comment || "-"}`
   function addZoneFromInput(){
     const raw=(zoneNumEl.value||"").trim();
     const n=parseInt(raw,10);
-    if(!isFinite(n)){ alert("Введи номер зоны"); return; }
+    if(!isFinite(n)){ toast("Введи номер зоны"); return; }
     const dict=dictFor(view);
     if(!dict[n]){
-      alert(`Для стороны "${view==="front"?"ПЕРЕД":"СПИНА"}" нет зоны №${n}.`);
+      toast(`Нет зоны №${n} для стороны: ${view==="front"?"ПЕРЕД":"СПИНА"}`, 2600);
       return;
     }
     toggleZone(n);
-    zoneNumEl.value="";
-  }
-
-  // handlers
-  btnFront.addEventListener("pointerdown",(e)=>{ e.preventDefault(); setView("front"); });
-  btnBack .addEventListener("pointerdown",(e)=>{ e.preventDefault(); setView("back"); });
-
-  $("btnAddZone").addEventListener("pointerdown",(e)=>{ e.preventDefault(); addZoneFromInput(); });
-  zoneNumEl.addEventListener("keydown",(e)=>{ if(e.key==="Enter"){ e.preventDefault(); addZoneFromInput(); } });
-
-  $("btnRefresh").addEventListener("pointerdown",(e)=>{ e.preventDefault(); finalEl.textContent=buildTextReport(); });
-
-  $("btnCopy").addEventListener("pointerdown", async (e)=>{
-    e.preventDefault();
-    const v=validateRequired();
-    if(!v.ok){
-      alert("Не заполнены обязательные поля:\n- " + v.missing.join("\n- "));
-      return;
-    }
-    const text=buildTextReport();
-    finalEl.textContent=text;
-    try{ await navigator.clipboard.writeText(text); alert("Скопировано."); }
-    catch{ alert("Не смог скопировать. Можно выделить вручную."); }
-  });
-
-  [dtEl, callEl, commentEl].forEach(el=>{
-    el.addEventListener("input", ()=> el.classList.remove("reqBad"));
-    el.addEventListener("change", ()=> el.classList.remove("reqBad"));
-  });
-
-  // init
-  setView("front");
-  finalEl.textContent=buildTextReport();
-})();
-</script>
-</body>
-</html>
+    zon
