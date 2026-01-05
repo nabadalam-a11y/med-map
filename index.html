@@ -19,8 +19,17 @@
     }
     .btn:active { opacity:0.85; }
     .wrap { position:relative; width:100%; }
-    .map { width:100%; display:block; user-select:none; -webkit-user-drag:none; }
-    .zone { position:absolute; background: rgba(255, 0, 0, 0.0); } /* можно сделать 0.08 чтобы видеть зоны */
+    .map {
+  width: 100%;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none; /* картинка не перехватывает нажатия */
+    }
+  position: absolute;
+  background: rgba(255, 0, 0, 0.12); /* видно зоны */
+  z-index: 5;                        /* поверх картинки */
+    }
     .panel {
       padding:10px;
       border-top:1px solid #ddd;
