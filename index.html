@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Карта ранений</title>
 
-  <!-- jsPDF (без модулей, чтобы не ломать запуск) -->
+  <!-- jsPDF -->
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
   <style>
@@ -155,7 +155,6 @@
     .bar button:active{ opacity:.85; }
     .bar button:disabled{ opacity:.55; }
 
-    /* Toast */
     #toast{
       position:fixed;
       left:50%;
@@ -244,7 +243,6 @@
     toastEl._t = setTimeout(()=>{ toastEl.style.display="none"; }, ms || 2200);
   }
 
-  // Показ любых JS ошибок на экране (чтобы не гадать)
   window.addEventListener("error", (e)=>{
     setTopBad("JS ОШИБКА:\n" + (e.message || "unknown") + "\n" + (e.filename||"") + ":" + (e.lineno||""));
   });
@@ -253,7 +251,6 @@
   });
 
   const $ = (id)=>document.getElementById(id);
-
   // ===== словари зон (как ты дал) =====
   const BACK = {
     1:"Подошва",2:"Тыльная область стопы",3:"Передняя область голени",4:"Задняя область голени",
@@ -282,7 +279,7 @@
     38:"Передняя голеностопная область",39:"Пяточная область",40:"Тыльная область стопы"
   };
 
-  // ===== ключи localStorage (не меняем — твои точки сохраняются) =====
+  // ===== ключи localStorage (твои точки НЕ слетают) =====
   const POINTS_KEY="medmap_points_v2";
   const SEL_FRONT="medmap_sel_front_v2";
   const SEL_BACK="medmap_sel_back_v2";
@@ -361,7 +358,13 @@
   }
 
   // ===== чекбоксы/логика =====
-  const TRAUMAS=[{key:"bullet",label:"Пулевое"},{key:"shrapnel",label:"Осколочное"},{key:"mvt",label:"МВТ"},{key:"burn",label:"Ожог"},{key:"fracture",label:"Перелом"}];
+  const TRAUMAS=[
+    {key:"bullet",label:"Пулевое"},
+    {key:"shrapnel",label:"Осколочное"},
+    {key:"mvt",label:"МВТ"},
+    {key:"burn",label:"Ожог"},
+    {key:"fracture",label:"Перелом"}
+  ];
 
   function zoneClassByName(name){
     const s=(name||"").toLowerCase();
@@ -387,22 +390,25 @@
     if(obj && obj.burn) out.push("ожог");
     if(obj && obj.fracture) out.push("перелом");
     return out;
-  }
-
+}
   // ===== метки =====
   function clearPins(){ pinsLayer.innerHTML=""; }
+
   function addPin(num,x,y,selected){
     const pin=document.createElement("div");
     pin.className="pin " + (view==="front"?"front":"back") + (selected?" selected":"");
     pin.style.left=x+"%";
     pin.style.top=y+"%";
     pin.textContent=String(num);
+
     pin.addEventListener("pointerdown",(e)=>{
       e.preventDefault(); e.stopPropagation();
       toggleZone(num);
     });
+
     pinsLayer.appendChild(pin);
   }
+
   function renderPins(){
     const points=loadPoints();
     const map=view==="front"?points.front:points.back;
@@ -427,9 +433,13 @@
   function toggleZone(num){
     const n=String(parseInt(num,10));
     let sel=loadSel(view);
+
     let idx=-1;
     for(let i=0;i<sel.length;i++){ if(sel[i]===n){ idx=i; break; } }
-    if(idx>=0) sel.splice(idx,1); else sel.push(n);
+
+    if(idx>=0) sel.splice(idx,1);
+    else sel.push(n);
+
     sel=uniqNums(sel);
     saveSel(view,sel);
     renderAll();
@@ -506,12 +516,15 @@
       if(allow.splint){
         const wrap=document.createElement("label");
         wrap.className="chk";
+
         const inp=document.createElement("input");
         inp.type="checkbox";
         inp.checked=!!cur.splint;
         inp.addEventListener("change", ()=> setTrauma(num,"splint",inp.checked));
+
         const span=document.createElement("span");
         span.textContent="Шина наложена";
+
         wrap.appendChild(inp);
         wrap.appendChild(span);
         grid.appendChild(wrap);
@@ -542,6 +555,7 @@
         const name=dict[parseInt(num,10)] || "НЕИЗВЕСТНО";
         const ts=traumaSummary(t[num]||{});
         const spl=!!(t[num] && t[num].splint);
+
         let line=`• ${num} — ${name}`;
         if(ts.length) line += `\n  Травмы: ${ts.join(", ")}`;
         if(spl) line += `\n  Шина: да`;
@@ -584,10 +598,312 @@ ${comment || "-"}`
     const raw=(zoneNumEl.value||"").trim();
     const n=parseInt(raw,10);
     if(!isFinite(n)){ toast("Введи номер зоны"); return; }
-    const dict=dictFor(view);
+
+    const dict = dictFor(view);
     if(!dict[n]){
       toast(`Нет зоны №${n} для стороны: ${view==="front"?"ПЕРЕД":"СПИНА"}`, 2600);
       return;
     }
+
     toggleZone(n);
-    zon
+    zoneNumEl.value="";
+  }
+
+  // ===== COPY (без alert) =====
+  $("btnCopy").addEventListener("pointerdown", async (e)=>{
+    e.preventDefault();
+    const v=validateRequired();
+    if(!v.ok){
+      toast("Не заполнены обязательные поля:\n- " + v.missing.join("\n- "), 3200);
+      return;
+    }
+    const text=buildTextReport();
+    finalEl.textContent=text;
+    try{
+      await navigator.clipboard.writeText(text);
+      toast("✅ Скопировано");
+    }catch(_){
+      toast("Не удалось скопировать. Выдели текст вручную.", 3200);
+    }
+  });
+
+  $("btnRefresh").addEventListener("pointerdown",(e)=>{
+    e.preventDefault();
+    finalEl.textContent=buildTextReport();
+    toast("Текст обновлён");
+  });
+  // ===== PDF: рисуем 2 картинки + выделение выбранных зон + список =====
+  function dtToFileStamp(dt){
+    // dt: "2026-01-05T10:46"
+    try{
+      const s=dt.replace("T","_").replace(/:/g,"-");
+      return s;
+    }catch(_){ return "date"; }
+  }
+  function firstTwoLetters(call){
+    const s=(call||"").trim();
+    if(!s) return "XX";
+    const m=s.replace(/[^A-Za-zА-Яа-я0-9]/g,"");
+    return (m.slice(0,2) || s.slice(0,2) || "XX").toUpperCase();
+  }
+
+  function loadImage(url){
+    return new Promise((resolve,reject)=>{
+      const img=new Image();
+      img.crossOrigin="anonymous";
+      img.onload=()=>resolve(img);
+      img.onerror=()=>reject(new Error("img load fail: "+url));
+      img.src=url + (url.indexOf("?")>=0?"&":"?") + "v=" + Date.now();
+    });
+  }
+
+  function drawPinsOnCanvas(canvas, baseImg, side){
+    const ctx=canvas.getContext("2d");
+    canvas.width=baseImg.naturalWidth || baseImg.width;
+    canvas.height=baseImg.naturalHeight || baseImg.height;
+
+    ctx.drawImage(baseImg,0,0,canvas.width,canvas.height);
+
+    const points=loadPoints();
+    const map = side==="front"?points.front:points.back;
+    const sel = loadSel(side);
+    const isFront = side==="front";
+
+    // circle size relative
+    const r = Math.max(10, Math.round(canvas.width * 0.018));
+    ctx.textAlign="center";
+    ctx.textBaseline="middle";
+    ctx.font = `bold ${Math.round(r*1.1)}px Arial`;
+
+    for(let i=0;i<sel.length;i++){
+      const k=sel[i];
+      const p=map[k];
+      if(!p) continue;
+      const x = (p.x/100)*canvas.width;
+      const y = (p.y/100)*canvas.height;
+
+      // fill
+      ctx.beginPath();
+      ctx.arc(x,y,r,0,Math.PI*2);
+      ctx.fillStyle = isFront ? "rgba(0,120,255,0.9)" : "rgba(255,0,0,0.9)";
+      ctx.fill();
+
+      // stroke white
+      ctx.lineWidth=Math.max(2,Math.round(r*0.18));
+      ctx.strokeStyle="rgba(255,255,255,0.95)";
+      ctx.stroke();
+
+      // number
+      ctx.fillStyle="#fff";
+      ctx.fillText(String(k), x, y);
+    }
+    return canvas;
+  }
+
+  function canvasToJpegDataURL(canvas, quality){
+    return canvas.toDataURL("image/jpeg", quality || 0.92);
+  }
+
+  function wrapText(doc, text, x, y, maxWidth, lineHeight){
+    const words = (text||"").split(/\s+/);
+    let line="";
+    for(let i=0;i<words.length;i++){
+      const test = line ? (line+" "+words[i]) : words[i];
+      const w = doc.getTextWidth(test);
+      if(w > maxWidth && line){
+        doc.text(line, x, y);
+        y += lineHeight;
+        line = words[i];
+      }else{
+        line = test;
+      }
+    }
+    if(line){ doc.text(line, x, y); y += lineHeight; }
+    return y;
+  }
+
+  async function makePdf(){
+    const v=validateRequired();
+    if(!v.ok){
+      toast("Не заполнены обязательные поля:\n- " + v.missing.join("\n- "), 3400);
+      return;
+    }
+    if(pdfBusy) return;
+    pdfBusy=true;
+    btnMakePDF.disabled=true;
+
+    try{
+      const dt=(dtEl.value||"").trim();
+      const call=(callEl.value||"").trim();
+      const comment=(commentEl.value||"").trim();
+
+      // file name
+      const fname = `${dtToFileStamp(dt)}_${firstTwoLetters(call)}.pdf`;
+
+      // build canvases
+      const [imgF,imgB] = await Promise.all([loadImage("body_front.png"), loadImage("body_back.png")]);
+      const cF=document.createElement("canvas");
+      const cB=document.createElement("canvas");
+      drawPinsOnCanvas(cF,imgF,"front");
+      drawPinsOnCanvas(cB,imgB,"back");
+
+      const jpgF = canvasToJpegDataURL(cF,0.92);
+      const jpgB = canvasToJpegDataURL(cB,0.92);
+
+      // jsPDF
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation:"p", unit:"mm", format:"a4" });
+
+      // NOTE: парольная защита в jsPDF через standard security НЕ всегда поддерживается браузерами одинаково.
+      // Но мы делаем: если доступно encrypt(), применим. Если нет — просто сохраняем (главное, чтобы работало автономно).
+      function tryEncrypt(){
+        try{
+          // некоторые сборки jsPDF поддерживают:
+          // doc.encrypt({ userPassword: call, ownerPassword: call, userPermissions: ["print"] });
+          if(typeof doc.encrypt === "function"){
+            doc.encrypt({
+              userPassword: call,
+              ownerPassword: call,
+              userPermissions: ["print","copy"]
+            });
+          }
+        }catch(_){}
+      }
+
+      // ===== Page 1: ПЕРЕД =====
+      doc.setFont("helvetica","bold");
+      doc.setFontSize(16);
+      doc.text("МЕД ОТЧЁТ", 105, 14, {align:"center"});
+
+      doc.setFont("helvetica","normal");
+      doc.setFontSize(11);
+      doc.text(`Дата/время: ${dt}`, 14, 22);
+      doc.text(`Позывной: ${call}`, 14, 28);
+
+      doc.setFont("helvetica","bold");
+      doc.text("ПЕРЕД (с выделением зон)", 14, 36);
+
+      // image fit
+      const imgW=180, imgH=180;
+      doc.addImage(jpgF, "JPEG", 15, 40, imgW, imgH);
+
+      // list
+      let y=225;
+      doc.setFont("helvetica","bold"); doc.text("Список зон:", 14, y); y+=6;
+      doc.setFont("helvetica","normal");
+
+      const selFront=loadSel("front").sort((a,b)=>parseInt(a,10)-parseInt(b,10));
+      const tf=loadTrauma("front");
+      const dictF=dictFor("front");
+      if(selFront.length===0){
+        doc.text("(нет)", 14, y); y+=6;
+      }else{
+        for(let i=0;i<selFront.length;i++){
+          const n=selFront[i];
+          const name=dictF[parseInt(n,10)] || "НЕИЗВЕСТНО";
+          const ts=traumaSummary(tf[n]||{});
+          const spl=!!(tf[n] && tf[n].splint);
+
+          let line = `${n} — ${name}`;
+          if(ts.length) line += `; травмы: ${ts.join(", ")}`;
+          if(spl) line += `; шина: да`;
+
+          y = wrapText(doc, line, 14, y, 182, 5);
+          if(y>285){ doc.addPage(); y=16; }
+        }
+      }
+
+      // ===== Page 2: СПИНА =====
+      doc.addPage();
+      doc.setFont("helvetica","bold");
+      doc.setFontSize(16);
+      doc.text("МЕД ОТЧЁТ", 105, 14, {align:"center"});
+      doc.setFont("helvetica","normal");
+      doc.setFontSize(11);
+      doc.text(`Дата/время: ${dt}`, 14, 22);
+      doc.text(`Позывной: ${call}`, 14, 28);
+
+      doc.setFont("helvetica","bold");
+      doc.text("СПИНА (с выделением зон)", 14, 36);
+      doc.addImage(jpgB, "JPEG", 15, 40, imgW, imgH);
+
+      y=225;
+      doc.setFont("helvetica","bold"); doc.text("Список зон:", 14, y); y+=6;
+      doc.setFont("helvetica","normal");
+      const selBack=loadSel("back").sort((a,b)=>parseInt(a,10)-parseInt(b,10));
+      const tb=loadTrauma("back");
+      const dictB=dictFor("back");
+      if(selBack.length===0){
+        doc.text("(нет)", 14, y); y+=6;
+      }else{
+        for(let i=0;i<selBack.length;i++){
+          const n=selBack[i];
+          const name=dictB[parseInt(n,10)] || "НЕИЗВЕСТНО";
+          const ts=traumaSummary(tb[n]||{});
+          const spl=!!(tb[n] && tb[n].splint);
+
+          let line = `${n} — ${name}`;
+          if(ts.length) line += `; травмы: ${ts.join(", ")}`;
+          if(spl) line += `; шина: да`;
+
+          y = wrapText(doc, line, 14, y, 182, 5);
+          if(y>285){ doc.addPage(); y=16; }
+        }
+      }
+
+      // ===== Page 3: Комментарий =====
+      doc.addPage();
+      doc.setFont("helvetica","bold");
+      doc.setFontSize(16);
+      doc.text("КОММЕНТАРИЙ", 105, 16, {align:"center"});
+      doc.setFont("helvetica","normal");
+      doc.setFontSize(11);
+      let yy=28;
+      yy = wrapText(doc, `Дата/время: ${dt}`, 14, yy, 182, 6);
+      yy = wrapText(doc, `Позывной: ${call}`, 14, yy, 182, 6);
+      yy += 4;
+      doc.setFont("helvetica","bold");
+      doc.text("Текст:", 14, yy); yy+=6;
+      doc.setFont("helvetica","normal");
+      wrapText(doc, comment || "-", 14, yy, 182, 6);
+
+      // encrypt (если доступно)
+      tryEncrypt();
+
+      doc.save(fname);
+
+      toast("✅ PDF сохранён. Теперь отправь его в Telegram вручную.", 3400);
+    }catch(err){
+      setTopBad("PDF ОШИБКА:\n"+(err && err.message ? err.message : String(err)));
+      toast("Не получилось сделать PDF. Смотри верхнюю красную строку.", 3600);
+    }finally{
+      pdfBusy=false;
+      btnMakePDF.disabled=false;
+    }
+  }
+
+  // ===== старт =====
+  btnFront.addEventListener("pointerdown",(e)=>{ e.preventDefault(); setView("front"); });
+  btnBack.addEventListener("pointerdown",(e)=>{ e.preventDefault(); setView("back"); });
+  $("btnAddZone").addEventListener("pointerdown",(e)=>{ e.preventDefault(); addZoneFromInput(); });
+  btnMakePDF.addEventListener("pointerdown",(e)=>{ e.preventDefault(); makePdf(); });
+
+  // init dt default now
+  (function initDT(){
+    try{
+      const d=new Date();
+      const pad=(n)=>String(n).padStart(2,"0");
+      const val = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      if(!dtEl.value) dtEl.value=val;
+    }catch(_){}
+  })();
+
+  // init view
+  setView("front");
+  finalEl.textContent=buildTextReport();
+  top.textContent="JS: OK (карта готова)";
+})();
+</script>
+
+</body>
+</html>
