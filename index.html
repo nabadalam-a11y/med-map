@@ -11,54 +11,26 @@
   <style>
     body{ margin:0; font-family: Arial, sans-serif; background:#fff; color:#111; }
     .title{ padding:10px; text-align:center; font-weight:700; font-size:18px; }
-
-    .topStatus{
-      padding:10px 12px;
-      font-size:14px;
-      background:#dff7df;
-      border-bottom:1px solid #a9d9a9;
-      color:#333;
-      white-space:pre-wrap;
-    }
+    .topStatus{ padding:10px 12px; font-size:14px; background:#dff7df; border-bottom:1px solid #a9d9a9; color:#333; white-space:pre-wrap; }
     .topStatus.bad{ background:#ffe1e1; border-bottom:1px solid #f0a6a6; color:#8a1f1f; }
 
     .tabs{ display:flex; }
-    .tab{
-      width:100%;
-      padding:14px;
-      font-size:17px;
-      border:none;
-      background:#222;
-      color:#fff;
-      touch-action: manipulation;
-    }
+    .tab{ width:100%; padding:14px; font-size:17px; border:none; background:#222; color:#fff; touch-action: manipulation; }
     .tab.active{ background:#0b6623; }
     .tab:active{ opacity:.85; }
 
     .wrap{ position:relative; width:100%; }
     .map{ width:100%; display:block; user-select:none; -webkit-user-drag:none; }
 
-    #pinsLayer{
-      position:absolute; inset:0;
-      width:100%; height:100%;
-      pointer-events:none;
-      z-index:10;
-    }
+    #pinsLayer{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:10; }
 
     .pin{
-      position:absolute;
-      transform: translate(-50%,-50%);
-      min-width:26px; height:26px; padding:0 6px;
-      border-radius:999px;
-      color:#fff; font-weight:800; font-size:13px;
-      display:flex; align-items:center; justify-content:center;
-      z-index:20;
-      border:2px solid rgba(255,255,255,0.95);
+      position:absolute; transform: translate(-50%,-50%);
+      min-width:26px; height:26px; padding:0 6px; border-radius:999px;
+      color:#fff; font-weight:800; font-size:13px; display:flex; align-items:center; justify-content:center;
+      z-index:20; border:2px solid rgba(255,255,255,0.95);
       box-shadow:0 1px 6px rgba(0,0,0,0.18);
-      pointer-events:auto;
-      cursor:pointer;
-      user-select:none;
-      touch-action: manipulation;
+      pointer-events:auto; cursor:pointer; user-select:none; touch-action: manipulation;
       -webkit-tap-highlight-color: rgba(0,0,0,0);
     }
     .pin.front{ background: rgba(0,120,255,0.90); } /* ПЕРЕД — синий */
@@ -68,52 +40,33 @@
     .panel{ padding:12px; border-top:1px solid #ddd; background:#fafafa; }
     label{ display:block; font-size:13px; color:#444; margin:10px 0 6px; }
     input, textarea{
-      width:100%; box-sizing:border-box;
-      padding:10px; font-size:15px;
+      width:100%; box-sizing:border-box; padding:10px; font-size:15px;
       border:1px solid #ccc; border-radius:10px; background:#fff;
     }
     textarea{ min-height:55px; }
-
     .row{ display:flex; gap:10px; }
     .col{ width:100%; }
 
     .btn2{
-      width:100%;
-      padding:12px;
-      font-size:16px;
-      border:1px solid #222;
-      background:#fff;
-      color:#222;
-      border-radius:10px;
-      margin-top:10px;
+      width:100%; padding:12px; font-size:16px; border:1px solid #222;
+      background:#fff; color:#222; border-radius:10px; margin-top:10px;
       touch-action: manipulation;
     }
     .btn2:active{ opacity:.85; }
     .btn2:disabled{ opacity:.55; }
 
     .hint{ font-size:12px; color:#666; margin-top:6px; }
+    .reqBad{ border-color:#d11 !important; box-shadow:0 0 0 3px rgba(209,17,17,0.15); }
 
-    .reqBad{
-      border-color:#d11 !important;
-      box-shadow:0 0 0 3px rgba(209,17,17,0.15);
-    }
-
-    .zoneCard{
-      background:#fff; border:1px solid #ddd; border-radius:12px;
-      padding:10px; margin-top:10px;
-    }
-    .zoneHead{
-      display:flex; justify-content:space-between; gap:10px;
-      align-items:flex-start; font-size:14px; font-weight:700;
-    }
+    .zoneCard{ background:#fff; border:1px solid #ddd; border-radius:12px; padding:10px; margin-top:10px; }
+    .zoneHead{ display:flex; justify-content:space-between; gap:10px; align-items:flex-start; font-size:14px; font-weight:700; }
     .zoneSub{ margin-top:4px; font-size:12px; color:#444; font-weight:400; }
 
     .grid{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px; }
     .chk{
       display:flex; align-items:center; gap:10px;
       padding:10px; border:1px solid #eee; border-radius:12px;
-      background:#fafafa; font-size:14px; user-select:none;
-      touch-action: manipulation;
+      background:#fafafa; font-size:14px; user-select:none; touch-action: manipulation;
     }
     .chk input{ width:22px; height:22px; margin:0; }
 
@@ -127,48 +80,25 @@
     .out{
       white-space:pre-wrap;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-      font-size:12px;
-      padding:10px; border:1px solid #ddd; border-radius:10px;
+      font-size:12px; padding:10px; border:1px solid #ddd; border-radius:10px;
       background:#fff; margin-top:10px;
     }
 
     .bar{
-      display:flex;
-      gap:10px;
-      padding:10px 12px;
-      border-top:1px solid #ddd;
-      background:#fafafa;
-      position:sticky;
-      bottom:0;
-      z-index:30;
+      display:flex; gap:10px; padding:10px 12px; border-top:1px solid #ddd;
+      background:#fafafa; position:sticky; bottom:0; z-index:30;
     }
     .bar button{
-      width:100%;
-      padding:14px;
-      font-size:16px;
-      border:none;
-      border-radius:10px;
-      color:#fff;
-      background:#0b6623;
-      touch-action: manipulation;
+      width:100%; padding:14px; font-size:16px; border:none; border-radius:10px;
+      color:#fff; background:#0b6623; touch-action: manipulation;
     }
     .bar button:active{ opacity:.85; }
     .bar button:disabled{ opacity:.55; }
 
     #toast{
-      position:fixed;
-      left:50%;
-      bottom:16px;
-      transform:translateX(-50%);
-      background:rgba(0,0,0,0.85);
-      color:#fff;
-      padding:10px 12px;
-      border-radius:12px;
-      font-size:14px;
-      max-width:92%;
-      z-index:9999;
-      display:none;
-      white-space:pre-wrap;
+      position:fixed; left:50%; bottom:16px; transform:translateX(-50%);
+      background:rgba(0,0,0,0.85); color:#fff; padding:10px 12px; border-radius:12px;
+      font-size:14px; max-width:92%; z-index:9999; display:none; white-space:pre-wrap;
     }
   </style>
 </head>
@@ -194,7 +124,7 @@
         <input id="dt" type="datetime-local"/>
       </div>
       <div class="col">
-        <label>Позывной (обязательно, он же пароль PDF)</label>
+        <label>Позывной (обязательно)</label>
         <input id="call" placeholder="например: БАРС-12"/>
       </div>
     </div>
@@ -226,7 +156,7 @@
   </div>
 
   <div class="bar">
-    <button id="btnMakePDF" type="button">СДЕЛАТЬ PDF (С ПАРОЛЕМ)</button>
+    <button id="btnMakePDF" type="button">СДЕЛАТЬ PDF</button>
   </div>
 
   <div id="toast"></div>
@@ -251,7 +181,7 @@
   });
 
   const $ = (id)=>document.getElementById(id);
-  // ===== словари зон (как ты дал) =====
+
   const BACK = {
     1:"Подошва",2:"Тыльная область стопы",3:"Передняя область голени",4:"Задняя область голени",
     5:"Задняя область колена",6:"Заднепроходная область",7:"Задняя область бедра",8:"Крестцовая область",
@@ -279,7 +209,6 @@
     38:"Передняя голеностопная область",39:"Пяточная область",40:"Тыльная область стопы"
   };
 
-  // ===== ключи localStorage (твои точки НЕ слетают) =====
   const POINTS_KEY="medmap_points_v2";
   const SEL_FRONT="medmap_sel_front_v2";
   const SEL_BACK="medmap_sel_back_v2";
@@ -325,7 +254,6 @@
     return out;
   }
 
-  // ===== DOM/state =====
   const bodyImage=$("bodyImage");
   const pinsLayer=$("pinsLayer");
   const btnFront=$("btnFront");
@@ -337,12 +265,10 @@
   const callEl=$("call");
   const commentEl=$("comment");
   const btnMakePDF=$("btnMakePDF");
-  const btnCopy=$("btnCopy");
 
   let view="front";
   let pdfBusy=false;
 
-  // ===== обязательные поля =====
   function markReq(el, ok){ if(ok) el.classList.remove("reqBad"); else el.classList.add("reqBad"); }
   function validateRequired(){
     const dt=(dtEl.value||"").trim();
@@ -357,7 +283,6 @@
     return {ok: okDt&&okCall&&okComment, missing: miss};
   }
 
-  // ===== чекбоксы/логика =====
   const TRAUMAS=[
     {key:"bullet",label:"Пулевое"},
     {key:"shrapnel",label:"Осколочное"},
@@ -390,8 +315,8 @@
     if(obj && obj.burn) out.push("ожог");
     if(obj && obj.fracture) out.push("перелом");
     return out;
-}
-  // ===== метки =====
+  }
+
   function clearPins(){ pinsLayer.innerHTML=""; }
 
   function addPin(num,x,y,selected){
@@ -417,16 +342,14 @@
 
     clearPins();
 
-    // selected first
     for(let i=0;i<sel.length;i++){
       const k=sel[i];
       if(map[k]) addPin(k, map[k].x, map[k].y, true);
     }
-    // then other points
     const keys=Object.keys(map);
     for(let i=0;i<keys.length;i++){
       const k=keys[i];
-      if(!selSet[k]) addPin(k, map[k].x, map[k].y, false);
+      if(!selSet[k] && map[k]) addPin(k, map[k].x, map[k].y, false);
     }
   }
 
@@ -534,8 +457,6 @@
       zonesUI.appendChild(card);
     }
   }
-
-  // ===== текст отчёта =====
   function buildTextReport(){
     const dt=(dtEl.value||"").trim();
     const call=(callEl.value||"").trim();
@@ -598,33 +519,23 @@ ${comment || "-"}`
     const raw=(zoneNumEl.value||"").trim();
     const n=parseInt(raw,10);
     if(!isFinite(n)){ toast("Введи номер зоны"); return; }
-
     const dict = dictFor(view);
-    if(!dict[n]){
-      toast(`Нет зоны №${n} для стороны: ${view==="front"?"ПЕРЕД":"СПИНА"}`, 2600);
-      return;
-    }
-
+    if(!dict[n]){ toast(`Нет зоны №${n} для стороны: ${view==="front"?"ПЕРЕД":"СПИНА"}`, 2600); return; }
     toggleZone(n);
     zoneNumEl.value="";
   }
 
-  // ===== COPY (без alert) =====
+  // --- FIX: чтобы после "КОПИРОВАТЬ ТЕКСТ" ничего не всплывало снова ---
+  // Мы НЕ используем alert/confirm вообще, только toast.
+
   $("btnCopy").addEventListener("pointerdown", async (e)=>{
     e.preventDefault();
     const v=validateRequired();
-    if(!v.ok){
-      toast("Не заполнены обязательные поля:\n- " + v.missing.join("\n- "), 3200);
-      return;
-    }
+    if(!v.ok){ toast("Не заполнены обязательные поля:\n- " + v.missing.join("\n- "), 3200); return; }
     const text=buildTextReport();
     finalEl.textContent=text;
-    try{
-      await navigator.clipboard.writeText(text);
-      toast("✅ Скопировано");
-    }catch(_){
-      toast("Не удалось скопировать. Выдели текст вручную.", 3200);
-    }
+    try{ await navigator.clipboard.writeText(text); toast("✅ Скопировано"); }
+    catch(_){ toast("Не удалось скопировать. Выдели текст вручную.", 3200); }
   });
 
   $("btnRefresh").addEventListener("pointerdown",(e)=>{
@@ -632,19 +543,259 @@ ${comment || "-"}`
     finalEl.textContent=buildTextReport();
     toast("Текст обновлён");
   });
-  // ===== PDF: рисуем 2 картинки + выделение выбранных зон + список =====
-  function dtToFileStamp(dt){
-    // dt: "2026-01-05T10:46"
-    try{
-      const s=dt.replace("T","_").replace(/:/g,"-");
-      return s;
-    }catch(_){ return "date"; }
+
+  btnFront.addEventListener("pointerdown",(e)=>{ e.preventDefault(); setView("front"); });
+  btnBack.addEventListener("pointerdown",(e)=>{ e.preventDefault(); setView("back"); });
+
+  $("btnAddZone").addEventListener("pointerdown",(e)=>{
+    e.preventDefault();
+    addZoneFromInput();
+  });
+
+  zoneNumEl.addEventListener("keydown",(e)=>{
+    if(e.key==="Enter"){ e.preventDefault(); addZoneFromInput(); }
+  });
+
+  // -------- PDF (без пароля) --------
+  function fmtHuman(dtLocal){
+    // dtLocal: "2026-01-05T12:55"
+    if(!dtLocal) return "";
+    const [d,t]=dtLocal.split("T");
+    if(!d || !t) return dtLocal;
+    const [Y,M,D]=d.split("-");
+    return `${D}.${M}.${Y}, ${t}`;
   }
-  function firstTwoLetters(call){
-    const s=(call||"").trim();
-    if(!s) return "XX";
-    const m=s.replace(/[^A-Za-zА-Яа-я0-9]/g,"");
-    return (m.slice(0,2) || s.slice(0,2) || "XX").toUpperCase();
+
+  function mkFileName(){
+    const dt=(dtEl.value||"").trim();
+    const call=(callEl.value||"").trim();
+    const nice=dt ? dt.replace(/[:]/g,"-") : "no-date";
+    const pref = call ? call.trim().slice(0,2).toUpperCase().replace(/[^A-ZА-Я0-9]/g,"") : "XX";
+    return `${nice}_${pref}.pdf`;
+  }
+
+  async function loadImgAsDataURL(src){
+    return new Promise((resolve,reject)=>{
+      const img=new Image();
+      img.crossOrigin="anonymous";
+      img.onload=()=>{
+        try{
+          const c=document.createElement("canvas");
+          c.width=img.naturalWidth;
+          c.height=img.naturalHeight;
+          const ctx=c.getContext("2d");
+          ctx.drawImage(img,0,0);
+          resolve(c.toDataURL("image/png"));
+        }catch(err){ reject(err); }
+      };
+      img.onerror=()=>reject(new Error("Не загрузилась картинка: "+src));
+      img.src=src;
+    });
+  }
+
+  function drawPinsOnCanvas(baseImg, side){
+    // side: "front"|"back"
+    const points=loadPoints();
+    const map = side==="front" ? points.front : points.back;
+    const sel = loadSel(side);
+    const trauma = loadTrauma(side);
+
+    const img=new Image();
+    img.src=baseImg;
+
+    return new Promise((resolve,reject)=>{
+      img.onload=()=>{
+        const c=document.createElement("canvas");
+        c.width=img.naturalWidth;
+        c.height=img.naturalHeight;
+        const ctx=c.getContext("2d");
+
+        // base
+        ctx.drawImage(img,0,0);
+
+        // pins
+        for(let i=0;i<sel.length;i++){
+          const n=sel[i];
+          const p=map[n];
+          if(!p) continue;
+
+          const x = (p.x/100)*c.width;
+          const y = (p.y/100)*c.height;
+
+          const r=18;
+          ctx.beginPath();
+          ctx.arc(x,y,r,0,Math.PI*2);
+
+          if(side==="front"){
+            ctx.fillStyle="rgba(0,120,255,0.90)";
+          }else{
+            ctx.fillStyle="rgba(255,0,0,0.90)";
+          }
+          ctx.fill();
+
+          ctx.lineWidth=3;
+          ctx.strokeStyle="rgba(255,255,255,0.95)";
+          ctx.stroke();
+
+          // number
+          ctx.fillStyle="#fff";
+          ctx.font="bold 16px Arial";
+          ctx.textAlign="center";
+          ctx.textBaseline="middle";
+          ctx.fillText(String(n), x, y);
+
+          // optional: tiny trauma marks (если хочешь — можно убрать)
+          const t=trauma[n]||{};
+          const marks=[];
+          if(t.bullet) marks.push("П");
+          if(t.shrapnel) marks.push("О");
+          if(t.mvt) marks.push("М");
+          if(t.burn) marks.push("Ж");
+          if(t.fracture) marks.push("ПР");
+          if(t.splint) marks.push("Ш");
+          if(marks.length){
+            ctx.fillStyle="rgba(0,0,0,0.75)";
+            ctx.font="bold 12px Arial";
+            ctx.textBaseline="top";
+            ctx.fillText(marks.join(","), x, y+r+4);
+          }
+        }
+
+        resolve(c.toDataURL("image/png"));
+      };
+      img.onerror=()=>reject(new Error("Canvas base img error"));
+    });
+  }
+
+  function addTextBlock(doc, x, y, text, maxWidth, lineHeight){
+    const lines = doc.splitTextToSize(text, maxWidth);
+    doc.text(lines, x, y);
+    return y + lines.length*lineHeight;
+  }
+
+  async function makePDF(){
+    if(pdfBusy) return;
+    const v=validateRequired();
+    if(!v.ok){
+      toast("Не заполнены обязательные поля:\n- " + v.missing.join("\n- "), 3200);
+      return;
+    }
+
+    pdfBusy=true;
+    btnMakePDF.disabled=true;
+    toast("Готовлю PDF...");
+
+    try{
+      const { jsPDF } = window.jspdf;
+
+      // base images
+      const frontBase = await loadImgAsDataURL("body_front.png");
+      const backBase  = await loadImgAsDataURL("body_back.png");
+
+      // with pins
+      const frontWithPins = await drawPinsOnCanvas(frontBase, "front");
+      const backWithPins  = await drawPinsOnCanvas(backBase, "back");
+
+      const dt=(dtEl.value||"").trim();
+      const call=(callEl.value||"").trim();
+      const comment=(commentEl.value||"").trim();
+
+      const selFront=loadSel("front").sort((a,b)=>parseInt(a,10)-parseInt(b,10));
+      const selBack=loadSel("back").sort((a,b)=>parseInt(a,10)-parseInt(b,10));
+      const tf=loadTrauma("front");
+      const tb=loadTrauma("back");
+
+      function linesFor(side, sel, t){
+        const dict=dictFor(side);
+        if(sel.length===0) return ["(нет)"];
+        const out=[];
+        for(let i=0;i<sel.length;i++){
+          const num=sel[i];
+          const name=dict[parseInt(num,10)] || "НЕИЗВЕСТНО";
+          const ts=traumaSummary(t[num]||{});
+          const spl=!!(t[num] && t[num].splint);
+
+          let line=`${num} — ${name}`;
+          if(ts.length) line += `; травмы: ${ts.join(", ")}`;
+          if(spl) line += `; шина: да`;
+          out.push(line);
+        }
+        return out;
+      }
+
+      const textBlock =
+`МЕД ОТЧЁТ
+Дата/время: ${fmtHuman(dt) || "-"}
+Позывной: ${call || "-"}
+
+ПЕРЕД:
+- ${linesFor("front", selFront, tf).join("\n- ")}
+
+СПИНА:
+- ${linesFor("back", selBack, tb).join("\n- ")}
+
+Комментарий:
+${comment || "-"}`;
+
+      // A4 portrait
+      const doc = new jsPDF({orientation:"p", unit:"mm", format:"a4"});
+
+      // Page 1: front image + text
+      doc.setFont("helvetica","bold");
+      doc.setFontSize(14);
+      doc.text("КАРТА РАНЕНИЙ — ПЕРЕД", 14, 14);
+
+      // image fit
+      doc.addImage(frontWithPins, "PNG", 14, 18, 182, 120);
+
+      doc.setFont("helvetica","normal");
+      doc.setFontSize(11);
+
+      let y = 145;
+      y = addTextBlock(doc, 14, y, textBlock, 182, 5);
+
+      // Page 2: back image
+      doc.addPage();
+      doc.setFont("helvetica","bold");
+      doc.setFontSize(14);
+      doc.text("КАРТА РАНЕНИЙ — СПИНА", 14, 14);
+      doc.addImage(backWithPins, "PNG", 14, 18, 182, 120);
+
+      // Save
+      doc.save(mkFileName());
+
+      toast("✅ PDF создан");
+    }catch(err){
+      console.error(err);
+      toast("Ошибка PDF: " + (err.message||err), 4000);
+    }finally{
+      pdfBusy=false;
+      btnMakePDF.disabled=false;
+    }
+  }
+
+  btnMakePDF.addEventListener("pointerdown",(e)=>{
+    e.preventDefault();
+    makePDF();
+  });
+
+  // старт
+  setView("front");
+  finalEl.textContent=buildTextReport();
+
+})();
+</script>
+</body>
+</html>
+
+// -------- PDF (без пароля, с русским текстом как картинка) --------
+
+  function mkFileName(){
+    const dt=(dtEl.value||"").trim();
+    const call=(callEl.value||"").trim();
+    const nice = dt ? dt.replace("T","_").replace(/:/g,"-") : "no-date";
+    const pref = call ? call.trim().slice(0,2).toUpperCase().replace(/[^A-ZА-Я0-9]/g,"") : "XX";
+    return `${nice}_${pref}.pdf`;
   }
 
   function loadImage(url){
@@ -652,25 +803,24 @@ ${comment || "-"}`
       const img=new Image();
       img.crossOrigin="anonymous";
       img.onload=()=>resolve(img);
-      img.onerror=()=>reject(new Error("img load fail: "+url));
+      img.onerror=()=>reject(new Error("Не загрузилась картинка: "+url));
       img.src=url + (url.indexOf("?")>=0?"&":"?") + "v=" + Date.now();
     });
   }
 
-  function drawPinsOnCanvas(canvas, baseImg, side){
-    const ctx=canvas.getContext("2d");
-    canvas.width=baseImg.naturalWidth || baseImg.width;
-    canvas.height=baseImg.naturalHeight || baseImg.height;
-
-    ctx.drawImage(baseImg,0,0,canvas.width,canvas.height);
-
+  function drawImageWithPins(baseImg, side){
     const points=loadPoints();
-    const map = side==="front"?points.front:points.back;
+    const map = side==="front" ? points.front : points.back;
     const sel = loadSel(side);
-    const isFront = side==="front";
 
-    // circle size relative
-    const r = Math.max(10, Math.round(canvas.width * 0.018));
+    const c=document.createElement("canvas");
+    c.width = baseImg.naturalWidth || baseImg.width;
+    c.height= baseImg.naturalHeight || baseImg.height;
+    const ctx=c.getContext("2d");
+
+    ctx.drawImage(baseImg,0,0,c.width,c.height);
+
+    const r = Math.max(12, Math.round(c.width*0.018));
     ctx.textAlign="center";
     ctx.textBaseline="middle";
     ctx.font = `bold ${Math.round(r*1.1)}px Arial`;
@@ -679,216 +829,120 @@ ${comment || "-"}`
       const k=sel[i];
       const p=map[k];
       if(!p) continue;
-      const x = (p.x/100)*canvas.width;
-      const y = (p.y/100)*canvas.height;
+      const x=(p.x/100)*c.width;
+      const y=(p.y/100)*c.height;
 
-      // fill
       ctx.beginPath();
       ctx.arc(x,y,r,0,Math.PI*2);
-      ctx.fillStyle = isFront ? "rgba(0,120,255,0.9)" : "rgba(255,0,0,0.9)";
+      ctx.fillStyle = side==="front" ? "rgba(0,120,255,0.90)" : "rgba(255,0,0,0.90)";
       ctx.fill();
 
-      // stroke white
       ctx.lineWidth=Math.max(2,Math.round(r*0.18));
       ctx.strokeStyle="rgba(255,255,255,0.95)";
       ctx.stroke();
 
-      // number
       ctx.fillStyle="#fff";
       ctx.fillText(String(k), x, y);
     }
-    return canvas;
+    return c;
   }
 
-  function canvasToJpegDataURL(canvas, quality){
-    return canvas.toDataURL("image/jpeg", quality || 0.92);
-  }
-
-  function wrapText(doc, text, x, y, maxWidth, lineHeight){
-    const words = (text||"").split(/\s+/);
-    let line="";
-    for(let i=0;i<words.length;i++){
-      const test = line ? (line+" "+words[i]) : words[i];
-      const w = doc.getTextWidth(test);
-      if(w > maxWidth && line){
-        doc.text(line, x, y);
-        y += lineHeight;
-        line = words[i];
-      }else{
-        line = test;
+  function wrapTextCanvas(ctx, text, x, y, maxWidth, lineHeight){
+    const paragraphs = String(text||"").split("\n");
+    for(let p=0;p<paragraphs.length;p++){
+      const words = paragraphs[p].split(/\s+/);
+      let line="";
+      for(let i=0;i<words.length;i++){
+        const test = line ? (line+" "+words[i]) : words[i];
+        if(ctx.measureText(test).width > maxWidth && line){
+          ctx.fillText(line, x, y);
+          y += lineHeight;
+          line = words[i];
+        }else{
+          line = test;
+        }
       }
+      if(line){ ctx.fillText(line, x, y); y += lineHeight; }
+      y += Math.round(lineHeight*0.35);
     }
-    if(line){ doc.text(line, x, y); y += lineHeight; }
     return y;
   }
 
-  async function makePdf(){
+  function makeA4PageCanvas(title, imgCanvas, reportText){
+    const page=document.createElement("canvas");
+    page.width=1240; page.height=1754;
+    const ctx=page.getContext("2d");
+
+    ctx.fillStyle="#fff";
+    ctx.fillRect(0,0,page.width,page.height);
+
+    ctx.fillStyle="#111";
+    ctx.font="bold 34px Arial";
+    ctx.fillText(title, 60, 70);
+
+    const imgX=160, imgY=110, imgW=920, imgH=920;
+    ctx.drawImage(imgCanvas, imgX, imgY, imgW, imgH);
+
+    ctx.font="22px Arial";
+    let y=imgY+imgH+60;
+    wrapTextCanvas(ctx, reportText, 60, y, page.width-120, 28);
+
+    return page;
+  }
+      async function makePDF(){
     const v=validateRequired();
     if(!v.ok){
-      toast("Не заполнены обязательные поля:\n- " + v.missing.join("\n- "), 3400);
+      toast("Не заполнены обязательные поля:\n- " + v.missing.join("\n- "), 3200);
       return;
     }
     if(pdfBusy) return;
+
     pdfBusy=true;
     btnMakePDF.disabled=true;
 
     try{
-      const dt=(dtEl.value||"").trim();
-      const call=(callEl.value||"").trim();
-      const comment=(commentEl.value||"").trim();
+      toast("Готовлю PDF...");
 
-      // file name
-      const fname = `${dtToFileStamp(dt)}_${firstTwoLetters(call)}.pdf`;
+      const baseFront = await loadImage("body_front.png");
+      const baseBack  = await loadImage("body_back.png");
 
-      // build canvases
-      const [imgF,imgB] = await Promise.all([loadImage("body_front.png"), loadImage("body_back.png")]);
-      const cF=document.createElement("canvas");
-      const cB=document.createElement("canvas");
-      drawPinsOnCanvas(cF,imgF,"front");
-      drawPinsOnCanvas(cB,imgB,"back");
+      const frontPins = drawImageWithPins(baseFront, "front");
+      const backPins  = drawImageWithPins(baseBack, "back");
 
-      const jpgF = canvasToJpegDataURL(cF,0.92);
-      const jpgB = canvasToJpegDataURL(cB,0.92);
+      const reportText = buildTextReport(); // русский текст будет нарисован на canvas
 
-      // jsPDF
+      const page1 = makeA4PageCanvas("КАРТА РАНЕНИЙ — ПЕРЕД", frontPins, reportText);
+      const page2 = makeA4PageCanvas("КАРТА РАНЕНИЙ — СПИНА", backPins, reportText);
+
       const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({ orientation:"p", unit:"mm", format:"a4" });
+      const doc = new jsPDF({orientation:"p", unit:"mm", format:"a4"});
 
-      // NOTE: парольная защита в jsPDF через standard security НЕ всегда поддерживается браузерами одинаково.
-      // Но мы делаем: если доступно encrypt(), применим. Если нет — просто сохраняем (главное, чтобы работало автономно).
-      function tryEncrypt(){
-        try{
-          // некоторые сборки jsPDF поддерживают:
-          // doc.encrypt({ userPassword: call, ownerPassword: call, userPermissions: ["print"] });
-          if(typeof doc.encrypt === "function"){
-            doc.encrypt({
-              userPassword: call,
-              ownerPassword: call,
-              userPermissions: ["print","copy"]
-            });
-          }
-        }catch(_){}
-      }
+      const img1 = page1.toDataURL("image/jpeg", 0.92);
+      doc.addImage(img1, "JPEG", 0, 0, 210, 297);
 
-      // ===== Page 1: ПЕРЕД =====
-      doc.setFont("helvetica","bold");
-      doc.setFontSize(16);
-      doc.text("МЕД ОТЧЁТ", 105, 14, {align:"center"});
-
-      doc.setFont("helvetica","normal");
-      doc.setFontSize(11);
-      doc.text(`Дата/время: ${dt}`, 14, 22);
-      doc.text(`Позывной: ${call}`, 14, 28);
-
-      doc.setFont("helvetica","bold");
-      doc.text("ПЕРЕД (с выделением зон)", 14, 36);
-
-      // image fit
-      const imgW=180, imgH=180;
-      doc.addImage(jpgF, "JPEG", 15, 40, imgW, imgH);
-
-      // list
-      let y=225;
-      doc.setFont("helvetica","bold"); doc.text("Список зон:", 14, y); y+=6;
-      doc.setFont("helvetica","normal");
-
-      const selFront=loadSel("front").sort((a,b)=>parseInt(a,10)-parseInt(b,10));
-      const tf=loadTrauma("front");
-      const dictF=dictFor("front");
-      if(selFront.length===0){
-        doc.text("(нет)", 14, y); y+=6;
-      }else{
-        for(let i=0;i<selFront.length;i++){
-          const n=selFront[i];
-          const name=dictF[parseInt(n,10)] || "НЕИЗВЕСТНО";
-          const ts=traumaSummary(tf[n]||{});
-          const spl=!!(tf[n] && tf[n].splint);
-
-          let line = `${n} — ${name}`;
-          if(ts.length) line += `; травмы: ${ts.join(", ")}`;
-          if(spl) line += `; шина: да`;
-
-          y = wrapText(doc, line, 14, y, 182, 5);
-          if(y>285){ doc.addPage(); y=16; }
-        }
-      }
-
-      // ===== Page 2: СПИНА =====
       doc.addPage();
-      doc.setFont("helvetica","bold");
-      doc.setFontSize(16);
-      doc.text("МЕД ОТЧЁТ", 105, 14, {align:"center"});
-      doc.setFont("helvetica","normal");
-      doc.setFontSize(11);
-      doc.text(`Дата/время: ${dt}`, 14, 22);
-      doc.text(`Позывной: ${call}`, 14, 28);
+      const img2 = page2.toDataURL("image/jpeg", 0.92);
+      doc.addImage(img2, "JPEG", 0, 0, 210, 297);
 
-      doc.setFont("helvetica","bold");
-      doc.text("СПИНА (с выделением зон)", 14, 36);
-      doc.addImage(jpgB, "JPEG", 15, 40, imgW, imgH);
-
-      y=225;
-      doc.setFont("helvetica","bold"); doc.text("Список зон:", 14, y); y+=6;
-      doc.setFont("helvetica","normal");
-      const selBack=loadSel("back").sort((a,b)=>parseInt(a,10)-parseInt(b,10));
-      const tb=loadTrauma("back");
-      const dictB=dictFor("back");
-      if(selBack.length===0){
-        doc.text("(нет)", 14, y); y+=6;
-      }else{
-        for(let i=0;i<selBack.length;i++){
-          const n=selBack[i];
-          const name=dictB[parseInt(n,10)] || "НЕИЗВЕСТНО";
-          const ts=traumaSummary(tb[n]||{});
-          const spl=!!(tb[n] && tb[n].splint);
-
-          let line = `${n} — ${name}`;
-          if(ts.length) line += `; травмы: ${ts.join(", ")}`;
-          if(spl) line += `; шина: да`;
-
-          y = wrapText(doc, line, 14, y, 182, 5);
-          if(y>285){ doc.addPage(); y=16; }
-        }
-      }
-
-      // ===== Page 3: Комментарий =====
-      doc.addPage();
-      doc.setFont("helvetica","bold");
-      doc.setFontSize(16);
-      doc.text("КОММЕНТАРИЙ", 105, 16, {align:"center"});
-      doc.setFont("helvetica","normal");
-      doc.setFontSize(11);
-      let yy=28;
-      yy = wrapText(doc, `Дата/время: ${dt}`, 14, yy, 182, 6);
-      yy = wrapText(doc, `Позывной: ${call}`, 14, yy, 182, 6);
-      yy += 4;
-      doc.setFont("helvetica","bold");
-      doc.text("Текст:", 14, yy); yy+=6;
-      doc.setFont("helvetica","normal");
-      wrapText(doc, comment || "-", 14, yy, 182, 6);
-
-      // encrypt (если доступно)
-      tryEncrypt();
-
-      doc.save(fname);
-
-      toast("✅ PDF сохранён. Теперь отправь его в Telegram вручную.", 3400);
+      doc.save(mkFileName());
+      toast("✅ PDF создан");
     }catch(err){
-      setTopBad("PDF ОШИБКА:\n"+(err && err.message ? err.message : String(err)));
-      toast("Не получилось сделать PDF. Смотри верхнюю красную строку.", 3600);
+      console.error(err);
+      setTopBad("PDF ОШИБКА:\n" + (err && err.message ? err.message : String(err)));
+      toast("Ошибка PDF (см. верхнюю строку)", 4000);
     }finally{
       pdfBusy=false;
       btnMakePDF.disabled=false;
     }
   }
 
-  // ===== старт =====
-  btnFront.addEventListener("pointerdown",(e)=>{ e.preventDefault(); setView("front"); });
-  btnBack.addEventListener("pointerdown",(e)=>{ e.preventDefault(); setView("back"); });
-  $("btnAddZone").addEventListener("pointerdown",(e)=>{ e.preventDefault(); addZoneFromInput(); });
-  btnMakePDF.addEventListener("pointerdown",(e)=>{ e.preventDefault(); makePdf(); });
+  // кнопка PDF
+  btnMakePDF.addEventListener("pointerdown",(e)=>{
+    e.preventDefault();
+    makePDF();
+  });
 
-  // init dt default now
+  // init dt
   (function initDT(){
     try{
       const d=new Date();
@@ -898,7 +952,7 @@ ${comment || "-"}`
     }catch(_){}
   })();
 
-  // init view
+  // старт
   setView("front");
   finalEl.textContent=buildTextReport();
   top.textContent="JS: OK (карта готова)";
@@ -906,4 +960,5 @@ ${comment || "-"}`
 </script>
 
 </body>
-</html>
+    </html>
+      
