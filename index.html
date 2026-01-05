@@ -3,10 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Мед-карта</title>
-
-  <!-- jsPDF -->
-  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <title>Мед-карта (стабильная)</title>
 
   <style>
     body{ margin:0; font-family: Arial, sans-serif; background:#fff; color:#111; }
@@ -15,10 +12,13 @@
     .topStatus{
       padding:10px 12px;
       font-size:14px;
-      background:#dff7df;
-      border-bottom:1px solid #a9d9a9;
+      background:#fff7cc;
+      border-bottom:1px solid #e7d48a;
       color:#333;
+      white-space:pre-wrap;
     }
+    .topStatus.ok{ background:#dff7df; border-bottom:1px solid #a9d9a9; }
+    .topStatus.bad{ background:#ffe1e1; border-bottom:1px solid #f0a6a6; color:#8a1f1f; }
 
     .tabs{ display:flex; }
     .tab{
@@ -119,7 +119,6 @@
       border-radius:10px; padding:6px 10px; font-size:13px; min-width:88px;
       touch-action: manipulation;
     }
-    .miniBtn:active{ opacity:.85; }
 
     .out{
       white-space:pre-wrap;
@@ -128,42 +127,12 @@
       padding:10px; border:1px solid #ddd; border-radius:10px;
       background:#fff; margin-top:10px;
     }
-
-    .statusLine{
-      margin-top:10px;
-      font-size:13px;
-      color:#0b6623;
-      font-weight:700;
-      display:none;
-      white-space:pre-wrap;
-    }
-
-    .bar{
-      display:flex;
-      gap:10px;
-      padding:10px 12px;
-      border-top:1px solid #ddd;
-      background:#fafafa;
-      position:sticky;
-      bottom:0;
-    }
-    .bar button{
-      width:100%;
-      padding:14px;
-      font-size:16px;
-      border:none;
-      border-radius:10px;
-      color:#fff;
-      background:#0b6623;
-      touch-action: manipulation;
-    }
-    .bar button:active{ opacity:.85; }
   </style>
 </head>
 
 <body>
   <div class="title">КАРТА РАНЕНИЙ</div>
-  <div class="topStatus">JS: OK — карта работает</div>
+  <div id="topStatus" class="topStatus">JS: загрузка…</div>
 
   <div class="tabs">
     <button class="tab" id="btnFront" type="button">ПЕРЕД</button>
@@ -182,7 +151,7 @@
         <input id="dt" type="datetime-local"/>
       </div>
       <div class="col">
-        <label>Позывной (обязательно, он же пароль PDF)</label>
+        <label>Позывной (обязательно)</label>
         <input id="call" placeholder="например: БАРС-12"/>
       </div>
     </div>
@@ -211,276 +180,241 @@
     <button class="btn2" id="btnCopy" type="button">КОПИРОВАТЬ ТЕКСТ</button>
 
     <div class="out" id="finalMsg"></div>
-    <div class="statusLine" id="statusLine"></div>
-  </div>
-
-  <div class="bar">
-    <button id="btnMakePDF" type="button">СДЕЛАТЬ PDF (С ПАРОЛЕМ)</button>
   </div>
 
 <script>
 (function(){
+  const top = document.getElementById("topStatus");
+  function setTopOK(msg){ top.className="topStatus ok"; top.textContent=msg; }
+  function setTopBad(msg){ top.className="topStatus bad"; top.textContent=msg; }
+
+  // Ловим любые ошибки и показываем
+  window.addEventListener("error", (e)=>{
+    setTopBad("JS ОШИБКА:\n" + (e.message || e.type || "unknown") + "\n" + (e.filename||"") + ":" + (e.lineno||""));
+  });
+  window.addEventListener("unhandledrejection", (e)=>{
+    setTopBad("JS PROMISE ОШИБКА:\n" + (e.reason && (e.reason.message || e.reason) || "unknown"));
+  });
+
   const $ = (id)=>document.getElementById(id);
-  const statusLine = $("statusLine");
-  function setStatus(msg){ statusLine.style.display="block"; statusLine.textContent = msg; }
-  function clearStatus(){ statusLine.style.display="none"; statusLine.textContent=""; }
 
-  // ===== словари зон =====
-  const BACK = {
-    1:"Подошва",2:"Тыльная область стопы",3:"Передняя область голени",4:"Задняя область голени",
-    5:"Задняя область колена",6:"Заднепроходная область",7:"Задняя область бедра",8:"Крестцовая область",
-    9:"Ягодичная область",10:"Боковая область живота",11:"Поясничная область",12:"Позвоночная область",
-    13:"Подлопаточная область",14:"Задняя локтевая область",15:"Задняя область плеча",16:"Задняя область предплечья",
-    17:"Передняя область плеча",18:"Тыл кисти",19:"Надлопаточная область",20:"Задняя область шеи",
-    21:"Затылочная область",22:"Скуловая область",23:"Теменная область",24:"Височная область",
-    25:"Лобная область",26:"Глазница",27:"Щёчная область",28:"Поднижнечелюстной треугольник",
-    29:"Грудино-ключично-сосцевидная область",30:"Акромиальная область",31:"Межлопаточная область",
-    32:"Дельтовидная область",33:"Лопаточная область",34:"Задняя область плеча",35:"Латеральная область груди",
-    36:"Задняя локтевая область",37:"Задняя область предплечья",38:"Передняя область предплечья",
-    39:"Кисть, ладонь",40:"Подрёберная область",41:"Пяточная область"
-  };
-  const FRONT = {
-    1:"Пупочная область",2:"Подчревная (лобковая) область",3:"Передняя область предплечья",4:"Тыл кисти",
-    5:"Предплечье",6:"Задняя область предплечья",7:"Задняя локтевая область",8:"Передняя область плеча",
-    9:"Грудная область",10:"Дельтовидная область",11:"Ключично-грудной треугольник",
-    12:"Грудино-ключично-сосцевидная область",13:"Область рта",14:"Область носа",
-    15:"Височная область",16:"Глазница",17:"Лобная область",18:"Теменная область",
-    19:"Передняя область шеи",20:"Подбородочная область",21:"Латеральная область шеи",22:"Область ключицы",
-    23:"Подключичная ямка",24:"Ладонь",25:"Передняя локтевая область",26:"Задняя область плеча",
-    27:"Подмышечная область",28:"Грудная область",29:"Подрёберная область",30:"Надчревная область",
-    31:"Боковая область живота",32:"Паховая область",33:"Бедренный треугольник",34:"Передняя область бедра",
-    35:"Передняя область колена",36:"Задняя область голени",37:"Передняя область голени",
-    38:"Передняя голеностопная область",39:"Пяточная область",40:"Тыльная область стопы"
-  };
+  setTopOK("JS: OK (эта версия должна быть кликабельной)");
 
-  // ===== storage keys (НЕ меняем — твои точки остаются) =====
-  const POINTS_KEY = "medmap_points_v2";
-  const SEL_FRONT  = "medmap_sel_front_v2";
-  const SEL_BACK   = "medmap_sel_back_v2";
-  const TRAUMA_FRONT = "medmap_trauma_front_v1";
-  const TRAUMA_BACK  = "medmap_trauma_back_v1";
+  // ===== зоны =====
+  const BACK = {1:"Подошва",2:"Тыльная область стопы",3:"Передняя область голени",4:"Задняя область голени",5:"Задняя область колена",6:"Заднепроходная область",7:"Задняя область бедра",8:"Крестцовая область",9:"Ягодичная область",10:"Боковая область живота",11:"Поясничная область",12:"Позвоночная область",13:"Подлопаточная область",14:"Задняя локтевая область",15:"Задняя область плеча",16:"Задняя область предплечья",17:"Передняя область плеча",18:"Тыл кисти",19:"Надлопаточная область",20:"Задняя область шеи",21:"Затылочная область",22:"Скуловая область",23:"Теменная область",24:"Височная область",25:"Лобная область",26:"Глазница",27:"Щёчная область",28:"Поднижнечелюстной треугольник",29:"Грудино-ключично-сосцевидная область",30:"Акромиальная область",31:"Межлопаточная область",32:"Дельтовидная область",33:"Лопаточная область",34:"Задняя область плеча",35:"Латеральная область груди",36:"Задняя локтевая область",37:"Задняя область предплечья",38:"Передняя область предплечья",39:"Кисть, ладонь",40:"Подрёберная область",41:"Пяточная область"};
+  const FRONT = {1:"Пупочная область",2:"Подчревная (лобковая) область",3:"Передняя область предплечья",4:"Тыл кисти",5:"Предплечье",6:"Задняя область предплечья",7:"Задняя локтевая область",8:"Передняя область плеча",9:"Грудная область",10:"Дельтовидная область",11:"Ключично-грудной треугольник",12:"Грудино-ключично-сосцевидная область",13:"Область рта",14:"Область носа",15:"Височная область",16:"Глазница",17:"Лобная область",18:"Теменная область",19:"Передняя область шеи",20:"Подбородочная область",21:"Латеральная область шеи",22:"Область ключицы",23:"Подключичная ямка",24:"Ладонь",25:"Передняя локтевая область",26:"Задняя область плеча",27:"Подмышечная область",28:"Грудная область",29:"Подрёберная область",30:"Надчревная область",31:"Боковая область живота",32:"Паховая область",33:"Бедренный треугольник",34:"Передняя область бедра",35:"Передняя область колена",36:"Задняя область голени",37:"Передняя область голени",38:"Передняя голеностопная область",39:"Пяточная область",40:"Тыльная область стопы"};
+
+  // ===== storage keys (НЕ меняем) =====
+  const POINTS_KEY="medmap_points_v2";
+  const SEL_FRONT="medmap_sel_front_v2";
+  const SEL_BACK="medmap_sel_back_v2";
+  const TRAUMA_FRONT="medmap_trauma_front_v1";
+  const TRAUMA_BACK="medmap_trauma_back_v1";
 
   function loadJSON(key, fallback){
-    try{ const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; }
-    catch{ return fallback; }
+    try{ const raw=localStorage.getItem(key); return raw?JSON.parse(raw):fallback; }catch(_){ return fallback; }
   }
-  function saveJSON(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+  function saveJSON(key,val){ localStorage.setItem(key, JSON.stringify(val)); }
 
   function loadPoints(){
-    const p = loadJSON(POINTS_KEY, {front:{}, back:{}});
-    if(!p.front) p.front = {};
-    if(!p.back) p.back = {};
+    const p=loadJSON(POINTS_KEY,{front:{},back:{}});
+    if(!p.front) p.front={};
+    if(!p.back) p.back={};
     return p;
   }
   function loadSel(side){
-    const key = side==="front" ? SEL_FRONT : SEL_BACK;
-    const arr = loadJSON(key, []);
-    return Array.isArray(arr) ? arr.map(String) : [];
+    const key = side==="front"?SEL_FRONT:SEL_BACK;
+    const arr=loadJSON(key,[]);
+    return Array.isArray(arr)?arr.map(String):[];
   }
-  function saveSel(side, arr){
-    const key = side==="front" ? SEL_FRONT : SEL_BACK;
-    saveJSON(key, arr);
+  function saveSel(side,arr){
+    const key = side==="front"?SEL_FRONT:SEL_BACK;
+    saveJSON(key,arr);
   }
   function loadTrauma(side){
-    const key = side==="front" ? TRAUMA_FRONT : TRAUMA_BACK;
-    const obj = loadJSON(key, {});
-    return (obj && typeof obj==="object") ? obj : {};
+    const key = side==="front"?TRAUMA_FRONT:TRAUMA_BACK;
+    const obj=loadJSON(key,{});
+    return (obj && typeof obj==="object")?obj:{};
   }
-  function saveTrauma(side, obj){
-    const key = side==="front" ? TRAUMA_FRONT : TRAUMA_BACK;
-    saveJSON(key, obj);
+  function saveTrauma(side,obj){
+    const key = side==="front"?TRAUMA_FRONT:TRAUMA_BACK;
+    saveJSON(key,obj);
   }
-
-  function dictFor(side){ return side==="front" ? FRONT : BACK; }
+  function dictFor(side){ return side==="front"?FRONT:BACK; }
   function uniqNums(arr){
-    const seen=new Set(), out=[];
-    for(const x of arr){
-      const n=parseInt(x,10);
-      if(Number.isFinite(n) && !seen.has(n)){ seen.add(n); out.push(String(n)); }
+    const seen={}, out=[];
+    for(let i=0;i<arr.length;i++){
+      const n=parseInt(arr[i],10);
+      if(isFinite(n) && !seen[n]){ seen[n]=1; out.push(String(n)); }
     }
     return out;
   }
 
-  // ===== DOM =====
-  const bodyImage = $("bodyImage");
-  const pinsLayer = $("pinsLayer");
-  const btnFront = $("btnFront");
-  const btnBack = $("btnBack");
-  const zoneNumEl = $("zoneNum");
-  const zonesUI = $("zonesUI");
-  const finalEl = $("finalMsg");
-  const dtEl = $("dt");
-  const callEl = $("call");
-  const commentEl = $("comment");
-  let view = "front";
+  // ===== DOM/state =====
+  const bodyImage=$("bodyImage");
+  const pinsLayer=$("pinsLayer");
+  const btnFront=$("btnFront");
+  const btnBack=$("btnBack");
+  const zoneNumEl=$("zoneNum");
+  const zonesUI=$("zonesUI");
+  const finalEl=$("finalMsg");
+  const dtEl=$("dt");
+  const callEl=$("call");
+  const commentEl=$("comment");
 
-  // ===== обязательные поля =====
-  function markReq(el, ok){ ok ? el.classList.remove("reqBad") : el.classList.add("reqBad"); }
+  let view="front";
+
+  // required
+  function markReq(el, ok){ if(ok) el.classList.remove("reqBad"); else el.classList.add("reqBad"); }
   function validateRequired(){
-    const dt = (dtEl.value||"").trim();
-    const call = (callEl.value||"").trim();
-    const comment = (commentEl.value||"").trim();
-
-    const okDt = !!dt, okCall = !!call, okComment = !!comment;
-    markReq(dtEl, okDt);
-    markReq(callEl, okCall);
-    markReq(commentEl, okComment);
-
-    const missing=[];
-    if(!okDt) missing.push("Дата/время");
-    if(!okCall) missing.push("Позывной");
-    if(!okComment) missing.push("Комментарий");
-    return { ok: okDt && okCall && okComment, missing };
+    const dt=(dtEl.value||"").trim();
+    const call=(callEl.value||"").trim();
+    const comment=(commentEl.value||"").trim();
+    const okDt=!!dt, okCall=!!call, okComment=!!comment;
+    markReq(dtEl,okDt); markReq(callEl,okCall); markReq(commentEl,okComment);
+    const miss=[];
+    if(!okDt) miss.push("Дата/время");
+    if(!okCall) miss.push("Позывной");
+    if(!okComment) miss.push("Комментарий");
+    return {ok: okDt&&okCall&&okComment, missing: miss};
   }
 
-  // ===== логика чекбоксов =====
-  const TRAUMAS = [
-    { key:"bullet",   label:"Пулевое" },
-    { key:"shrapnel", label:"Осколочное" },
-    { key:"mvt",      label:"МВТ" },
-    { key:"burn",     label:"Ожог" },
-    { key:"fracture", label:"Перелом" },
-  ];
+  // травмы
+  const TRAUMAS=[{key:"bullet",label:"Пулевое"},{key:"shrapnel",label:"Осколочное"},{key:"mvt",label:"МВТ"},{key:"burn",label:"Ожог"},{key:"fracture",label:"Перелом"}];
 
   function zoneClassByName(name){
-    const s = (name||"").toLowerCase();
-    const head = ["лоб","височ","теменн","затыл","скул","глазниц","щёч","нос","рот","подбород"];
-    if(head.some(k=>s.includes(k))) return "head";
-    if(s.includes("шеи") || s.includes("грудино-ключично-сосцевид") || s.includes("поднижнечелюст")) return "neck";
-    const upper = ["плеч","предплеч","локт","кист","ладон","дельтов","акроми","подмыш"];
-    if(upper.some(k=>s.includes(k))) return "limb_upper";
-    const lower = ["бедр","колен","голен","стоп","пят","подошв","голеностоп"];
-    if(lower.some(k=>s.includes(k))) return "limb_lower";
+    const s=(name||"").toLowerCase();
+    const head=["лоб","височ","теменн","затыл","скул","глазниц","щёч","нос","рот","подбород"];
+    for(let i=0;i<head.length;i++) if(s.indexOf(head[i])!==-1) return "head";
+    if(s.indexOf("шеи")!==-1 || s.indexOf("грудино-ключично-сосцевид")!==-1 || s.indexOf("поднижнечелюст")!==-1) return "neck";
+    const upper=["плеч","предплеч","локт","кист","ладон","дельтов","акроми","подмыш"];
+    for(let i=0;i<upper.length;i++) if(s.indexOf(upper[i])!==-1) return "limb_upper";
+    const lower=["бедр","колен","голен","стоп","пят","подошв","голеностоп"];
+    for(let i=0;i<lower.length;i++) if(s.indexOf(lower[i])!==-1) return "limb_lower";
     return "trunk";
   }
   function allowedForClass(cls){
-    if(cls==="limb_upper" || cls==="limb_lower"){
-      return { bullet:true, shrapnel:true, mvt:true, burn:true, fracture:true, splint:true };
-    }
-    if(cls==="head" || cls==="neck"){
-      return { bullet:true, shrapnel:true, mvt:true, burn:true, fracture:false, splint:false };
-    }
-    return { bullet:true, shrapnel:true, mvt:true, burn:true, fracture:false, splint:false };
+    if(cls==="limb_upper" || cls==="limb_lower") return {bullet:1,shrapnel:1,mvt:1,burn:1,fracture:1,splint:1};
+    if(cls==="head" || cls==="neck") return {bullet:1,shrapnel:1,mvt:1,burn:1,fracture:0,splint:0};
+    return {bullet:1,shrapnel:1,mvt:1,burn:1,fracture:0,splint:0};
   }
   function traumaSummary(obj){
-    const out = [];
-    if(obj?.bullet) out.push("пулевое");
-    if(obj?.shrapnel) out.push("осколочное");
-    if(obj?.mvt) out.push("МВТ");
-    if(obj?.burn) out.push("ожог");
-    if(obj?.fracture) out.push("перелом");
+    const out=[];
+    if(obj && obj.bullet) out.push("пулевое");
+    if(obj && obj.shrapnel) out.push("осколочное");
+    if(obj && obj.mvt) out.push("МВТ");
+    if(obj && obj.burn) out.push("ожог");
+    if(obj && obj.fracture) out.push("перелом");
     return out;
   }
 
-  // ===== метки =====
+  // pins
   function clearPins(){ pinsLayer.innerHTML=""; }
-
-  function addPin(num, x, y, selected){
-    const pin = document.createElement("div");
-    pin.className = "pin " + (view==="front" ? "front" : "back") + (selected ? " selected" : "");
-    pin.style.left = x + "%";
-    pin.style.top  = y + "%";
-    pin.textContent = String(num);
-
-    // ВАЖНО: pointerdown (планшеты/встроенные браузеры)
-    pin.addEventListener("pointerdown", (e)=>{
-      e.preventDefault();
-      e.stopPropagation();
+  function addPin(num,x,y,selected){
+    const pin=document.createElement("div");
+    pin.className="pin " + (view==="front"?"front":"back") + (selected?" selected":"");
+    pin.style.left=x+"%";
+    pin.style.top=y+"%";
+    pin.textContent=String(num);
+    pin.addEventListener("pointerdown",(e)=>{
+      e.preventDefault(); e.stopPropagation();
       toggleZone(num);
     });
-
     pinsLayer.appendChild(pin);
   }
-
   function renderPins(){
-    const points = loadPoints();
-    const map = view==="front" ? points.front : points.back;
-    const sel = new Set(loadSel(view));
+    const points=loadPoints();
+    const map=view==="front"?points.front:points.back;
+    const selSet={};
+    const sel=loadSel(view);
+    for(let i=0;i<sel.length;i++) selSet[sel[i]]=1;
+
     clearPins();
 
-    for(const k of Array.from(sel)){
+    for(let i=0;i<sel.length;i++){
+      const k=sel[i];
       if(map[k]) addPin(k, map[k].x, map[k].y, true);
     }
-    for(const k of Object.keys(map)){
-      if(!sel.has(k)) addPin(k, map[k].x, map[k].y, false);
+    const keys=Object.keys(map);
+    for(let i=0;i<keys.length;i++){
+      const k=keys[i];
+      if(!selSet[k]) addPin(k, map[k].x, map[k].y, false);
     }
   }
 
   function toggleZone(num){
-    const n = String(parseInt(num,10));
-    let sel = loadSel(view);
-    const idx = sel.indexOf(n);
-    if(idx>=0) sel.splice(idx,1);
-    else sel.push(n);
-    sel = uniqNums(sel);
-    saveSel(view, sel);
+    const n=String(parseInt(num,10));
+    let sel=loadSel(view);
+    let idx=-1;
+    for(let i=0;i<sel.length;i++){ if(sel[i]===n){ idx=i; break; } }
+    if(idx>=0) sel.splice(idx,1); else sel.push(n);
+    sel=uniqNums(sel);
+    saveSel(view,sel);
     renderAll();
   }
 
-  function setTrauma(num, key, val){
-    const n = String(parseInt(num,10));
-    const t = loadTrauma(view);
-    if(!t[n]) t[n] = {};
-    t[n][key] = !!val;
-    saveTrauma(view, t);
+  function setTrauma(num,key,val){
+    const n=String(parseInt(num,10));
+    const t=loadTrauma(view);
+    if(!t[n]) t[n]={};
+    t[n][key]=!!val;
+    saveTrauma(view,t);
     renderAll(false);
   }
 
   function renderZonesUI(){
-    const sel = loadSel(view).sort((a,b)=>parseInt(a,10)-parseInt(b,10));
-    const trauma = loadTrauma(view);
-    const dict = dictFor(view);
+    const sel=loadSel(view).sort((a,b)=>parseInt(a,10)-parseInt(b,10));
+    const trauma=loadTrauma(view);
+    const dict=dictFor(view);
 
-    zonesUI.innerHTML = "";
-
+    zonesUI.innerHTML="";
     if(sel.length===0){
-      const empty = document.createElement("div");
+      const empty=document.createElement("div");
       empty.className="hint";
       empty.textContent="Зоны не выбраны. Тапни по меткам или введи номер.";
       zonesUI.appendChild(empty);
       return;
     }
 
-    for(const num of sel){
-      const name = dict[parseInt(num,10)] || "НЕИЗВЕСТНО";
-      const cls = zoneClassByName(name);
-      const allow = allowedForClass(cls);
-      const cur = trauma[num] || {};
+    for(let i=0;i<sel.length;i++){
+      const num=sel[i];
+      const name=dict[parseInt(num,10)] || "НЕИЗВЕСТНО";
+      const cls=zoneClassByName(name);
+      const allow=allowedForClass(cls);
+      const cur=trauma[num] || {};
 
-      const card = document.createElement("div");
+      const card=document.createElement("div");
       card.className="zoneCard";
 
-      const head = document.createElement("div");
+      const head=document.createElement("div");
       head.className="zoneHead";
-      head.innerHTML = `<div>[${num}] ${name}<div class="zoneSub">Сторона: ${view==="front"?"ПЕРЕД":"СПИНА"}</div></div>`;
+      head.innerHTML=`<div>[${num}] ${name}<div class="zoneSub">Сторона: ${view==="front"?"ПЕРЕД":"СПИНА"}</div></div>`;
 
-      const delBtn = document.createElement("button");
+      const delBtn=document.createElement("button");
       delBtn.className="miniBtn";
       delBtn.type="button";
       delBtn.textContent="Убрать";
-      delBtn.addEventListener("pointerdown",(e)=>{
-        e.preventDefault();
-        toggleZone(num);
-      });
+      delBtn.addEventListener("pointerdown",(e)=>{ e.preventDefault(); toggleZone(num); });
       head.appendChild(delBtn);
       card.appendChild(head);
 
-      const grid = document.createElement("div");
+      const grid=document.createElement("div");
       grid.className="grid";
 
-      for(const tr of TRAUMAS){
+      for(let j=0;j<TRAUMAS.length;j++){
+        const tr=TRAUMAS[j];
         if(!allow[tr.key]) continue;
 
-        const wrap = document.createElement("label");
+        const wrap=document.createElement("label");
         wrap.className="chk";
 
-        const inp = document.createElement("input");
+        const inp=document.createElement("input");
         inp.type="checkbox";
-        inp.checked = !!cur[tr.key];
-        inp.addEventListener("change", ()=> setTrauma(num, tr.key, inp.checked));
+        inp.checked=!!cur[tr.key];
+        inp.addEventListener("change", ()=> setTrauma(num,tr.key,inp.checked));
 
-        const span = document.createElement("span");
-        span.textContent = tr.label;
+        const span=document.createElement("span");
+        span.textContent=tr.label;
 
         wrap.appendChild(inp);
         wrap.appendChild(span);
@@ -488,17 +422,14 @@
       }
 
       if(allow.splint){
-        const wrap = document.createElement("label");
+        const wrap=document.createElement("label");
         wrap.className="chk";
-
-        const inp = document.createElement("input");
+        const inp=document.createElement("input");
         inp.type="checkbox";
-        inp.checked = !!cur.splint;
-        inp.addEventListener("change", ()=> setTrauma(num, "splint", inp.checked));
-
-        const span = document.createElement("span");
-        span.textContent = "Шина наложена";
-
+        inp.checked=!!cur.splint;
+        inp.addEventListener("change", ()=> setTrauma(num,"splint",inp.checked));
+        const span=document.createElement("span");
+        span.textContent="Шина наложена";
         wrap.appendChild(inp);
         wrap.appendChild(span);
         grid.appendChild(wrap);
@@ -510,24 +441,25 @@
   }
 
   function buildTextReport(){
-    const dt = (dtEl.value||"").trim();
-    const call = (callEl.value||"").trim();
-    const comment = (commentEl.value||"").trim();
+    const dt=(dtEl.value||"").trim();
+    const call=(callEl.value||"").trim();
+    const comment=(commentEl.value||"").trim();
 
-    const selFront = loadSel("front").sort((a,b)=>parseInt(a,10)-parseInt(b,10));
-    const selBack  = loadSel("back").sort((a,b)=>parseInt(a,10)-parseInt(b,10));
-    const tf = loadTrauma("front");
-    const tb = loadTrauma("back");
+    const selFront=loadSel("front").sort((a,b)=>parseInt(a,10)-parseInt(b,10));
+    const selBack=loadSel("back").sort((a,b)=>parseInt(a,10)-parseInt(b,10));
+    const tf=loadTrauma("front");
+    const tb=loadTrauma("back");
 
     function linesFor(side, sel, t){
-      const dict = dictFor(side);
+      const dict=dictFor(side);
       if(sel.length===0) return ["(нет)"];
       const out=[];
-      for(const num of sel){
-        const name = dict[parseInt(num,10)] || "НЕИЗВЕСТНО";
-        const ts = traumaSummary(t[num]||{});
-        const spl = !!(t[num]?.splint);
-        let line = `• ${num} — ${name}`;
+      for(let i=0;i<sel.length;i++){
+        const num=sel[i];
+        const name=dict[parseInt(num,10)] || "НЕИЗВЕСТНО";
+        const ts=traumaSummary(t[num]||{});
+        const spl=!!(t[num] && t[num].splint);
+        let line=`• ${num} — ${name}`;
         if(ts.length) line += `\n  Травмы: ${ts.join(", ")}`;
         if(spl) line += `\n  Шина: да`;
         out.push(line);
@@ -554,62 +486,61 @@ ${comment || "-"}`
   function renderAll(updateText=true){
     renderPins();
     renderZonesUI();
-    if(updateText) finalEl.textContent = buildTextReport();
+    if(updateText) finalEl.textContent=buildTextReport();
   }
 
   function setView(side){
-    view = side;
-    bodyImage.src = (view==="front") ? "body_front.png" : "body_back.png";
+    view=side;
+    bodyImage.src=(view==="front") ? "body_front.png" : "body_back.png";
     btnFront.classList.toggle("active", view==="front");
     btnBack.classList.toggle("active", view==="back");
     renderAll();
   }
 
   function addZoneFromInput(){
-    const raw = (zoneNumEl.value||"").trim();
-    const n = parseInt(raw,10);
-    if(!Number.isFinite(n)){ alert("Введи номер зоны"); return; }
-
-    const dict = dictFor(view);
+    const raw=(zoneNumEl.value||"").trim();
+    const n=parseInt(raw,10);
+    if(!isFinite(n)){ alert("Введи номер зоны"); return; }
+    const dict=dictFor(view);
     if(!dict[n]){
       alert(`Для стороны "${view==="front"?"ПЕРЕД":"СПИНА"}" нет зоны №${n}.`);
       return;
     }
-
     toggleZone(n);
     zoneNumEl.value="";
   }
 
-  // ===== PDF: делаем 2 страницы PNG -> PDF -> шифруем qpdf =====
-  function firstTwoChars(s){
-    if(!s) return "XX";
-    return Array.from(s).slice(0,2).join("");
-  }
-  function fmtBaseName(){
-    const dt = (dtEl.value||"").trim(); // YYYY-MM-DDTHH:MM
-    const call = (callEl.value||"").trim();
-    const parts = (dt || "0000-00-00T00:00").split("T");
-    const d = parts[0] || "0000-00-00";
-    const t = (parts[1] || "00:00").replace(":","");
-    const xx = firstTwoChars(call);
-    return `MED_${d}_${t}_${xx}`;
-  }
-  function downloadBlob(blob, filename){
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href=url; a.download=filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  }
-  async function loadImage(src){
-    return new Promise((resolve, reject)=>{
-      const img = new Image();
-      img.onload=()=>resolve(img);
-      img.onerror=reject;
-      img.src=src;
-    });
-  }
-  function sideColor(side){ return side==="front" ? "#0078ff" : "#ff0000"; }
-  function traumaLineFor(sid
+  // handlers
+  btnFront.addEventListener("pointerdown",(e)=>{ e.preventDefault(); setView("front"); });
+  btnBack .addEventListener("pointerdown",(e)=>{ e.preventDefault(); setView("back"); });
+
+  $("btnAddZone").addEventListener("pointerdown",(e)=>{ e.preventDefault(); addZoneFromInput(); });
+  zoneNumEl.addEventListener("keydown",(e)=>{ if(e.key==="Enter"){ e.preventDefault(); addZoneFromInput(); } });
+
+  $("btnRefresh").addEventListener("pointerdown",(e)=>{ e.preventDefault(); finalEl.textContent=buildTextReport(); });
+
+  $("btnCopy").addEventListener("pointerdown", async (e)=>{
+    e.preventDefault();
+    const v=validateRequired();
+    if(!v.ok){
+      alert("Не заполнены обязательные поля:\n- " + v.missing.join("\n- "));
+      return;
+    }
+    const text=buildTextReport();
+    finalEl.textContent=text;
+    try{ await navigator.clipboard.writeText(text); alert("Скопировано."); }
+    catch{ alert("Не смог скопировать. Можно выделить вручную."); }
+  });
+
+  [dtEl, callEl, commentEl].forEach(el=>{
+    el.addEventListener("input", ()=> el.classList.remove("reqBad"));
+    el.addEventListener("change", ()=> el.classList.remove("reqBad"));
+  });
+
+  // init
+  setView("front");
+  finalEl.textContent=buildTextReport();
+})();
+</script>
+</body>
+</html>
