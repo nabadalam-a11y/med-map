@@ -147,6 +147,17 @@
   </div>
 </header>
 
+  <div style="padding:10px;">
+  <button id="btnBackMap" style="
+    background:#fff;
+    border:1px solid #999;
+    border-radius:10px;
+    padding:10px 14px;
+    font-size:15px;
+  ">
+    ← К карте ранений
+  </button>
+  </div>
 <div class="wrap">
   <div class="panel">
     <div class="resHead">
@@ -607,6 +618,10 @@
     });
   });
 
+  document.getElementById("btnBackMap").addEventListener("pointerdown", (e)=>{
+  e.preventDefault();
+  window.location.href = "../index.html";
+});
   $("timerStop").addEventListener("pointerdown",(e)=>{
     e.preventDefault();
     stopTimer();
