@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+  <title>Тренажёр: Черепашья повязка (колено)</title>
+  <style>
+    :root{
+      --bg:#f4f6f8;
+      --card:#fff;
+      --line:#d9dee6;
+      --text:#111;
+      --muted:#556;
+      --green:#1b5e20;
+      --blue:#1976d2;
+      --amber:#f9a825;
+      --red:#b71c1c;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+    header{
+      position:sticky;top:0;z-index:20;
+      background:linear-gradient(0deg, rgba(0,0,0,.06), rgba(0,0,0,.06)), var(--green);
+      color:#fff;padding:12px 14px;
+    }
+    .t{font-weight:900;text-align:center;font-size:18px}
+    .sub{margin-top:6px;text-align:center;font-size:12px;opacity:.92;line-height:1.25}
+    .wrap{max-width:980px;margin:0 auto;padding:12px;display:grid;gap:12px}
+    @media (min-width: 920px){
+      .wrap{grid-template-columns: 1.25fr .75fr; align-items:start;}
+    }
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:18px;
+      box-shadow:0 2px 10px rgba(0,0,0,.06);
+      padding:12px;
+    }
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+    .pill{
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:999px;
+      padding:8px 12px;
+      font-size:12px;
+      font-weight:900;
+      white-space:nowrap;
+    }
+    .pill.good{border-color:rgba(27,94,32,.35);background:rgba(27,94,32,.10);color:#0f4f2b}
+    .pill.warn{border-color:rgba(249,168,37,.45);background:rgba(249,168,37,.14);color:#6a4b00}
+    .pill.bad{border-color:rgba(183,28,28,.35);background:rgba(183,28,28,.12);color:#7b1212}
+    .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    button{
+      border:none;border-radius:14px;padding:12px 14px;font-weight:900;font-size:15px;
+      cursor:pointer;touch-action:manipulation;
+    }
+    button:active{opacity:.86}
+    .bBlue{background:var(--blue);color:#fff}
+    .bGray{background:#515a63;color:#fff}
+    .bGreen{background:var(--green);color:#fff}
+    .bWhite{background:#fff;color:#111;border:1px solid var(--line)}
+    .hint{margin-top:10px;font-size:13px;color:var(--muted);line-height:1.25}
+    .stepTitle{font-size:16px;font-weight:900;margin:0}
+    .stepText{margin-top:6px;font-size:13px;color:var(--muted);line-height:1.25}
+    .list{margin:10px 0 0 18px;color:var(--muted);font-size:13px;line-height:1.25}
+    .list li{margin:6px 0}
+    .canvasWrap{
+      width:100%;
+      border-radius:18px;
+      overflow:hidden;
+      border:1px solid var(--line);
+      background:#fff;
+      touch-action:none; /* важно для рисования */
+    }
+    canvas{display:block;width:100%;height:auto}
+    .small{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.25}
+    .toast{
+      position:fixed;left:50%;bottom:16px;transform:translateX(-50%);
+      background:rgba(0,0,0,.85);color:#fff;padding:10px 12px;border-radius:12px;
+      font-size:14px;max-width:92%;display:none;z-index:9999;white-space:pre-wrap;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="t">ТРЕНАЖЁР: “ЧЕРЕПАШЬЯ” ПОВЯЗКА НА КОЛЕНО</div>
+  <div class="sub">Пальцем рисуй “бинт”. Попади в коридор — шаг засчитан. Оффлайн, без интернета.</div>
+</header>
+
+<div class="wrap">
+
+  <!-- Поле рисования -->
+  <div class="card">
+    <div class="row">
+      <div class="pill" id="stepPill">Шаг 1/5</div>
+      <div class="pill warn" id="statusPill">Нарисуй линию и нажми “Проверить”</div>
+    </div>
+
+    <div class="canvasWrap" style="margin-top:10px;">
+      <canvas id="cv" width="900" height="900"></canvas>
+    </div>
+
+    <div class="btns">
+      <button class="bWhite" id="btnToggleHint" type="button">ПОДСКАЗКА: ВКЛ</button>
+      <button class="bGray" id="btnClear" type="button">СТЕРЕТЬ</button>
+      <button class="bBlue" id="btnCheck" type="button">ПРОВЕРИТЬ</button>
+      <button class="bGreen" id="btnNext" type="button" disabled>ДАЛЬШЕ</button>
+    </div>
+
+    <div class="small">
+      Подсказка показывает “идеальный путь” полупрозрачной линией.  
+      Без подсказки — режим тренировки. Рисуй одним непрерывным движением, как будто ведёшь тур бинта.
+    </div>
+  </div>
+
+  <!-- Инструкция и контроль -->
+  <div class="card">
+    <h3 class="stepTitle" id="stepTitle">Шаг 1 — фиксирующий тур ниже колена</h3>
+    <div class="stepText" id="stepText">
+      Начни с 1–2 круговых туров ниже сустава (на голени), чтобы “зафиксировать” старт.
+    </div>
+
+    <div class="hint"><b>Цель черепашьей:</b> закрыть/удержать повязку на суставе, не сползая при движении.</div>
+
+    <div style="margin-top:10px;">
+      <b style="font-size:13px;">Что считаем правильным здесь</b>
+      <ul class="list" id="criteria">
+        <li>Тур проходит вокруг голени (ниже колена).</li>
+        <li>Форма близка к окружности/овалу.</li>
+        <li>Не “залезает” на сустав.</li>
+      </ul>
+    </div>
+
+    <div style="margin-top:10px;">
+      <b style="font-size:13px;">Контроль после повязки (реально в поле)</b>
+      <ul class="list">
+        <li>Не передавливает: пальцы тёплые, цвет нормальный.</li>
+        <li>Чувствительность сохранена (если проверяете).</li>
+        <li>Повязка держится и не сползает.</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  // ----------------------- Canvas setup -----------------------
+  const cv = document.getElementById("cv");
+  const ctx = cv.getContext("2d");
+  const toastEl = document.getElementById("toast");
+  const stepPill = document.getElementById("stepPill");
+  const statusPill = document.getElementById("statusPill");
+  const stepTitle = document.getElementById("stepTitle");
+  const stepText = document.getElementById("stepText");
+  const criteria = document.getElementById("criteria");
+
+  const btnToggleHint = document.getElementById("btnToggleHint");
+  const btnClear = document.getElementById("btnClear");
+  const btnCheck = document.getElementById("btnCheck");
+  const btnNext = document.getElementById("btnNext");
+
+  function toast(msg, ms=2000){
+    toastEl.textContent = msg;
+    toastEl.style.display = "block";
+    clearTimeout(toastEl._t);
+    toastEl._t = setTimeout(()=>toastEl.style.display="none", ms);
+  }
+
+  // HiDPI crisp
+  function fitCanvas(){
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    const rect = cv.getBoundingClientRect();
+    const w = Math.round(rect.width * dpr);
+    const h = Math.round(rect.height * dpr);
+    if(cv.width !== w || cv.height !== h){
+      cv.width = w; cv.height = h;
+    }
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    redraw();
+  }
+  // ensure CSS size
+  function setCanvasCSS(){
+    // keep square on all screens
+    cv.style.width = "100%";
+    cv.style.height = "auto";
+  }
+  setCanvasCSS();
+
+  // ----------------------- Knee diagram -----------------------
+  // Coordinates in "CSS pixels" (we draw in a virtual 900x900 scaled to real)
+  // We'll define a virtual space 900x900 and map to actual by scaling
+  const V = {w:900, h:900};
+  function scale(){
+    const rect = cv.getBoundingClientRect();
+    const sx = rect.width / V.w;
+    const sy = rect.width / V.w; // square based on width
+    return {sx, sy};
+  }
+  function toCanvas(p){
+    const rect = cv.getBoundingClientRect();
+    const s = scale();
+    return {x: p.x * s.sx, y: p.y * s.sy};
+  }
+  function fromCanvas(x,y){
+    const s = scale();
+    return {x: x / s.sx, y: y / s.sy};
+  }
+
+  // Simple silhouette: thigh -> knee -> calf
+  const kneeCenter = {x:450, y:450};
+  const kneeR = 135;
+
+  function drawBody(){
+    // background
+    ctx.clearRect(0,0,cv.clientWidth, cv.clientWidth);
+    // white background already; add subtle grid
+    ctx.save();
+    ctx.globalAlpha = 0.06;
+    ctx.lineWidth = 1;
+    for(let i=0;i<=900;i+=50){
+      ctx.beginPath(); ctx.moveTo(toCanvas({x:i,y:0}).x,toCanvas({x:i,y:0}).y);
+      ctx.lineTo(toCanvas({x:i,y:900}).x,toCanvas({x:i,y:900}).y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(toCanvas({x:0,y:i}).x,toCanvas({x:0,y:i}).y);
+      ctx.lineTo(toCanvas({x:900,y:i}).x,toCanvas({x:900,y:i}).y); ctx.stroke();
+    }
+    ctx.restore();
+
+    // limb outline (stylized)
+    ctx.save();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = "#222";
+    ctx.globalAlpha = 0.9;
+
+    // thigh/calf shape
+    // outer contour
+    ctx.beginPath();
+    ctx.moveTo(toCanvas({x:320,y:140}).x, toCanvas({x:320,y:140}).y);
+    ctx.quadraticCurveTo(toCanvas({x:250,y:320}).x,toCanvas({x:250,y:320}).y, toCanvas({x:295,y:420}).x,toCanvas({x:295,y:420}).y);
+    ctx.quadraticCurveTo(toCanvas({x:250,y:520}).x,toCanvas({x:250,y:520}).y, toCanvas({x:295,y:760}).x,toCanvas({x:295,y:760}).y);
+    ctx.quadraticCurveTo(toCanvas({x:320,y:840}).x,toCanvas({x:320,y:840}).y, toCanvas({x:360,y:860}).x,toCanvas({x:360,y:860}).y);
+
+    ctx.moveTo(toCanvas({x:580,y:140}).x, toCanvas({x:580,y:140}).y);
+    ctx.quadraticCurveTo(toCanvas({x:650,y:320}).x,toCanvas({x:650,y:320}).y, toCanvas({x:605,y:420}).x,toCanvas({x:605,y:420}).y);
+    ctx.quadraticCurveTo(toCanvas({x:650,y:520}).x,toCanvas({x:650,y:520}).y, toCanvas({x:605,y:760}).x,toCanvas({x:605,y:760}).y);
+    ctx.quadraticCurveTo(toCanvas({x:580,y:840}).x,toCanvas({x:580,y:840}).y, toCanvas({x:540,y:860}).x,toCanvas({x:540,y:860}).y);
+    ctx.stroke();
+
+    // joint circle (knee)
+    ctx.save();
+    ctx.globalAlpha = 0.7;
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    const kc = toCanvas(kneeCenter);
+    ctx.arc(kc.x,kc.y, kneeR*scale().sx, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
+
+    // labels
+    ctx.fillStyle="#111";
+    ctx.globalAlpha = 0.65;
+    ctx.font = "bold 16px system-ui, Arial";
+    ctx.fillText("БЕДРО", toCanvas({x:390,y:120}).x, toCanvas({x:390,y:120}).y);
+    ctx.fillText("КОЛЕНО", toCanvas({x:382,y:465}).x, toCanvas({x:382,y:465}).y);
+    ctx.fillText("ГОЛЕНЬ", toCanvas({x:392,y:835}).x, toCanvas({x:392,y:835}).y);
+
+    ctx.restore();
+  }
+
+  // ----------------------- Trainer steps -----------------------
+  // We model "ideal paths" as polylines in virtual coordinates (V=900).
+  // We'll allow a tolerance corridor (px in virtual space).
+  const TOL = 45; // corridor radius in virtual units
+
+  function circlePolyline(cx,cy,r, startA, endA, steps=70){
+    const pts=[];
+    const dir = endA>=startA ? 1 : -1;
+    const span = Math.abs(endA-startA);
+    for(let i=0;i<=steps;i++){
+      const t=i/steps;
+      const a = startA + dir*(span*t);
+      pts.push({x: cx + Math.cos(a)*r, y: cy + Math.sin(a)*r});
+    }
+    return pts;
+  }
+  function linePolyline(x1,y1,x2,y2, steps=40){
+    const pts=[];
+    for(let i=0;i<=steps;i++){
+      const t=i/steps;
+      pts.push({x:x1+(x2-x1)*t, y:y1+(y2-y1)*t});
+    }
+    return pts;
+  }
+
+  // Define 5 steps for "черепашья (расходящаяся)" around knee:
+  // 1) anchor circle below knee (calf)
+  // 2) diagonal up crossing knee (lower left -> upper right)
+  // 3) circle above knee (thigh)
+  // 4) diagonal down crossing knee (upper left -> lower right)
+  // 5) finishing around knee (mid circle) to secure
+  const STEPS = [
+    {
+      id:1,
+      title:"Шаг 1 — фиксирующий тур ниже колена",
+      text:"Сделай 1 круговой тур ниже сустава (на голени). Это стартовая фиксация.",
+      criteria:[
+        "Тур проходит вокруг голени (ниже колена).",
+        "Форма близка к окружности/овалу.",
+        "Не “залезает” на сустав."
+      ],
+      path: circlePolyline(kneeCenter.x, kneeCenter.y+210, 170, 0, Math.PI*2, 90)
+    },
+    {
+      id:2,
+      title:"Шаг 2 — диагональ вверх через сустав",
+      text:"Проведи бинт по диагонали вверх через колено. Представь “восьмёрку”.",
+      criteria:[
+        "Траектория пересекает область колена.",
+        "Диагональ направлена снизу-вверх.",
+        "Не уходит слишком в сторону от сустава."
+      ],
+      path: linePolyline(330, 635, 610, 300, 55)
+    },
+    {
+      id:3,
+      title:"Шаг 3 — тур выше колена (на бедре)",
+      text:"Теперь круговой тур выше сустава (на бедре) для фиксации второй петли.",
+      criteria:[
+        "Тур проходит вокруг бедра (выше колена).",
+        "Форма близка к окружности/овалу.",
+        "Не уходит ниже линии сустава."
+      ],
+      path: circlePolyline(kneeCenter.x, kneeCenter.y-210, 175, 0, Math.PI*2, 90)
+    },
+    {
+      id:4,
+      title:"Шаг 4 — диагональ вниз через сустав",
+      text:"Вторая диагональ: сверху вниз через колено, формируя “восьмёрку”.",
+      criteria:[
+        "Траектория снова пересекает область колена.",
+        "Направление сверху-вниз.",
+        "Симметрично относительно прошлого диагонального хода."
+      ],
+      path: linePolyline(330, 300, 610, 635, 55)
+    },
+    {
+      id:5,
+      title:"Шаг 5 — закрепление (тур на уровне сустава)",
+      text:"Закрепи повязку круговым туром вокруг области колена (чуть шире/по ситуации).",
+      criteria:[
+        "Тур проходит вокруг колена.",
+        "Покрывает центральную часть без сильного смещения.",
+        "Закрепляет пересечения диагоналей."
+      ],
+      path: circlePolyline(kneeCenter.x, kneeCenter.y, 195, 0, Math.PI*2, 90)
+    }
+  ];
+
+  let stepIndex = 0;
+  let showHint = true;
+
+  // User drawing
+  let drawing = false;
+  let userPts = [];
+
+  function setStatus(type, text){
+    statusPill.textContent = text;
+    statusPill.classList.remove("good","warn","bad");
+    statusPill.classList.add(type);
+  }
+
+  function updateStepUI(){
+    const s = STEPS[stepIndex];
+    stepPill.textContent = `Шаг ${s.id}/5`;
+    stepTitle.textContent = s.title;
+    stepText.textContent = s.text;
+
+    criteria.innerHTML = "";
+    for(const c of s.criteria){
+      const li = document.createElement("li");
+      li.textContent = c;
+      criteria.appendChild(li);
+    }
+
+    btnNext.disabled = true;
+    setStatus("warn","Нарисуй линию и нажми “Проверить”");
+    redraw();
+  }
+
+  // distance point -> polyline (min segment distance)
+  function distPointToSegment(p,a,b){
+    const vx = b.x-a.x, vy = b.y-a.y;
+    const wx = p.x-a.x, wy = p.y-a.y;
+    const c1 = vx*wx + vy*wy;
+    if(c1 <= 0) return Math.hypot(p.x-a.x, p.y-a.y);
+    const c2 = vx*vx + vy*vy;
+    if(c2 <= c1) return Math.hypot(p.x-b.x, p.y-b.y);
+    const t = c1 / c2;
+    const px = a.x + t*vx;
+    const py = a.y + t*vy;
+    return Math.hypot(p.x-px, p.y-py);
+  }
+  function distPointToPolyline(p, poly){
+    let best = Infinity;
+    for(let i=0;i<poly.length-1;i++){
+      const d = distPointToSegment(p, poly[i], poly[i+1]);
+      if(d < best) best = d;
+    }
+    return best;
+  }
+
+  // Evaluate: percentage of user points within corridor around ideal path
+  function evaluate(step){
+    if(userPts.length < 10) return {ok:false, score:0, msg:"Слишком коротко. Проведи линию длиннее."};
+
+    const poly = step.path;
+
+    // coverage: what fraction of user points are close enough
+    let good = 0;
+    for(const p of userPts){
+      const d = distPointToPolyline(p, poly);
+      if(d <= TOL) good++;
+    }
+    const score = good / userPts.length;
+
+    // direction check for diagonal steps: compare start/end y trend
+    if(step.id === 2){
+      const dy = userPts[userPts.length-1].y - userPts[0].y;
+      // should go up: end y smaller
+      if(dy > 30) return {ok:false, score, msg:"Диагональ должна идти СНИЗУ ВВЕРХ. Попробуй снова."};
+    }
+    if(step.id === 4){
+      const dy = userPts[userPts.length-1].y - userPts[0].y;
+      // should go down: end y larger
+      if(dy < -30) return {ok:false, score, msg:"Диагональ должна идти СВЕРХУ ВНИЗ. Попробуй снова."};
+    }
+
+    const ok = score >= 0.62; // lenient for finger drawing
+    if(ok) return {ok:true, score, msg:`Зачёт ✅ (точность ${(score*100).toFixed(0)}%)`};
+    return {ok:false, score, msg:`Почти. Тяни ближе к подсказке (точность ${(score*100).toFixed(0)}%).`};
+  }
+
+  // ----------------------- Drawing rendering -----------------------
+  function drawHint(step){
+    if(!showHint) return;
+    const poly = step.path;
+    ctx.save();
+    ctx.globalAlpha = 0.28;
+    ctx.lineWidth = 16;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#1976d2";
+    ctx.beginPath();
+    const p0 = toCanvas(poly[0]);
+    ctx.moveTo(p0.x,p0.y);
+    for(let i=1;i<poly.length;i++){
+      const pi = toCanvas(poly[i]);
+      ctx.lineTo(pi.x,pi.y);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // corridor outline
+    ctx.save();
+    ctx.globalAlpha = 0.14;
+    ctx.lineWidth = (TOL*2)*scale().sx;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#f9a825";
+    ctx.beginPath();
+    ctx.moveTo(p0.x,p0.y);
+    for(let i=1;i<poly.length;i++){
+      const pi = toCanvas(poly[i]);
+      ctx.lineTo(pi.x,pi.y);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawUser(){
+    if(userPts.length < 2) return;
+    ctx.save();
+    ctx.globalAlpha = 0.95;
+    ctx.lineWidth = 14;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#111";
+    ctx.beginPath();
+    const p0 = toCanvas(userPts[0]);
+    ctx.moveTo(p0.x,p0.y);
+    for(let i=1;i<userPts.length;i++){
+      const pi = toCanvas(userPts[i]);
+      ctx.lineTo(pi.x,pi.y);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function redraw(){
+    // clear visible area: use clientWidth square
+    const rect = cv.getBoundingClientRect();
+    const w = rect.width;
+    const h = rect.width;
+    ctx.clearRect(0,0,w,h);
+
+    drawBody();
+    drawHint(STEPS[stepIndex]);
+    drawUser();
+  }
+
+  // ----------------------- Pointer handling -----------------------
+  function addPointFromEvent(e){
+    const rect = cv.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    // keep inside square
+    const xx = Math.max(0, Math.min(rect.width, x));
+    const yy = Math.max(0, Math.min(rect.width, y));
+    const v = fromCanvas(xx, yy);
+    userPts.push(v);
+  }
+
+  cv.addEventListener("pointerdown", (e)=>{
+    e.preventDefault();
+    cv.setPointerCapture(e.pointerId);
+    drawing = true;
+    userPts = [];
+    addPointFromEvent(e);
+    redraw();
+  });
+
+  cv.addEventListener("pointermove", (e)=>{
+    if(!drawing) return;
+    e.preventDefault();
+    addPointFromEvent(e);
+    // throttle a bit
+    if(userPts.length % 2 === 0) redraw();
+  });
+
+  function endDraw(e){
+    if(!drawing) return;
+    drawing = false;
+    redraw();
+  }
+  cv.addEventListener("pointerup", endDraw);
+  cv.addEventListener("pointercancel", endDraw);
+
+  // ----------------------- Buttons -----------------------
+  btnToggleHint.addEventListener("pointerdown", (e)=>{
+    e.preventDefault();
+    showHint = !showHint;
+    btnToggleHint.textContent = showHint ? "ПОДСКАЗКА: ВКЛ" : "ПОДСКАЗКА: ВЫКЛ";
+    toast(showHint ? "Подсказка включена" : "Подсказка выключена");
+    redraw();
+  });
+
+  btnClear.addEventListener("pointerdown", (e)=>{
+    e.preventDefault();
+    userPts = [];
+    btnNext.disabled = true;
+    setStatus("warn","Нарисуй линию и нажми “Проверить”");
+    redraw();
+  });
+
+  btnCheck.addEventListener("pointerdown", (e)=>{
+    e.preventDefault();
+    const step = STEPS[stepIndex];
+    const r = evaluate(step);
+    if(r.ok){
+      setStatus("good", r.msg);
+      btnNext.disabled = false;
+      toast("Шаг засчитан ✅");
+    }else{
+      setStatus("bad", r.msg);
+      btnNext.disabled = true;
+      toast(r.msg, 2400);
+    }
+  });
+
+  btnNext.addEventListener("pointerdown", (e)=>{
+    e.preventDefault();
+    if(stepIndex < STEPS.length-1){
+      stepIndex++;
+      userPts = [];
+      updateStepUI();
+      toast("Следующий шаг");
+    }else{
+      // finish
+      setStatus("good","Готово ✅ Повязка собрана (учебный режим)");
+      btnNext.disabled = true;
+      toast("Тренировка завершена ✅", 2600);
+    }
+  });
+
+  // ----------------------- Init & resize -----------------------
+  updateStepUI();
+  window.addEventListener("resize", ()=>{ redraw(); });
+  // slight delay so layout settles
+  setTimeout(()=>{ redraw(); }, 50);
+
+})();
+</script>
+</body>
+</html>
