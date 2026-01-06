@@ -94,6 +94,7 @@
     }
     .bar button:active{ opacity:.85; }
     .bar button:disabled{ opacity:.55; }
+
     #toast{
       position:fixed; left:50%; bottom:16px; transform:translateX(-50%);
       background:rgba(0,0,0,0.85); color:#fff; padding:10px 12px; border-radius:12px;
@@ -181,6 +182,7 @@
   });
 
   const $ = (id)=>document.getElementById(id);
+
   // ---------- СЛОВАРИ ЗОН ----------
   const BACK = {
     1:"Подошва",2:"Тыльная область стопы",3:"Передняя область голени",4:"Задняя область голени",
@@ -254,6 +256,7 @@
     }
     return out;
   }
+
   // ---------- DOM ----------
   const bodyImage=$("bodyImage");
   const pinsLayer=$("pinsLayer");
@@ -284,9 +287,8 @@
     return {ok: okDt&&okCall&&okComment, missing: miss};
   }
 
-  // ---------- Травмы ----------
+  // ---------- Травмы (без пулевого) ----------
   const TRAUMAS=[
-    {key:"bullet",label:"Пулевое"},
     {key:"shrapnel",label:"Осколочное"},
     {key:"mvt",label:"МВТ"},
     {key:"burn",label:"Ожог"},
@@ -305,21 +307,50 @@
     return "trunk";
   }
   function allowedForClass(cls){
-    // конечности: всё + шина
-    if(cls==="limb_upper" || cls==="limb_lower") return {bullet:1,shrapnel:1,mvt:1,burn:1,fracture:1,splint:1};
-    // голова/шея: без перелома и шины
-    if(cls==="head" || cls==="neck") return {bullet:1,shrapnel:1,mvt:1,burn:1,fracture:0,splint:0};
-    // туловище: без перелома и шины
-    return {bullet:1,shrapnel:1,mvt:1,burn:1,fracture:0,splint:0};
+    if(cls==="limb_upper" || cls==="limb_lower") return {shrapnel:1,mvt:1,burn:1,fracture:1,splint:1};
+    if(cls==="head" || cls==="neck") return {shrapnel:1,mvt:1,burn:1,fracture:0,splint:0};
+    return {shrapnel:1,mvt:1,burn:1,fracture:0,splint:0};
   }
-  function traumaSummary(obj){
+
+  // ---- Лево/право и финальная фраза для строки отчёта ----
+  function lrByXPercentWord(x){
+    // как смотришь на него: слева на экране = левой
+    if(x >= 46 && x <= 54) return "";
+    return (x < 50) ? "левой" : "правой";
+  }
+  function limbWordByClass(cls){
+    if(cls === "limb_upper") return "верхней конечности";
+    if(cls === "limb_lower") return "нижней конечности";
+    return "";
+  }
+  function traumaPhrase(obj){
     const out=[];
-    if(obj && obj.bullet) out.push("пулевое");
-    if(obj && obj.shrapnel) out.push("осколочное");
+    if(obj && obj.shrapnel) out.push("Осколочное ранение");
     if(obj && obj.mvt) out.push("МВТ");
-    if(obj && obj.burn) out.push("ожог");
-    if(obj && obj.fracture) out.push("перелом");
+    if(obj && obj.burn) out.push("Ожог");
+    if(obj && obj.fracture) out.push("Перелом");
     return out;
+  }
+  function buildLineForZone(side, num, zoneName, trObj){
+    const cls = zoneClassByName(zoneName);
+    const limb = limbWordByClass(cls);
+
+    const parts = traumaPhrase(trObj);
+    let main = parts.length ? parts.join(", ") : "Без уточнения";
+
+    if(trObj && trObj.splint) main += ", шина наложена";
+
+    if(!limb) return `${main} — ${zoneName}`;
+
+    const points = loadPoints();
+    const map = (side === "front") ? points.front : points.back;
+    const p = map[String(num)];
+    if(!p || typeof p.x !== "number") return `${main} ${limb} — ${zoneName}`;
+
+    const lr = lrByXPercentWord(p.x);
+    if(!lr) return `${main} ${limb} — ${zoneName}`;
+
+    return `${main} ${lr} ${limb} — ${zoneName}`;
   }
 
   // ---------- Пины ----------
@@ -348,18 +379,16 @@
 
     clearPins();
 
-    // выбранные сверху
     for(let i=0;i<sel.length;i++){
       const k=sel[i];
       if(map[k]) addPin(k, map[k].x, map[k].y, true);
     }
-    // остальные
     const keys=Object.keys(map);
     for(let i=0;i<keys.length;i++){
       const k=keys[i];
       if(!selSet[k] && map[k]) addPin(k, map[k].x, map[k].y, false);
     }
-  }
+ }
 
   function toggleZone(num){
     const n=String(parseInt(num,10));
@@ -383,13 +412,13 @@
     t[n][key]=!!val;
     saveTrauma(view,t);
     renderAll(false);
-}
+  }
 
   // ---------- UI выбранных зон ----------
   function renderZonesUI(){
     const sel=loadSel(view).sort((a,b)=>parseInt(a,10)-parseInt(b,10));
-    const trauma=loadTrauma(view);
     const dict=dictFor(view);
+    const trauma=loadTrauma(view);
 
     zonesUI.innerHTML="";
     if(sel.length===0){
@@ -402,8 +431,8 @@
 
     for(let i=0;i<sel.length;i++){
       const num=sel[i];
-      const name=dict[parseInt(num,10)] || "НЕИЗВЕСТНО";
-      const cls=zoneClassByName(name);
+      const zoneName=dict[parseInt(num,10)] || "НЕИЗВЕСТНО";
+      const cls=zoneClassByName(zoneName);
       const allow=allowedForClass(cls);
       const cur=trauma[num] || {};
 
@@ -412,7 +441,7 @@
 
       const head=document.createElement("div");
       head.className="zoneHead";
-      head.innerHTML=`<div>[${num}] ${name}<div class="zoneSub">Сторона: ${view==="front"?"ПЕРЕД":"СПИНА"}</div></div>`;
+      head.innerHTML=`<div>[${num}] ${zoneName}<div class="zoneSub">Сторона: ${view==="front"?"ПЕРЕД":"СПИНА"}</div></div>`;
 
       const delBtn=document.createElement("button");
       delBtn.className="miniBtn";
@@ -484,20 +513,16 @@
       const out=[];
       for(let i=0;i<sel.length;i++){
         const num=sel[i];
-        const name=dict[parseInt(num,10)] || "НЕИЗВЕСТНО";
-        const ts=traumaSummary(t[num]||{});
-        const spl=!!(t[num] && t[num].splint);
-
-        let line=`• ${num} — ${name}`;
-        if(ts.length) line += `\n  Травмы: ${ts.join(", ")}`;
-        if(spl) line += `\n  Шина: да`;
+        const zoneName = dict[parseInt(num,10)] || "НЕИЗВЕСТНО";
+        const tr = t[num] || {};
+        const line = `• ${num} — ${buildLineForZone(side, num, zoneName, tr)}`;
         out.push(line);
       }
       return out;
     }
 
     return (
-`МЕД ОТЧЁТ
+      `МЕД ОТЧЁТ
 Дата/время: ${dt || "-"}
 Позывной: ${call || "-"}
 
@@ -563,6 +588,7 @@ ${comment || "-"}`
   zoneNumEl.addEventListener("keydown",(e)=>{
     if(e.key==="Enter"){ e.preventDefault(); addZoneFromInput(); }
   });
+
   // ---------- PDF (без пароля, русский текст как картинка) ----------
   function mkFileName(){
     const dt=(dtEl.value||"").trim();
@@ -640,7 +666,7 @@ ${comment || "-"}`
       y += Math.round(lineHeight*0.35);
     }
     return y;
-  }
+        }
 
   function makeA4PageCanvas(title, imgCanvas, reportText){
     const page=document.createElement("canvas");
