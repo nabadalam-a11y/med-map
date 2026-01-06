@@ -37,21 +37,18 @@
     .pin.front{ background: rgba(0,120,255,0.90); }
     .pin.back{  background: rgba(255,0,0,0.90); }
 
-    /* ВЫБРАНО: заметная смена цвета + небольшое увеличение */
+    /* ВЫБРАНО — желтый */
     .pin.selected{
       outline:3px solid rgba(255,255,255,0.95);
       transform: translate(-50%,-50%) scale(1.08);
-      filter:brightness(1.25);
+      filter:none;
     }
-    /* ВЫБРАНО — жёлтый */
-.pin.front.selected,
-.pin.back.selected{
-  background: rgba(255, 200, 0, 0.98);
-  color:#111;                 /* на жёлтом лучше тёмный текст */
-  border-color: rgba(0,0,0,0.15);
-  outline:3px solid rgba(255,255,255,0.95);
-  filter:none;
-}
+    .pin.front.selected,
+    .pin.back.selected{
+      background: rgba(255, 200, 0, 0.98);
+      color:#111;
+      border-color: rgba(0,0,0,0.15);
+    }
 
     .panel{ padding:12px; border-top:1px solid #ddd; background:#fafafa; }
     label{ display:block; font-size:13px; color:#444; margin:10px 0 6px; }
@@ -93,7 +90,7 @@
     }
     .miniBtn:active{ opacity:.85; }
 
-    /* ЛЕВО/ПРАВО — отдельные кнопки, НЕ как чекбоксы */
+    /* ЛЕВО/ПРАВО — отдельные кнопки */
     .lrRow{
       display:flex;
       gap:10px;
@@ -134,9 +131,14 @@
     .bar button:active{ opacity:.85; }
     .bar button:disabled{ opacity:.55; }
 
-    .bar .tg{
-      background:#2a76d2;
+    .bar .tg{ background:#2a76d2; }
+
+    .miniRow{
+      display:flex;
+      gap:10px;
+      margin-top:10px;
     }
+    .miniRow .btn2{ margin-top:0; }
 
     #toast{
       position:fixed; left:50%; bottom:16px; transform:translateX(-50%);
@@ -187,14 +189,19 @@
     </div>
 
     <div class="hint" style="margin-top:10px;">
-      Выбери зоны (тап по метке). Ниже появятся травмы. Для головы/шеи перелом/шина скрыты.
-      Для “парных” зон появится выбор ЛЕВО/ПРАВО.
+      Теперь ЛЕВО/ПРАВО есть для всех зон, кроме:
+      <b>Позвоночной области</b> и <b>Пупочной области</b>.
+      <br/>🎁 Новая фишка: при добавлении зоны сторона ставится автоматически по положению метки (если есть координата) — можно изменить кнопками.
     </div>
 
     <div id="zonesUI"></div>
 
-    <button class="btn2" id="btnRefresh" type="button">ОБНОВИТЬ ТЕКСТ ОТЧЁТА</button>
-    <button class="btn2" id="btnCopy" type="button">КОПИРОВАТЬ ТЕКСТ</button>
+    <div class="miniRow">
+      <button class="btn2" id="btnRefresh" type="button">ОБНОВИТЬ ОТЧЁТ</button>
+      <button class="btn2" id="btnCopy" type="button">КОПИРОВАТЬ</button>
+    </div>
+
+    <button class="btn2" id="btnShort" type="button">КОРОТКАЯ СВОДКА (для рации)</button>
 
     <div class="out" id="finalMsg"></div>
   </div>
@@ -215,7 +222,7 @@
     toastEl.textContent = msg;
     toastEl.style.display = "block";
     clearTimeout(toastEl._t);
-    toastEl._t = setTimeout(()=>{ toastEl.style.display="none"; }, ms || 2200);
+    toastEl._t = setTimeout(()=>{ toastEl.style.display="none"; }, ms || 2400);
   }
 
   window.addEventListener("error", (e)=>{
@@ -257,10 +264,10 @@
 
   /* ===== ХРАНИЛИЩЕ ===== */
   const POINTS_KEY="medmap_points_v2";        // координаты меток: {front:{n:{x,y}}, back:{...}}
-  const SEL_FRONT="medmap_sel_front_v3";      // выбранные зоны на переде
-  const SEL_BACK="medmap_sel_back_v3";        // выбранные зоны на спине
-  const META_FRONT="medmap_meta_front_v3";    // травмы + л/п для переда
-  const META_BACK="medmap_meta_back_v3";      // травмы + л/п для спины
+  const SEL_FRONT="medmap_sel_front_v4";
+  const SEL_BACK="medmap_sel_back_v4";
+  const META_FRONT="medmap_meta_front_v4";    // { [num]: { lr:"L"/"R", shrapnel:bool, ... } }
+  const META_BACK="medmap_meta_back_v4";
 
   function loadJSON(key, fallback){
     try{ const raw=localStorage.getItem(key); return raw?JSON.parse(raw):fallback; }catch(_){ return fallback; }
@@ -342,7 +349,7 @@
     {key:"fracture",label:"Перелом",abbr:"ПЕР"}
   ];
 
-  /* ===== КЛАССЫ ЗОН (для ограничений перелом/шина) ===== */
+  /* ===== КЛАССЫ ЗОН (ограничения перелом/шина) ===== */
   function zoneClassByName(name){
     const s=(name||"").toLowerCase();
     const head=["лоб","височ","теменн","затыл","скул","глазниц","щёч","нос","рот","подбород"];
@@ -352,8 +359,6 @@
     for(let i=0;i<upper.length;i++) if(s.indexOf(upper[i])!==-1) return "limb_upper";
     const lower=["бедр","колен","голен","стоп","пят","подошв","голеностоп"];
     for(let i=0;i<lower.length;i++) if(s.indexOf(lower[i])!==-1) return "limb_lower";
-    if(s.indexOf("лопат")!==-1) return "trunk_pair";
-    if(s.indexOf("боковая область живота")!==-1 || s.indexOf("латеральная")!==-1) return "trunk_pair";
     return "trunk";
   }
   function allowedForClass(cls){
@@ -361,31 +366,26 @@
     if(cls==="limb_upper" || cls==="limb_lower") return {shrapnel:1,sor:1,mvt:1,burn:1,fracture:1,splint:1};
     // голова/шея: без перелома и шины
     if(cls==="head" || cls==="neck") return {shrapnel:1,sor:1,mvt:1,burn:1,fracture:0,splint:0};
-    // туловище/парные туловища: без перелома и шины
+    // туловище: без перелома и шины
     return {shrapnel:1,sor:1,mvt:1,burn:1,fracture:0,splint:0};
   }
 
-  /* ===== ЛЕВО/ПРАВО: показываем для большинства парных/конечностей =====
-     Исключаем явно срединные зоны (чтобы не мешать). */
-  const UNPAIRED_FRONT = new Set([1,2,9,11,19,20,23,30]);
-  const UNPAIRED_BACK  = new Set([6,8,11,12,20,21,23,31,40,41]);
-  function isPair(side, num){
-    const n=parseInt(num,10);
-    if(!isFinite(n)) return false;
-    if(side==="front") return !UNPAIRED_FRONT.has(n);
-    return !UNPAIRED_BACK.has(n);
+  /* ===== ЛЕВО/ПРАВО: для всего, кроме позвоночной и пупочной ===== */
+  function needsLR(name){
+    const s=(name||"").toLowerCase();
+    if(s.indexOf("позвоночн")!==-1) return false;  // позвоночная область
+    if(s.indexOf("пупочн")!==-1) return false;     // пупочная область
+    return true;
   }
 
   function lrLabel(lr){
-    if(lr==="L") return "левая";
-    if(lr==="R") return "правая";
-    return "";
+    return lr==="R" ? "правая" : "левая";
   }
 
   function limbGroupByName(name){
     const cls=zoneClassByName(name);
-    if(cls==="limb_upper") return "ВК"; // верхняя конечность
-    if(cls==="limb_lower") return "НК"; // нижняя конечность
+    if(cls==="limb_upper") return "ВК";
+    if(cls==="limb_lower") return "НК";
     if(cls==="head") return "ГОЛОВА";
     if(cls==="neck") return "ШЕЯ";
     return "ТУЛОВИЩЕ";
@@ -397,6 +397,18 @@
       if(meta && meta[t.key]) out.push(t.abbr);
     }
     return out;
+  }
+
+  /* ===== НОВАЯ ФИШКА: авто-сторона по координате метки ===== */
+  function autoLRForZone(side, num){
+    // если есть координаты точки: x < 50 => L, иначе R
+    const points=loadPoints();
+    const map = side==="front" ? points.front : points.back;
+    const p = map && map[num];
+    if(p && typeof p.x==="number"){
+      return (p.x < 50) ? "L" : "R";
+    }
+    return "L";
   }
 
   /* ===== ПИНЫ ===== */
@@ -425,7 +437,7 @@
 
     clearPins();
 
-    // сначала выбранные (чтобы были сверху визуально)
+    // сначала выбранные
     for(let i=0;i<sel.length;i++){
       const k=sel[i];
       if(map[k]) addPin(k, map[k].x, map[k].y, true);
@@ -438,6 +450,12 @@
     }
   }
 
+  function ensureMeta(side, n){
+    const m=loadMeta(side);
+    if(!m[n]) m[n]={};
+    return m;
+  }
+
   function toggleZone(num){
     const n=String(parseInt(num,10));
     let sel=loadSel(view);
@@ -445,21 +463,29 @@
     let idx=-1;
     for(let i=0;i<sel.length;i++){ if(sel[i]===n){ idx=i; break; } }
 
-    if(idx>=0) sel.splice(idx,1);
-    else sel.push(n);
+    if(idx>=0){
+      sel.splice(idx,1);
+      saveSel(view, uniqNums(sel));
+      renderAll();
+      return;
+    }
 
-    sel=uniqNums(sel);
-    saveSel(view,sel);
+    // добавить
+    sel.push(n);
+    saveSel(view, uniqNums(sel));
 
-    // если сняли зону — можно оставить метаданные (не мешает), но лучше чистить травмы/лп
-    // (оставим как есть, чтобы случайно не потерять ввод)
+    // авто-сторона, если нужна
+    const dict=dictFor(view);
+    const name=dict[parseInt(n,10)] || "";
+    if(needsLR(name)){
+      const m=ensureMeta(view, n);
+      if(m[n].lr!=="L" && m[n].lr!=="R"){
+        m[n].lr = autoLRForZone(view, n);
+        saveMeta(view, m);
+      }
+    }
+
     renderAll();
-  }
-
-  function ensureMeta(side, n){
-    const m=loadMeta(side);
-    if(!m[n]) m[n]={};
-    return m;
   }
 
   function setTrauma(num,key,val){
@@ -473,7 +499,7 @@
   function setLR(num, lr){
     const n=String(parseInt(num,10));
     const m=ensureMeta(view, n);
-    m[n].lr = lr; // "L" | "R"
+    m[n].lr = lr;
     saveMeta(view,m);
     renderAll(false);
   }
@@ -515,9 +541,9 @@
       head.appendChild(delBtn);
       card.appendChild(head);
 
-      /* ЛЕВО/ПРАВО — отдельным блоком */
-      if(isPair(view, num)){
-        const curLR = (cur.lr==="L" || cur.lr==="R") ? cur.lr : "L";
+      /* ЛЕВО/ПРАВО — для всего, кроме позвоночной/пупочной */
+      if(needsLR(name)){
+        const curLR = (cur.lr==="L" || cur.lr==="R") ? cur.lr : autoLRForZone(view, num);
 
         const lrRow=document.createElement("div");
         lrRow.className="lrRow";
@@ -604,13 +630,12 @@
         const abbr=traumaAbbrList(m);
         const spl=!!m.splint;
 
-        // л/п
         let lrTxt="";
-        if(isPair(side, num)){
-          lrTxt = (m.lr==="R") ? " (правая)" : " (левая)";
+        if(needsLR(name)){
+          const lr = (m.lr==="R") ? "R" : "L";
+          lrTxt = ` (${lrLabel(lr)})`;
         }
 
-        // короткая “понятная” строка
         let line=`• ${num} — ${name}${lrTxt}`;
         if(abbr.length) line += `\n  Травмы: ${abbr.join(", ")}`;
         if(spl) line += `\n  Шина: да`;
@@ -633,6 +658,47 @@ ${linesFor("back", selBack, mb).join("\n")}
 Комментарий:
 ${comment || "-"}`
     );
+  }
+
+  /* ===== НОВАЯ ФИШКА №2: короткая сводка “для рации” ===== */
+  function shortSummary(){
+    const selFront=loadSel("front");
+    const selBack=loadSel("back");
+    const mf=loadMeta("front");
+    const mb=loadMeta("back");
+    const df=dictFor("front");
+    const db=dictFor("back");
+
+    function pack(side, sel, meta, dict){
+      const parts=[];
+      for(const num of sel){
+        const name=dict[parseInt(num,10)] || "";
+        const m=meta[num] || {};
+        const ab=traumaAbbrList(m);
+        const grp=limbGroupByName(name);
+        let where="";
+
+        if(needsLR(name)){
+          const lr=(m.lr==="R") ? "правая" : "левая";
+          if(grp==="ВК" || grp==="НК") where = `${lr} ${grp}`;
+          else where = `${lr} сторона`;
+        } else {
+          where = grp;
+        }
+
+        const lead = ab.length ? ab.join("+") : "ЗОНА";
+        parts.push(`${lead} ${where} (№${num})`);
+      }
+      return parts;
+    }
+
+    const all = [].concat(
+      pack("front", selFront, mf, df),
+      pack("back", selBack, mb, db)
+    );
+
+    if(!all.length) return "Сводка: (нет выбранных зон)";
+    return "Сводка: " + all.join("; ");
   }
 
   function renderAll(updateText=true){
@@ -673,7 +739,14 @@ ${comment || "-"}`
   $("btnRefresh").addEventListener("pointerdown",(e)=>{
     e.preventDefault();
     finalEl.textContent=buildTextReport();
-    toast("Текст обновлён");
+    toast("Отчёт обновлён");
+  });
+
+  $("btnShort").addEventListener("pointerdown",(e)=>{
+    e.preventDefault();
+    const v=validateRequired();
+    if(!v.ok){ toast("Заполни обязательные поля:\n- " + v.missing.join("\n- "), 3200); return; }
+    toast(shortSummary(), 4200);
   });
 
   btnFront.addEventListener("pointerdown",(e)=>{ e.preventDefault(); setView("front"); });
@@ -682,18 +755,16 @@ ${comment || "-"}`
   $("btnAddZone").addEventListener("pointerdown",(e)=>{ e.preventDefault(); addZoneFromInput(); });
   zoneNumEl.addEventListener("keydown",(e)=>{ if(e.key==="Enter"){ e.preventDefault(); addZoneFromInput(); } });
 
-  /* ===== TELEGRAM (правильный deep-link + fallback, без ссылки на сайт) ===== */
+  /* ===== TELEGRAM (deep-link + fallback, без ссылки на сайт) ===== */
   btnTG.addEventListener("pointerdown",(e)=>{
     e.preventDefault();
     const v=validateRequired();
     if(!v.ok){ toast("Заполни обязательные поля:\n- " + v.missing.join("\n- "), 3200); return; }
 
-    const text = buildTextReport();
-
+    const text = buildTextReport() + "\n\n" + shortSummary();
     const tgApp = "tg://msg_url?url=&text=" + encodeURIComponent(text);
     const tgWeb = "https://t.me/share/url?url=&text=" + encodeURIComponent(text);
 
-    // пробуем открыть приложение
     const a=document.createElement("a");
     a.href=tgApp;
     a.style.display="none";
@@ -701,13 +772,11 @@ ${comment || "-"}`
     a.click();
     document.body.removeChild(a);
 
-    // fallback
     setTimeout(()=>{ try{ window.open(tgWeb, "_blank"); }catch(_){ } }, 700);
     toast("Открываю Telegram…", 1800);
   });
 
-  /* ===== PDF (2 страницы, без пароля, русский текст как картинка) ===== */
-
+  /* ===== PDF (2 страницы, без пароля, русский как картинка) ===== */
   function mkFileName(){
     const dt=(dtEl.value||"").trim();
     const call=(callEl.value||"").trim();
@@ -726,26 +795,25 @@ ${comment || "-"}`
     });
   }
 
-  function drawCirclePin(ctx, cx, cy, num, fillRGBA, selected){
-    const r = selected ? 22 : 18;
+  function drawCirclePin(ctx, cx, cy, num, fillRGBA){
+    const r = 18;
     ctx.save();
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI*2);
     ctx.fillStyle = fillRGBA;
     ctx.fill();
-    ctx.lineWidth = selected ? 5 : 4;
+    ctx.lineWidth = 4;
     ctx.strokeStyle = "rgba(255,255,255,0.95)";
     ctx.stroke();
 
-    ctx.fillStyle = "#fff";
-    ctx.font = (selected ? "bold 22px Arial" : "bold 18px Arial");
+    ctx.fillStyle = "#111";
+    ctx.font = "bold 18px Arial";
     ctx.textAlign="center";
     ctx.textBaseline="middle";
     ctx.fillText(String(num), cx, cy+1);
     ctx.restore();
   }
 
-  // Рисуем базовую картинку + выбранные метки
   function drawImageWithSelectedPins(baseImg, side){
     const points=loadPoints();
     const map = side==="front" ? points.front : points.back;
@@ -760,7 +828,7 @@ ${comment || "-"}`
     ctx.fillRect(0,0,c.width,c.height);
     ctx.drawImage(baseImg,0,0,c.width,c.height);
 
-    const fill = side==="front" ? "rgba(0,80,220,0.98)" : "rgba(220,0,0,0.98)";
+    const fill = "rgba(255, 200, 0, 0.98)"; // выбранное на PDF тоже желтым
 
     for(let i=0;i<sel.length;i++){
       const k=sel[i];
@@ -768,7 +836,7 @@ ${comment || "-"}`
       if(!p) continue;
       const cx = (p.x/100)*c.width;
       const cy = (p.y/100)*c.height;
-      drawCirclePin(ctx, cx, cy, k, fill, true);
+      drawCirclePin(ctx, cx, cy, k, fill);
     }
     return c;
   }
@@ -807,8 +875,8 @@ ${comment || "-"}`
     lines.push("");
 
     function addSide(side, sel, meta){
-      lines.push(side==="front" ? "ПЕРЕД:" : "СПИНА:");
       const dict=dictFor(side);
+      lines.push(side==="front" ? "ПЕРЕД:" : "СПИНА:");
       if(!sel.length){ lines.push("— (нет)"); lines.push(""); return; }
 
       for(const num of sel){
@@ -816,18 +884,16 @@ ${comment || "-"}`
         const m=meta[num] || {};
         const abbr=traumaAbbrList(m);
         const spl=!!m.splint;
-        const lr = isPair(side, num) ? (m.lr==="R" ? "правая" : "левая") : "";
-        const group = limbGroupByName(name);
+        const grp=limbGroupByName(name);
 
-        // пример “понятной” формулировки: "СОР левой НК"
-        let lead = abbr.length ? abbr.join(", ") : "без уточнённых травм";
-        let where = "";
-        if(lr && (group==="ВК" || group==="НК")) where = `${lr} ${group}`;
-        else if(lr && group==="ТУЛОВИЩЕ") where = `${lr} сторона туловища`;
-        else if(lr && (group==="ГОЛОВА" || group==="ШЕЯ")) where = `${lr} сторона`;
-        else if(group==="ВК" || group==="НК") where = `${group}`;
-        else where = group;
+        let where = grp;
+        if(needsLR(name)){
+          const lr=(m.lr==="R") ? "правая" : "левая";
+          if(grp==="ВК" || grp==="НК") where = `${lr} ${grp}`;
+          else where = `${lr} сторона`;
+        }
 
+        const lead = abbr.length ? abbr.join(", ") : "без уточнённых травм";
         let line = `— ${lead}: ${where}; №${num} ${name}`;
         if(spl) line += " (шина)";
         lines.push(line);
@@ -840,10 +906,12 @@ ${comment || "-"}`
 
     lines.push("Комментарий:");
     lines.push(comment || "-");
+    lines.push("");
+    lines.push(shortSummary());
+
     return lines;
   }
 
-  // A4 canvas 1240x1754 (примерно 150dpi), потом кладём в jsPDF
   function makeA4PageCanvas(title, imgCanvas, lines){
     const page=document.createElement("canvas");
     page.width=1240;
@@ -857,11 +925,9 @@ ${comment || "-"}`
     ctx.font="bold 34px Arial";
     ctx.fillText(title, 60, 70);
 
-    // картинка
     const imgX=140, imgY=110, imgW=960, imgH=960;
     ctx.drawImage(imgCanvas, imgX, imgY, imgW, imgH);
 
-    // текст
     ctx.font="22px Arial";
     ctx.fillStyle="#111";
 
@@ -925,6 +991,12 @@ ${comment || "-"}`
 
   /* ===== INIT ===== */
   function init(){
+    // авто-время если пусто
+    if(!dtEl.value){
+      const d=new Date();
+      const pad=(n)=>String(n).padStart(2,"0");
+      dtEl.value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
     setView("front");
     finalEl.textContent=buildTextReport();
   }
