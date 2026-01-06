@@ -43,8 +43,15 @@
       transform: translate(-50%,-50%) scale(1.08);
       filter:brightness(1.25);
     }
-    .pin.front.selected{ background: rgba(0,80,220,0.98); }
-    .pin.back.selected{  background: rgba(220,0,0,0.98); }
+    /* ВЫБРАНО — жёлтый */
+.pin.front.selected,
+.pin.back.selected{
+  background: rgba(255, 200, 0, 0.98);
+  color:#111;                 /* на жёлтом лучше тёмный текст */
+  border-color: rgba(0,0,0,0.15);
+  outline:3px solid rgba(255,255,255,0.95);
+  filter:none;
+}
 
     .panel{ padding:12px; border-top:1px solid #ddd; background:#fafafa; }
     label{ display:block; font-size:13px; color:#444; margin:10px 0 6px; }
