@@ -5,49 +5,37 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Карта ранений</title>
 
-  <!-- jsPDF (PDF будет из картинок, поэтому русский отображается нормально) -->
+  <!-- jsPDF -->
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
   <style>
     body{ margin:0; font-family: Arial, sans-serif; background:#fff; color:#111; }
-    .title{ padding:10px; text-align:center; font-weight:800; font-size:18px; }
+    .title{ padding:10px; text-align:center; font-weight:700; font-size:18px; }
     .topStatus{ padding:10px 12px; font-size:14px; background:#dff7df; border-bottom:1px solid #a9d9a9; color:#333; white-space:pre-wrap; }
     .topStatus.bad{ background:#ffe1e1; border-bottom:1px solid #f0a6a6; color:#8a1f1f; }
 
     .tabs{ display:flex; }
-    .tab{
-      width:100%; padding:14px; font-size:17px; border:none;
-      background:#222; color:#fff; touch-action: manipulation;
-    }
+    .tab{ width:100%; padding:14px; font-size:17px; border:none; background:#222; color:#fff; touch-action: manipulation; }
     .tab.active{ background:#0b6623; }
     .tab:active{ opacity:.85; }
 
     .wrap{ position:relative; width:100%; }
     .map{ width:100%; display:block; user-select:none; -webkit-user-drag:none; }
 
-    #pinsLayer{
-      position:absolute; inset:0; width:100%; height:100%;
-      pointer-events:none; z-index:10;
-    }
+    #pinsLayer{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:10; }
 
     .pin{
       position:absolute; transform: translate(-50%,-50%);
-      min-width:26px; height:26px; padding:0 7px; border-radius:999px;
-      color:#fff; font-weight:900; font-size:13px;
-      display:flex; align-items:center; justify-content:center;
+      min-width:26px; height:26px; padding:0 6px; border-radius:999px;
+      color:#fff; font-weight:800; font-size:13px; display:flex; align-items:center; justify-content:center;
       z-index:20; border:2px solid rgba(255,255,255,0.95);
-      box-shadow:0 1px 8px rgba(0,0,0,0.22);
+      box-shadow:0 1px 6px rgba(0,0,0,0.18);
       pointer-events:auto; cursor:pointer; user-select:none; touch-action: manipulation;
       -webkit-tap-highlight-color: rgba(0,0,0,0);
     }
-    /* твои цвета */
     .pin.front{ background: rgba(0,120,255,0.90); } /* ПЕРЕД — синий */
     .pin.back{  background: rgba(255,0,0,0.90); }  /* СПИНА — красный */
-
-    /* просил: при тапе должна менять цвет */
-    .pin.selected.front{ background: rgba(0,200,120,0.95); } /* выбранное — зелёный */
-    .pin.selected.back{  background: rgba(0,200,120,0.95); } /* выбранное — зелёный */
-    .pin.selected{ outline:3px solid rgba(255,255,255,0.95); }
+    .pin.selected{ outline:3px solid rgba(255,255,255,0.95); filter:brightness(1.12); }
 
     .panel{ padding:12px; border-top:1px solid #ddd; background:#fafafa; }
     label{ display:block; font-size:13px; color:#444; margin:10px 0 6px; }
@@ -71,7 +59,7 @@
     .reqBad{ border-color:#d11 !important; box-shadow:0 0 0 3px rgba(209,17,17,0.15); }
 
     .zoneCard{ background:#fff; border:1px solid #ddd; border-radius:12px; padding:10px; margin-top:10px; }
-    .zoneHead{ display:flex; justify-content:space-between; gap:10px; align-items:flex-start; font-size:14px; font-weight:800; }
+    .zoneHead{ display:flex; justify-content:space-between; gap:10px; align-items:flex-start; font-size:14px; font-weight:700; }
     .zoneSub{ margin-top:4px; font-size:12px; color:#444; font-weight:400; }
 
     .grid{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px; }
@@ -105,6 +93,7 @@
       color:#fff; background:#0b6623; touch-action: manipulation;
     }
     .bar button:active{ opacity:.85; }
+    .bar button.secondary{ background:#2b6cb0; }
     .bar button:disabled{ opacity:.55; }
 
     #toast{
@@ -112,16 +101,11 @@
       background:rgba(0,0,0,0.85); color:#fff; padding:10px 12px; border-radius:12px;
       font-size:14px; max-width:92%; z-index:9999; display:none; white-space:pre-wrap;
     }
-
-    .splitBtns{ display:flex; gap:10px; margin-top:10px; }
-    .splitBtns button{ width:100%; }
-
-    .smallNote{ font-size:12px; color:#666; margin-top:8px; }
   </style>
 </head>
 
 <body>
-  <div id="title" class="title">КАРТА РАНЕНИЙ</div>
+  <div class="title">КАРТА РАНЕНИЙ</div>
   <div id="topStatus" class="topStatus">JS: OK (карта готова)</div>
 
   <div class="tabs">
@@ -161,8 +145,8 @@
     </div>
 
     <div class="hint" style="margin-top:10px;">
-      Тапай по меткам — они станут зелёными (выбраны).<br/>
-      Для зон с двумя сторонами (лопатки/бок живота/лат. грудь) метки будут “33Л/33П” и т.п.
+      Выбери зоны. Ниже появятся чекбоксы травм. Для головы/шеи перелом и шина не показываются.
+      Для “парных” зон появится выбор ЛЕВО/ПРАВО.
     </div>
 
     <div id="zonesUI"></div>
@@ -170,20 +154,12 @@
     <button class="btn2" id="btnRefresh" type="button">ОБНОВИТЬ ТЕКСТ ОТЧЁТА</button>
     <button class="btn2" id="btnCopy" type="button">КОПИРОВАТЬ ТЕКСТ</button>
 
-    <!-- “Удиви меня”: полезные кнопки -->
-    <div class="splitBtns">
-      <button class="btn2" id="btnShort" type="button">КОРОТКАЯ СВОДКА</button>
-      <button class="btn2" id="btnTG" type="button">ПОДЕЛИТЬСЯ В TELEGRAM</button>
-    </div>
-    <div class="smallNote">
-      “Короткая сводка” делает строку вида: <b>СОР левой ВК; МВТ правой НК…</b> (удобно быстро отправлять/диктовать).
-    </div>
-
     <div class="out" id="finalMsg"></div>
   </div>
 
   <div class="bar">
     <button id="btnMakePDF" type="button">СДЕЛАТЬ PDF (2 страницы)</button>
+    <button id="btnTG" class="secondary" type="button">TELEGRAM</button>
   </div>
 
   <div id="toast"></div>
@@ -192,7 +168,6 @@
 (function(){
   const top = document.getElementById("topStatus");
   const toastEl = document.getElementById("toast");
-
   function setTopBad(msg){ top.className="topStatus bad"; top.textContent=msg; }
   function toast(msg, ms){
     toastEl.textContent = msg;
@@ -201,7 +176,6 @@
     toastEl._t = setTimeout(()=>{ toastEl.style.display="none"; }, ms || 2200);
   }
 
-  // ловим ошибки — чтобы не было “тихо сломалось”
   window.addEventListener("error", (e)=>{
     setTopBad("JS ОШИБКА:\n" + (e.message || "unknown") + "\n" + (e.filename||"") + ":" + (e.lineno||""));
   });
@@ -239,28 +213,16 @@
     38:"Передняя голеностопная область",39:"Пяточная область",40:"Тыльная область стопы"
   };
 
-  // зоны, где нужна Л/П (две метки)
-  const LR_ZONES = {
-    front: new Set([31]),
-    back:  new Set([10,33,35])
+  // Парные зоны (нужен выбор ЛЕВО/ПРАВО)
+  const PAIR_ZONES = {
+    front: new Set([31]),        // бок живота
+    back:  new Set([10,33,35])   // бок живота, лопатка, лат. грудь
   };
-
-  function dictFor(side){ return side==="front"?FRONT:BACK; }
-  function isLR(side, num){ return LR_ZONES[side] && LR_ZONES[side].has(parseInt(num,10)); }
-  function makeKey(num, lr){ // lr "L"/"R" or null
-    const n = String(parseInt(num,10));
-    return lr ? `${n}|${lr}` : n;
+  function isPair(side, num){
+    return !!(PAIR_ZONES[side] && PAIR_ZONES[side].has(parseInt(num,10)));
   }
-  function splitKey(key){
-    const s = String(key);
-    const p = s.split("|");
-    return { num: p[0], lr: p[1] || null };
-  }
-  function lrSuffix(lr){ return lr==="L" ? "Л" : (lr==="R" ? "П" : ""); }
-  function lrWord(lr){ return lr==="L" ? "левая" : (lr==="R" ? "правая" : ""); }
 
   // ---------- STORAGE ----------
-  // Важно: ключи оставляем теми же, чтобы ТВОИ точки не пропали
   const POINTS_KEY="medmap_points_v2";
   const SEL_FRONT="medmap_sel_front_v2";
   const SEL_BACK="medmap_sel_back_v2";
@@ -272,41 +234,12 @@
   }
   function saveJSON(key,val){ localStorage.setItem(key, JSON.stringify(val)); }
 
-  // points format:
-  // points.front[num] = {x,y} OR {L:{x,y}, R:{x,y}}
-  // points.back[num]  = same
-  function normalizePoints(p){
-    if(!p || typeof p!=="object") p={front:{},back:{}};
+  function loadPoints(){
+    const p=loadJSON(POINTS_KEY,{front:{},back:{}});
     if(!p.front) p.front={};
     if(!p.back) p.back={};
-
-    // миграция старых LR зон: если было {x,y} — сохраняем как R
-    ["front","back"].forEach(side=>{
-      const map=p[side]||{};
-      Object.keys(map).forEach(k=>{
-        const v=map[k];
-        const n=parseInt(k,10);
-        if(!isFinite(n)) return;
-        if(isLR(side, n)){
-          // если уже L/R — ок
-          if(v && typeof v==="object" && (v.L || v.R)) return;
-          // если это {x,y}
-          if(v && typeof v==="object" && isFinite(v.x) && isFinite(v.y)){
-            map[k] = { R:{x:v.x,y:v.y} };
-          }
-        }
-      });
-      p[side]=map;
-    });
-
     return p;
   }
-
-  function loadPoints(){
-    return normalizePoints(loadJSON(POINTS_KEY,{front:{},back:{}}));
-  }
-  function savePoints(p){ saveJSON(POINTS_KEY, normalizePoints(p)); }
-
   function loadSel(side){
     const key = side==="front"?SEL_FRONT:SEL_BACK;
     const arr=loadJSON(key,[]);
@@ -322,18 +255,17 @@
     return (obj && typeof obj==="object")?obj:{};
   }
   function saveTrauma(side,obj){
-    const key = side==="front"?TRAUMA_FRONT:TRAUMABACK_DUMMY;
-  }
-
-  // маленький фикс: чтобы не было опечаток
-  function saveTraumaSafe(side,obj){
     const key = side==="front"?TRAUMA_FRONT:TRAUMA_BACK;
     saveJSON(key,obj);
   }
 
-  function uniqArr(arr){
-    const seen=new Set(), out=[];
-    for(const s of arr){ const v=String(s); if(!seen.has(v)){ seen.add(v); out.push(v); } }
+  function dictFor(side){ return side==="front"?FRONT:BACK; }
+  function uniqNums(arr){
+    const seen={}, out=[];
+    for(let i=0;i<arr.length;i++){
+      const n=parseInt(arr[i],10);
+      if(isFinite(n) && !seen[n]){ seen[n]=1; out.push(String(n)); }
+    }
     return out;
   }
 
@@ -349,17 +281,12 @@
   const callEl=$("call");
   const commentEl=$("comment");
   const btnMakePDF=$("btnMakePDF");
+  const btnTG=$("btnTG");
 
   let view="front";
   let pdfBusy=false;
 
-  // default datetime: now
-  try{
-    const d=new Date();
-    const pad=(x)=>String(x).padStart(2,"0");
-    dtEl.value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  }catch(_){}
-
+  // ---------- required ----------
   function markReq(el, ok){ if(ok) el.classList.remove("reqBad"); else el.classList.add("reqBad"); }
   function validateRequired(){
     const dt=(dtEl.value||"").trim();
@@ -374,13 +301,14 @@
     return {ok: okDt&&okCall&&okComment, missing: miss};
   }
 
-  // ---------- TRAUMAS (пулевое убрали) ----------
+  // ---------- trauma logic ----------
+  // “Пулевое” УБРАНО. Добавили СОР.
   const TRAUMAS=[
-    {key:"shrapnel", label:"Осколочное", short:"СОР"},  // Слепое осколочное ранение (как ты просил)
-    {key:"mvt",      label:"МВТ",       short:"МВТ"},
-    {key:"burn",     label:"Ожог",      short:"ОЖ"},
-    {key:"fracture", label:"Перелом",   short:"ПРЛ"},
-    {key:"splint",   label:"Шина",      short:"ШИНА"}
+    {key:"shrapnel",label:"Осколочное"},
+    {key:"sor",label:"СОР (слепое осколочное)"},
+    {key:"mvt",label:"МВТ"},
+    {key:"burn",label:"Ожог"},
+    {key:"fracture",label:"Перелом"}
   ];
 
   function zoneClassByName(name){
@@ -395,132 +323,111 @@
     return "trunk";
   }
   function allowedForClass(cls){
-    // Перелом и Шина только на конечности
-    if(cls==="limb_upper" || cls==="limb_lower") return {shrapnel:1,mvt:1,burn:1,fracture:1,splint:1};
-    if(cls==="head" || cls==="neck") return {shrapnel:1,mvt:1,burn:1,fracture:0,splint:0};
-    return {shrapnel:1,mvt:1,burn:1,fracture:0,splint:0};
+    // перелом + шина только на конечности
+    if(cls==="limb_upper" || cls==="limb_lower") return {shrapnel:1,sor:1,mvt:1,burn:1,fracture:1,splint:1};
+    if(cls==="head" || cls==="neck") return {shrapnel:1,sor:1,mvt:1,burn:1,fracture:0,splint:0};
+    return {shrapnel:1,sor:1,mvt:1,burn:1,fracture:0,splint:0};
   }
-
   function traumaSummary(obj){
     const out=[];
     if(obj && obj.shrapnel) out.push("осколочное");
+    if(obj && obj.sor) out.push("СОР");
     if(obj && obj.mvt) out.push("МВТ");
     if(obj && obj.burn) out.push("ожог");
     if(obj && obj.fracture) out.push("перелом");
-    if(obj && obj.splint) out.push("шина");
     return out;
   }
+  function sideTextLR(tObj, side, num){
+    if(!isPair(side, num)) return "";
+    const sd = tObj && (tObj.side==="L" || tObj.side==="R") ? tObj.side : "";
+    if(sd==="L") return " (левая)";
+    if(sd==="R") return " (правая)";
+    return " (левая)"; // дефолт
+  }
 
+  // ---------- pins ----------
   function clearPins(){ pinsLayer.innerHTML=""; }
 
-  function addPin(pinKey, x, y, selected){
-    const { num, lr } = splitKey(pinKey);
-
+  function addPin(num,x,y,selected){
     const pin=document.createElement("div");
     pin.className="pin " + (view==="front"?"front":"back") + (selected?" selected":"");
     pin.style.left=x+"%";
     pin.style.top=y+"%";
-    pin.textContent = String(num) + (lr ? lrSuffix(lr) : "");
+    pin.textContent=String(num);
 
     pin.addEventListener("pointerdown",(e)=>{
       e.preventDefault(); e.stopPropagation();
-      toggleZone(pinKey);
+      toggleZone(num);
     });
 
     pinsLayer.appendChild(pin);
   }
 
-  function getPointForKey(pointsSideMap, key){
-    const { num, lr } = splitKey(key);
-    const base = pointsSideMap[num];
-    if(!base) return null;
-
-    // если LR зона
-    if(isLR(view, num)){
-      if(base && typeof base==="object" && (base.L || base.R)){
-        const p = lr ? base[lr] : null;
-        return p || null;
-      }
-      return null;
-    }
-
-    // обычная зона
-    if(base && typeof base==="object" && isFinite(base.x) && isFinite(base.y)) return base;
-    return null;
-  }
-
-  function enumerateAllPinsForView(pointsSideMap){
-    const res=[];
-    const dict=dictFor(view);
-
-    Object.keys(pointsSideMap).forEach(num=>{
-      const n=parseInt(num,10);
-      if(!isFinite(n)) return;
-      if(!dict[n]) return;
-
-      const v=pointsSideMap[num];
-      if(isLR(view, n)){
-        if(v && typeof v==="object" && (v.L || v.R)){
-          if(v.L) res.push({ key: makeKey(n,"L"), x:v.L.x, y:v.L.y });
-          if(v.R) res.push({ key: makeKey(n,"R"), x:v.R.x, y:v.R.y });
-        }
-      } else {
-        if(v && typeof v==="object" && isFinite(v.x) && isFinite(v.y)){
-          res.push({ key: String(n), x:v.x, y:v.y });
-        }
-      }
-    });
-    return res;
-  }
-
   function renderPins(){
     const points=loadPoints();
     const map=view==="front"?points.front:points.back;
-
     const sel=loadSel(view);
-    const selSet=new Set(sel);
+    const selSet={}; for(let i=0;i<sel.length;i++) selSet[sel[i]]=1;
 
     clearPins();
 
     // сначала выбранные
-    for(const key of sel){
-      const p = getPointForKey(map, key);
-      if(p) addPin(key, p.x, p.y, true);
+    for(let i=0;i<sel.length;i++){
+      const k=sel[i];
+      if(map[k]) addPin(k, map[k].x, map[k].y, true);
     }
     // потом остальные
-    const all = enumerateAllPinsForView(map);
-    for(const item of all){
-      if(selSet.has(item.key)) continue;
-      addPin(item.key, item.x, item.y, false);
+    const keys=Object.keys(map);
+    for(let i=0;i<keys.length;i++){
+      const k=keys[i];
+      if(!selSet[k] && map[k]) addPin(k, map[k].x, map[k].y, false);
     }
   }
 
-  function toggleZone(key){
+  function toggleZone(num){
+    const n=String(parseInt(num,10));
     let sel=loadSel(view);
-    const idx=sel.indexOf(String(key));
+
+    let idx=-1;
+    for(let i=0;i<sel.length;i++){ if(sel[i]===n){ idx=i; break; } }
+
     if(idx>=0) sel.splice(idx,1);
-    else sel.push(String(key));
-    saveSel(view, uniqArr(sel));
+    else sel.push(n);
+
+    sel=uniqNums(sel);
+    saveSel(view,sel);
+
+    // дефолт ЛЕВО для парных зон (если ещё не задано)
+    if(isPair(view, n)){
+      const t=loadTrauma(view);
+      if(!t[n]) t[n]={};
+      if(t[n].side!=="L" && t[n].side!=="R") t[n].side="L";
+      saveTrauma(view,t);
+    }
+
     renderAll();
   }
 
-  function setTrauma(zoneKey, key, val){
+  function setTrauma(num,key,val){
+    const n=String(parseInt(num,10));
     const t=loadTrauma(view);
-    if(!t[zoneKey]) t[zoneKey]={};
-    t[zoneKey][key]=!!val;
-    saveTraumaSafe(view,t);
+    if(!t[n]) t[n]={};
+    t[n][key]=!!val;
+    saveTrauma(view,t);
+    renderAll(false);
+  }
+
+  function setLR(num, lr){
+    const n=String(parseInt(num,10));
+    const t=loadTrauma(view);
+    if(!t[n]) t[n]={};
+    t[n].side = lr;
+    saveTrauma(view,t);
     renderAll(false);
   }
 
   function renderZonesUI(){
-    const sel=loadSel(view).slice().sort((a,b)=>{
-      const A=splitKey(a), B=splitKey(b);
-      const na=parseInt(A.num,10), nb=parseInt(B.num,10);
-      if(na!==nb) return na-nb;
-      const la=A.lr||"", lb=B.lr||"";
-      return la.localeCompare(lb);
-    });
-
+    const sel=loadSel(view).sort((a,b)=>parseInt(a,10)-parseInt(b,10));
     const trauma=loadTrauma(view);
     const dict=dictFor(view);
 
@@ -533,35 +440,61 @@
       return;
     }
 
-    for(const zoneKey of sel){
-      const { num, lr } = splitKey(zoneKey);
-      const n=parseInt(num,10);
-      const name=dict[n] || "НЕИЗВЕСТНО";
+    for(let i=0;i<sel.length;i++){
+      const num=sel[i];
+      const name=dict[parseInt(num,10)] || "НЕИЗВЕСТНО";
       const cls=zoneClassByName(name);
       const allow=allowedForClass(cls);
-      const cur=trauma[zoneKey] || {};
+      const cur=trauma[num] || {};
 
       const card=document.createElement("div");
       card.className="zoneCard";
 
       const head=document.createElement("div");
       head.className="zoneHead";
-      head.innerHTML=
-        `<div>[${num}${lr?lrSuffix(lr):""}] ${name}` +
-        `<div class="zoneSub">Сторона: ${view==="front"?"ПЕРЕД":"СПИНА"}${lr?(", " + lrWord(lr)):""}</div></div>`;
+      head.innerHTML=`<div>[${num}] ${name}<div class="zoneSub">Сторона: ${view==="front"?"ПЕРЕД":"СПИНА"}</div></div>`;
 
       const delBtn=document.createElement("button");
       delBtn.className="miniBtn";
       delBtn.type="button";
       delBtn.textContent="Убрать";
-      delBtn.addEventListener("pointerdown",(e)=>{ e.preventDefault(); toggleZone(zoneKey); });
+      delBtn.addEventListener("pointerdown",(e)=>{ e.preventDefault(); toggleZone(num); });
       head.appendChild(delBtn);
       card.appendChild(head);
+
+      // --- ЛЕВО/ПРАВО (только для парных зон) ---
+      if(isPair(view, num)){
+        const curSide = (cur.side==="L" || cur.side==="R") ? cur.side : "L";
+
+        const lrGrid=document.createElement("div");
+        lrGrid.className="grid";
+        lrGrid.style.gridTemplateColumns="1fr 1fr";
+
+        function mkSide(label,val){
+          const wrap=document.createElement("label");
+          wrap.className="chk";
+          const inp=document.createElement("input");
+          inp.type="radio";
+          inp.name=`lr_${view}_${num}`;
+          inp.checked=(curSide===val);
+          inp.addEventListener("change", ()=> setLR(num,val));
+          const sp=document.createElement("span");
+          sp.textContent=label;
+          wrap.appendChild(inp);
+          wrap.appendChild(sp);
+          return wrap;
+        }
+
+        lrGrid.appendChild(mkSide("ЛЕВО","L"));
+        lrGrid.appendChild(mkSide("ПРАВО","R"));
+        card.appendChild(lrGrid);
+      }
 
       const grid=document.createElement("div");
       grid.className="grid";
 
-      for(const tr of TRAUMAS){
+      for(let j=0;j<TRAUMAS.length;j++){
+        const tr=TRAUMAS[j];
         if(!allow[tr.key]) continue;
 
         const wrap=document.createElement("label");
@@ -570,10 +503,27 @@
         const inp=document.createElement("input");
         inp.type="checkbox";
         inp.checked=!!cur[tr.key];
-        inp.addEventListener("change", ()=> setTrauma(zoneKey, tr.key, inp.checked));
+        inp.addEventListener("change", ()=> setTrauma(num,tr.key,inp.checked));
 
         const span=document.createElement("span");
         span.textContent=tr.label;
+
+        wrap.appendChild(inp);
+        wrap.appendChild(span);
+        grid.appendChild(wrap);
+      }
+
+      if(allow.splint){
+        const wrap=document.createElement("label");
+        wrap.className="chk";
+
+        const inp=document.createElement("input");
+        inp.type="checkbox";
+        inp.checked=!!cur.splint;
+        inp.addEventListener("change", ()=> setTrauma(num,"splint",inp.checked));
+
+        const span=document.createElement("span");
+        span.textContent="Шина наложена";
 
         wrap.appendChild(inp);
         wrap.appendChild(span);
@@ -590,19 +540,8 @@
     const call=(callEl.value||"").trim();
     const comment=(commentEl.value||"").trim();
 
-    const selFront=loadSel("front").slice().sort((a,b)=>{
-      const A=splitKey(a), B=splitKey(b);
-      const na=parseInt(A.num,10), nb=parseInt(B.num,10);
-      if(na!==nb) return na-nb;
-      return (A.lr||"").localeCompare(B.lr||"");
-    });
-    const selBack=loadSel("back").slice().sort((a,b)=>{
-      const A=splitKey(a), B=splitKey(b);
-      const na=parseInt(A.num,10), nb=parseInt(B.num,10);
-      if(na!==nb) return na-nb;
-      return (A.lr||"").localeCompare(B.lr||"");
-    });
-
+    const selFront=loadSel("front").sort((a,b)=>parseInt(a,10)-parseInt(b,10));
+    const selBack=loadSel("back").sort((a,b)=>parseInt(a,10)-parseInt(b,10));
     const tf=loadTrauma("front");
     const tb=loadTrauma("back");
 
@@ -610,14 +549,16 @@
       const dict=dictFor(side);
       if(sel.length===0) return ["(нет)"];
       const out=[];
-      for(const zoneKey of sel){
-        const { num, lr } = splitKey(zoneKey);
+      for(let i=0;i<sel.length;i++){
+        const num=sel[i];
         const name=dict[parseInt(num,10)] || "НЕИЗВЕСТНО";
-        const ts=traumaSummary(t[zoneKey]||{});
+        const ts=traumaSummary(t[num]||{});
+        const spl=!!(t[num] && t[num].splint);
+        const lr = sideTextLR(t[num], side, num);
 
-        let line=`• ${num}${lr?lrSuffix(lr):""} — ${name}`;
-        if(lr) line += ` (${lrWord(lr)})`;
+        let line=`• ${num} — ${name}${lr}`;
         if(ts.length) line += `\n  Травмы: ${ts.join(", ")}`;
+        if(spl) line += `\n  Шина: да`;
         out.push(line);
       }
       return out;
@@ -639,57 +580,6 @@ ${comment || "-"}`
     );
   }
 
-  // “Удиви меня”: короткая сводка (сокращениями + ВК/НК)
-  function limbAbbrByName(name){
-    const cls=zoneClassByName(name);
-    if(cls==="limb_upper") return "ВК";
-    if(cls==="limb_lower") return "НК";
-    if(cls==="head" || cls==="neck") return "ГОЛ/ШЕЯ";
-    return "ТУЛ";
-  }
-  function shortSummary(){
-    const dictF=dictFor("front");
-    const dictB=dictFor("back");
-    const selF=loadSel("front");
-    const selB=loadSel("back");
-    const tf=loadTrauma("front");
-    const tb=loadTrauma("back");
-
-    function parts(side, sel, dict, t){
-      const out=[];
-      for(const zoneKey of sel){
-        const { num, lr } = splitKey(zoneKey);
-        const name=dict[parseInt(num,10)] || "НЕИЗВЕСТНО";
-        const limb=limbAbbrByName(name);
-
-        const flags=t[zoneKey]||{};
-        const tags=[];
-        // приоритет: осколочное / МВТ / ожог / перелом / шина
-        if(flags.shrapnel) tags.push("СОР");
-        if(flags.mvt) tags.push("МВТ");
-        if(flags.burn) tags.push("ОЖ");
-        if(flags.fracture) tags.push("ПРЛ");
-        if(flags.splint) tags.push("ШИНА");
-
-        if(tags.length===0) tags.push("ЗОНА");
-
-        // пример: "СОР левой ВК"
-        if(lr && (limb==="ВК" || limb==="НК")){
-          out.push(`${tags.join("+")} ${lrWord(lr)} ${limb}`);
-        } else {
-          out.push(`${tags.join("+")} ${limb}`);
-        }
-      }
-      return out;
-    }
-
-    const a = parts("front", selF, dictF, tf);
-    const b = parts("back",  selB, dictB, tb);
-    const all = a.concat(b);
-    if(all.length===0) return "Сводка: (нет выбранных зон)";
-    return "Сводка: " + all.join("; ");
-  }
-
   function renderAll(updateText=true){
     renderPins();
     renderZonesUI();
@@ -704,39 +594,25 @@ ${comment || "-"}`
     renderAll();
   }
 
-  // Ввод номера: если LR-зона — спросим Л/П
   function addZoneFromInput(){
     const raw=(zoneNumEl.value||"").trim();
     const n=parseInt(raw,10);
     if(!isFinite(n)){ toast("Введи номер зоны"); return; }
-
-    const dict=dictFor(view);
+    const dict = dictFor(view);
     if(!dict[n]){ toast(`Нет зоны №${n} для стороны: ${view==="front"?"ПЕРЕД":"СПИНА"}`, 2600); return; }
-
-    if(isLR(view,n)){
-      const okLeft = confirm(`Зона ${n} — левая? (OK=левая, Отмена=правая)`);
-      const lr = okLeft ? "L" : "R";
-      toggleZone(makeKey(n, lr));
-    } else {
-      toggleZone(String(n));
-    }
-
+    toggleZone(n);
     zoneNumEl.value="";
   }
 
-  // ---------- BUTTONS ----------
+  // ----- Copy / Refresh -----
   $("btnCopy").addEventListener("pointerdown", async (e)=>{
     e.preventDefault();
     const v=validateRequired();
     if(!v.ok){ toast("Не заполнены обязательные поля:\n- " + v.missing.join("\n- "), 3200); return; }
     const text=buildTextReport();
     finalEl.textContent=text;
-    try{
-      await navigator.clipboard.writeText(text);
-      toast("✅ Скопировано");
-    } catch(_){
-      toast("Не удалось скопировать. Выдели текст вручную.", 3200);
-    }
+    try{ await navigator.clipboard.writeText(text); toast("✅ Скопировано"); }
+    catch(_){ toast("Не удалось скопировать. Выдели текст вручную.", 3200); }
   });
 
   $("btnRefresh").addEventListener("pointerdown",(e)=>{
@@ -745,34 +621,18 @@ ${comment || "-"}`
     toast("Текст обновлён");
   });
 
-  $("btnShort").addEventListener("pointerdown",(e)=>{
-    e.preventDefault();
-    const v=validateRequired();
-    if(!v.ok){ toast("Заполни обязательные поля:\n- " + v.missing.join("\n- "), 3200); return; }
-    const s = shortSummary();
-    toast(s, 3800);
-  });
-
-  $("btnTG").addEventListener("pointerdown",(e)=>{
-    e.preventDefault();
-    const v=validateRequired();
-    if(!v.ok){ toast("Заполни обязательные поля:\n- " + v.missing.join("\n- "), 3200); return; }
-    const text = buildTextReport() + "\n\n" + shortSummary();
-    // Telegram share link
-    const url = "https://t.me/share/url?text=" + encodeURIComponent(text);
-    window.open(url, "_blank");
-  });
-
+  // ----- Tabs + add zone -----
   btnFront.addEventListener("pointerdown",(e)=>{ e.preventDefault(); setView("front"); });
   btnBack.addEventListener("pointerdown",(e)=>{ e.preventDefault(); setView("back"); });
   $("btnAddZone").addEventListener("pointerdown",(e)=>{ e.preventDefault(); addZoneFromInput(); });
+  zoneNumEl.addEventListener("keydown",(e)=>{ if(e.key==="Enter"){ e.preventDefault(); addZoneFromInput(); } });
 
-  // ---------- PDF (2 страницы, без пароля, русский как картинка) ----------
+  // ---------- PDF (без пароля, русский текст как картинка) ----------
   function mkFileName(){
     const dt=(dtEl.value||"").trim();
     const call=(callEl.value||"").trim();
     const nice = dt ? dt.replace("T","_").replace(/:/g,"-") : "no-date";
-    const pref = call ? call.trim().slice(0,2).toUpperCase() : "XX";
+    const pref = call ? (call.trim().slice(0,2).toUpperCase()) : "XX";
     return `${nice}_${pref}.pdf`;
   }
 
@@ -782,78 +642,57 @@ ${comment || "-"}`
       img.crossOrigin="anonymous";
       img.onload=()=>resolve(img);
       img.onerror=()=>reject(new Error("Не загрузилась картинка: "+url));
-      img.src=url + (url.indexOf("?")>=0?"&":"?") + "v=" + Date.now();
+      img.src = url + (url.indexOf("?")>=0 ? "&" : "?") + "v=" + Date.now();
     });
   }
 
-  function drawMarker(ctx, x, y, text, kind){
-    // kind: "front"/"back"
-    const r = 18;
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI*2);
-
-    // базовый цвет
-    if(kind==="front") ctx.fillStyle = "rgba(0,120,255,0.90)";
-    else ctx.fillStyle = "rgba(255,0,0,0.90)";
-    // выбранные мы рисуем зелёным
-    // (на PDF выводим выбранные только)
-    ctx.fill();
-
-    ctx.lineWidth=3;
-    ctx.strokeStyle="rgba(255,255,255,0.98)";
-    ctx.stroke();
-
-    ctx.fillStyle="#fff";
-    ctx.font="bold 18px Arial";
-    ctx.textAlign="center";
-    ctx.textBaseline="middle";
-    ctx.fillText(text, x, y);
-  }
-
-  function canvasWithSelectedPins(baseImg, side){
-    // side: "front"/"back"
-    const points = loadPoints();
+  function drawImageWithPins(baseImg, side){
+    const points=loadPoints();
     const map = side==="front" ? points.front : points.back;
     const sel = loadSel(side);
     const c=document.createElement("canvas");
     c.width = baseImg.naturalWidth || baseImg.width;
-    c.height = baseImg.naturalHeight || baseImg.height;
+    c.height= baseImg.naturalHeight|| baseImg.height;
     const ctx=c.getContext("2d");
     ctx.drawImage(baseImg,0,0,c.width,c.height);
 
-    // рисуем только выбранные
-    for(const key of sel){
-      const { num, lr } = splitKey(key);
-      const base = map[num];
-      let p=null;
-
-      if(isLR(side, num)){
-        if(base && (base.L || base.R) && lr && base[lr]) p = base[lr];
-      } else {
-        if(base && isFinite(base.x) && isFinite(base.y)) p = base;
-      }
+    // рисуем ТОЛЬКО выбранные зоны
+    const isFront = side==="front";
+    for(let i=0;i<sel.length;i++){
+      const num=sel[i];
+      const p=map[num];
       if(!p) continue;
-
       const x = (p.x/100)*c.width;
       const y = (p.y/100)*c.height;
-      const label = String(num) + (lr?lrSuffix(lr):"");
-      drawMarker(ctx, x, y, label, side);
-    }
 
+      const r = Math.max(12, Math.round(c.width*0.018));
+      ctx.beginPath();
+      ctx.arc(x,y,r,0,Math.PI*2);
+      ctx.fillStyle = isFront ? "rgba(0,120,255,0.92)" : "rgba(255,0,0,0.92)";
+      ctx.fill();
+      ctx.lineWidth = Math.max(2, Math.round(r*0.18));
+      ctx.strokeStyle="rgba(255,255,255,0.95)";
+      ctx.stroke();
+
+      ctx.fillStyle="#fff";
+      ctx.font = `bold ${Math.round(r*0.95)}px Arial`;
+      ctx.textAlign="center";
+      ctx.textBaseline="middle";
+      ctx.fillText(String(num), x, y);
+    }
     return c;
   }
 
-  function wrapText(ctx, text, x, y, maxWidth, lineHeight){
-    const words = (text||"").split(/\s+/).filter(Boolean);
-    let line = "";
+  function wrapTextCanvas(ctx, text, x, y, maxWidth, lineHeight){
+    const words = (text||"").split(/\s+/);
+    let line="";
     for(let i=0;i<words.length;i++){
       const test = line ? (line + " " + words[i]) : words[i];
-      const w = ctx.measureText(test).width;
-      if(w > maxWidth && line){
+      if(ctx.measureText(test).width > maxWidth && line){
         ctx.fillText(line, x, y);
         y += lineHeight;
         line = words[i];
-      } else {
+      }else{
         line = test;
       }
     }
@@ -865,10 +704,10 @@ ${comment || "-"}`
   }
 
   function makeA4PageCanvas(title, imgCanvas, reportText){
+    // A4 @ 150dpi-ish
     const page=document.createElement("canvas");
-    // A4 portrait in pixels (примерно, чтобы выглядело одинаково)
-    page.width = 1240;
-    page.height = 1754;
+    page.width=1240;
+    page.height=1754;
     const ctx=page.getContext("2d");
 
     ctx.fillStyle="#fff";
@@ -876,59 +715,47 @@ ${comment || "-"}`
 
     ctx.fillStyle="#111";
     ctx.font="bold 34px Arial";
-    ctx.textAlign="left";
-    ctx.textBaseline="top";
-    ctx.fillText(title, 60, 40);
+    ctx.fillText(title, 60, 70);
 
     // картинка
-    const imgX=140, imgY=120, imgW=960, imgH=960;
+    const imgX=160, imgY=110, imgW=920, imgH=920;
     ctx.drawImage(imgCanvas, imgX, imgY, imgW, imgH);
 
-    // текст отчёта (как картинка)
-    ctx.fillStyle="#111";
-    ctx.font="20px Arial";
-    ctx.textAlign="left";
-    ctx.textBaseline="top";
+    // текст
+    ctx.font="22px Arial";
+    let y = imgY + imgH + 50;
+    const maxW = page.width - 120;
+    const lh = 28;
 
-    const boxX=60, boxY=1120, boxW=1120;
     const lines = reportText.split("\n");
-
-    let y=boxY;
-    const lineHeight=28;
-
-    // лёгкая рамка
-    ctx.strokeStyle="rgba(0,0,0,0.15)";
-    ctx.lineWidth=2;
-    ctx.strokeRect(boxX-10, boxY-10, boxW+20, 560);
-
-    for(const ln of lines){
-      y = wrapText(ctx, ln, boxX, y, boxW, lineHeight);
-      if(y > page.height-40) break;
+    for(let i=0;i<lines.length;i++){
+      const ln = lines[i];
+      if(!ln.trim()){
+        y += Math.round(lh*0.5);
+        continue;
+      }
+      y = wrapTextCanvas(ctx, ln, 60, y, maxW, lh);
+      if(y > page.height-60) break;
     }
-
     return page;
   }
 
   async function makePDF(){
     const v=validateRequired();
-    if(!v.ok){
-      toast("Не заполнены обязательные поля:\n- " + v.missing.join("\n- "), 3200);
-      return;
-    }
+    if(!v.ok){ toast("Не заполнены обязательные поля:\n- " + v.missing.join("\n- "), 3200); return; }
     if(pdfBusy) return;
-
     pdfBusy=true;
     btnMakePDF.disabled=true;
     try{
-      toast("Готовлю PDF…", 2600);
+      toast("Готовлю PDF…", 2000);
 
       const baseFront = await loadImage("body_front.png");
       const baseBack  = await loadImage("body_back.png");
 
-      const frontPins = canvasWithSelectedPins(baseFront, "front");
-      const backPins  = canvasWithSelectedPins(baseBack, "back");
+      const frontPins = drawImageWithPins(baseFront, "front");
+      const backPins  = drawImageWithPins(baseBack, "back");
 
-      const reportText = buildTextReport() + "\n\n" + shortSummary();
+      const reportText = buildTextReport();
 
       const page1 = makeA4PageCanvas("КАРТА РАНЕНИЙ — ПЕРЕД", frontPins, reportText);
       const page2 = makeA4PageCanvas("КАРТА РАНЕНИЙ — СПИНА", backPins, reportText);
@@ -936,30 +763,18 @@ ${comment || "-"}`
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({orientation:"p", unit:"mm", format:"a4"});
 
-      // page1
       const img1 = page1.toDataURL("image/jpeg", 0.92);
       doc.addImage(img1, "JPEG", 0, 0, 210, 297);
 
-      // page2
       doc.addPage();
       const img2 = page2.toDataURL("image/jpeg", 0.92);
       doc.addImage(img2, "JPEG", 0, 0, 210, 297);
 
-      // download + preview
-      const fileName = mkFileName();
-      doc.save(fileName);
-
-      // preview in new tab
-      try{
-        const blob = doc.output("blob");
-        const url = URL.createObjectURL(blob);
-        window.open(url, "_blank");
-        setTimeout(()=>URL.revokeObjectURL(url), 15000);
-      }catch(_){}
-
-      toast("✅ PDF готов", 2400);
+      doc.save(mkFileName());
+      toast("✅ PDF сохранён", 2200);
     }catch(err){
-      setTopBad("PDF ОШИБКА:\n" + (err && err.message ? err.message : String(err)));
+      console.error(err);
+      toast("Ошибка PDF: " + (err && err.message ? err.message : err), 3500);
     }finally{
       pdfBusy=false;
       btnMakePDF.disabled=false;
@@ -968,15 +783,50 @@ ${comment || "-"}`
 
   btnMakePDF.addEventListener("pointerdown",(e)=>{ e.preventDefault(); makePDF(); });
 
-  // ---------- старт ----------
-  function setViewInit(){
-    btnFront.classList.toggle("active", true);
-    btnBack.classList.toggle("active", false);
-    renderAll();
-  }
-  setViewInit();
+  // ---------- Telegram share ----------
+  btnTG.addEventListener("pointerdown",(e)=>{
+    e.preventDefault();
+    const v=validateRequired();
+    if(!v.ok){ toast("Заполни обязательные поля:\n- " + v.missing.join("\n- "), 3200); return; }
 
+    const text = buildTextReport();
+    const tgUrl  = "tg://msg?text=" + encodeURIComponent(text);
+    const webUrl = "https://t.me/share/url?text=" + encodeURIComponent(text);
+
+    // пробуем открыть приложение
+    const a = document.createElement("a");
+    a.href = tgUrl;
+    a.style.display="none";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    // fallback на web share
+    setTimeout(()=>{ try{ window.open(webUrl, "_blank"); }catch(_){} }, 650);
+    toast("Открываю Telegram…", 1800);
+  });
+
+  // ---------- Init ----------
+  // автозаполнение времени (если пусто)
+  (function initDT(){
+    if(dtEl.value) return;
+    const d=new Date();
+    const pad=(n)=>String(n).padStart(2,"0");
+    const yyyy=d.getFullYear();
+    const mm=pad(d.getMonth()+1);
+    const dd=pad(d.getDate());
+    const hh=pad(d.getHours());
+    const mi=pad(d.getMinutes());
+    dtEl.value = `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+  })();
+
+  // IMPORTANT: точки (координаты) не трогаем — только читаем из localStorage
+  // Если вдруг точек нет, карта всё равно работает по номеру (выбор зоны/отчёт/PDF),
+  // но кружки на картинке могут не появиться для зон без координат.
+
+  setView("front");
 })();
 </script>
+
 </body>
 </html>
