@@ -11,24 +11,54 @@
       --line:#d9dee6;
       --text:#111;
       --muted:#556;
+
       --green:#1b5e20;
       --blue:#1976d2;
       --amber:#f9a825;
       --red:#b71c1c;
+
+      --good:#0f7b2c;
+      --bad:#7b1212;
+
+      --bandage:#e9e2d3;
+      --bandageEdge:#d6cfbf;
+      --ink:#111;
     }
+
+    /* Ночь */
+    body.night{
+      --bg:#0b1220;
+      --card:#0f172a;
+      --line:#243149;
+      --text:#e5e7eb;
+      --muted:#aab4c0;
+
+      --bandage:#cfc8bb;
+      --bandageEdge:#bfb8aa;
+      --ink:#e5e7eb;
+    }
+
     *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
     header{
       position:sticky;top:0;z-index:20;
-      background:linear-gradient(0deg, rgba(0,0,0,.06), rgba(0,0,0,.06)), var(--green);
+      background:linear-gradient(0deg, rgba(0,0,0,.08), rgba(0,0,0,.08)), var(--green);
       color:#fff;padding:12px 14px;
     }
-    .t{font-weight:900;text-align:center;font-size:18px}
+    body.night header{ background:linear-gradient(0deg, rgba(0,0,0,.25), rgba(0,0,0,.25)), #0b3a1f; }
+    .t{font-weight:900;text-align:center;font-size:18px;letter-spacing:.2px}
     .sub{margin-top:6px;text-align:center;font-size:12px;opacity:.92;line-height:1.25}
-    .wrap{max-width:980px;margin:0 auto;padding:12px;display:grid;gap:12px}
+
+    .wrap{max-width:1020px;margin:0 auto;padding:12px;display:grid;gap:12px}
     @media (min-width: 920px){
       .wrap{grid-template-columns: 1.25fr .75fr; align-items:start;}
     }
+
     .card{
       background:var(--card);
       border:1px solid var(--line);
@@ -36,44 +66,56 @@
       box-shadow:0 2px 10px rgba(0,0,0,.06);
       padding:12px;
     }
+
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
     .pill{
       border:1px solid var(--line);
-      background:#fff;
+      background:var(--card);
       border-radius:999px;
       padding:8px 12px;
       font-size:12px;
       font-weight:900;
       white-space:nowrap;
     }
-    .pill.good{border-color:rgba(27,94,32,.35);background:rgba(27,94,32,.10);color:#0f4f2b}
+    .pill.good{border-color:rgba(15,123,44,.35);background:rgba(15,123,44,.10);color:var(--good)}
     .pill.warn{border-color:rgba(249,168,37,.45);background:rgba(249,168,37,.14);color:#6a4b00}
-    .pill.bad{border-color:rgba(183,28,28,.35);background:rgba(183,28,28,.12);color:#7b1212}
+    body.night .pill.warn{color:#ffd27a}
+    .pill.bad{border-color:rgba(183,28,28,.35);background:rgba(183,28,28,.12);color:var(--bad)}
+
     .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
     button{
       border:none;border-radius:14px;padding:12px 14px;font-weight:900;font-size:15px;
       cursor:pointer;touch-action:manipulation;
+      background:#fff;color:var(--text);border:1px solid var(--line);
     }
     button:active{opacity:.86}
-    .bBlue{background:var(--blue);color:#fff}
-    .bGray{background:#515a63;color:#fff}
-    .bGreen{background:var(--green);color:#fff}
-    .bWhite{background:#fff;color:#111;border:1px solid var(--line)}
+    .bBlue{background:var(--blue);border-color:rgba(25,118,210,.25);color:#fff}
+    .bGray{background:#515a63;border-color:#515a63;color:#fff}
+    .bGreen{background:var(--green);border-color:rgba(27,94,32,.25);color:#fff}
+    .bAmber{background:rgba(249,168,37,.14);border-color:rgba(249,168,37,.45);color:#6a4b00}
+    body.night .bAmber{color:#ffd27a}
+    button:disabled{opacity:.55}
+
     .hint{margin-top:10px;font-size:13px;color:var(--muted);line-height:1.25}
     .stepTitle{font-size:16px;font-weight:900;margin:0}
     .stepText{margin-top:6px;font-size:13px;color:var(--muted);line-height:1.25}
     .list{margin:10px 0 0 18px;color:var(--muted);font-size:13px;line-height:1.25}
     .list li{margin:6px 0}
+
+    /* ВАЖНО: квадратный холст */
     .canvasWrap{
       width:100%;
+      aspect-ratio: 1 / 1;
       border-radius:18px;
       overflow:hidden;
       border:1px solid var(--line);
-      background:#fff;
-      touch-action:none; /* важно для рисования */
+      background:var(--card);
+      touch-action:none;
     }
-    canvas{display:block;width:100%;height:auto}
+    canvas{display:block;width:100%;height:100%}
+
     .small{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.25}
+
     .toast{
       position:fixed;left:50%;bottom:16px;transform:translateX(-50%);
       background:rgba(0,0,0,.85);color:#fff;padding:10px 12px;border-radius:12px;
@@ -84,59 +126,62 @@
 <body>
 <header>
   <div class="t">ТРЕНАЖЁР: “ЧЕРЕПАШЬЯ” ПОВЯЗКА НА КОЛЕНО</div>
-  <div class="sub">Пальцем рисуй “бинт”. Попади в коридор — шаг засчитан. Оффлайн, без интернета.</div>
+  <div class="sub">Лента бинта + шаги “по турам” + экзамен. Оффлайн.</div>
 </header>
 
 <div class="wrap">
 
-  <!-- Поле рисования -->
+  <!-- Поле -->
   <div class="card">
     <div class="row">
       <div class="pill" id="stepPill">Шаг 1/5</div>
-      <div class="pill warn" id="statusPill">Нарисуй линию и нажми “Проверить”</div>
+      <div class="pill warn" id="statusPill">Сделай тур и нажми “Проверить”</div>
+    </div>
+
+    <div class="row" style="margin-top:10px;">
+      <div class="pill" id="modePill">Режим: ОБУЧЕНИЕ</div>
+      <div class="pill" id="triesPill">Попытки: —</div>
+      <div class="pill" id="timePill">Время: —</div>
+      <div class="pill" id="bestPill">Лучшее: —</div>
     </div>
 
     <div class="canvasWrap" style="margin-top:10px;">
-      <canvas id="cv" width="900" height="900"></canvas>
+      <canvas id="cv"></canvas>
     </div>
 
     <div class="btns">
-      <button class="bWhite" id="btnToggleHint" type="button">ПОДСКАЗКА: ВКЛ</button>
-      <button class="bGray" id="btnClear" type="button">СТЕРЕТЬ</button>
-      <button class="bBlue" id="btnCheck" type="button">ПРОВЕРИТЬ</button>
-      <button class="bGreen" id="btnNext" type="button" disabled>ДАЛЬШЕ</button>
+      <button id="btnMode" type="button" class="bAmber">ЭКЗАМЕН: ВЫКЛ</button>
+      <button id="btnNight" type="button">НОЧЬ: ВЫКЛ</button>
+      <button id="btnHint" type="button">ПОДСКАЗКА: ВКЛ</button>
+      <button id="btnClear" type="button" class="bGray">СТЕРЕТЬ ХОД</button>
+      <button id="btnCheck" type="button" class="bBlue">ПРОВЕРИТЬ</button>
+      <button id="btnNext" type="button" class="bGreen" disabled>ДАЛЬШЕ</button>
     </div>
 
     <div class="small">
-      Подсказка показывает “идеальный путь” полупрозрачной линией.  
-      Без подсказки — режим тренировки. Рисуй одним непрерывным движением, как будто ведёшь тур бинта.
+      В обучении подсказку можно включать/выключать. В экзамене подсказка всегда выключена, 3 попытки на шаг, идёт таймер.
+      Линия — это “лента бинта”, попадание подсвечивается зелёным.
     </div>
   </div>
 
-  <!-- Инструкция и контроль -->
+  <!-- Инструкция -->
   <div class="card">
-    <h3 class="stepTitle" id="stepTitle">Шаг 1 — фиксирующий тур ниже колена</h3>
-    <div class="stepText" id="stepText">
-      Начни с 1–2 круговых туров ниже сустава (на голени), чтобы “зафиксировать” старт.
-    </div>
+    <h3 class="stepTitle" id="stepTitle">—</h3>
+    <div class="stepText" id="stepText">—</div>
 
-    <div class="hint"><b>Цель черепашьей:</b> закрыть/удержать повязку на суставе, не сползая при движении.</div>
+    <div class="hint" id="stepMeta"><b>Цель:</b> фиксация на суставе без сползания. Туры перекрываются примерно на 1/2.</div>
 
     <div style="margin-top:10px;">
-      <b style="font-size:13px;">Что считаем правильным здесь</b>
-      <ul class="list" id="criteria">
-        <li>Тур проходит вокруг голени (ниже колена).</li>
-        <li>Форма близка к окружности/овалу.</li>
-        <li>Не “залезает” на сустав.</li>
-      </ul>
+      <b style="font-size:13px;">Что считаем правильным на этом шаге</b>
+      <ul class="list" id="criteria"></ul>
     </div>
 
     <div style="margin-top:10px;">
-      <b style="font-size:13px;">Контроль после повязки (реально в поле)</b>
+      <b style="font-size:13px;">Контроль после (реально в поле)</b>
       <ul class="list">
         <li>Не передавливает: пальцы тёплые, цвет нормальный.</li>
         <li>Чувствительность сохранена (если проверяете).</li>
-        <li>Повязка держится и не сползает.</li>
+        <li>Повязка держится, не сползает при движении.</li>
       </ul>
     </div>
   </div>
@@ -147,17 +192,28 @@
 
 <script>
 (() => {
-  // ----------------------- Canvas setup -----------------------
+  // ----------------------- Константы / состояние -----------------------
+  const STORAGE_KEY = "turtle_knee_trainer_v2";
+  const BEST_KEY = "turtle_knee_best_v2";
+
   const cv = document.getElementById("cv");
   const ctx = cv.getContext("2d");
+
   const toastEl = document.getElementById("toast");
   const stepPill = document.getElementById("stepPill");
   const statusPill = document.getElementById("statusPill");
+  const modePill = document.getElementById("modePill");
+  const triesPill = document.getElementById("triesPill");
+  const timePill = document.getElementById("timePill");
+  const bestPill = document.getElementById("bestPill");
+
   const stepTitle = document.getElementById("stepTitle");
   const stepText = document.getElementById("stepText");
-  const criteria = document.getElementById("criteria");
+  const criteriaEl = document.getElementById("criteria");
 
-  const btnToggleHint = document.getElementById("btnToggleHint");
+  const btnMode = document.getElementById("btnMode");
+  const btnNight = document.getElementById("btnNight");
+  const btnHint = document.getElementById("btnHint");
   const btnClear = document.getElementById("btnClear");
   const btnCheck = document.getElementById("btnCheck");
   const btnNext = document.getElementById("btnNext");
@@ -169,38 +225,98 @@
     toastEl._t = setTimeout(()=>toastEl.style.display="none", ms);
   }
 
-  // HiDPI crisp
-  function fitCanvas(){
-    const dpr = Math.max(1, window.devicePixelRatio || 1);
-    const rect = cv.getBoundingClientRect();
-    const w = Math.round(rect.width * dpr);
-    const h = Math.round(rect.height * dpr);
-    if(cv.width !== w || cv.height !== h){
-      cv.width = w; cv.height = h;
-    }
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-    redraw();
+  function pad2(n){ return String(n).padStart(2,"0"); }
+  function fmtTime(ms){
+    const s = Math.max(0, Math.floor(ms/1000));
+    const m = Math.floor(s/60);
+    const r = s%60;
+    return `${pad2(m)}:${pad2(r)}`;
   }
-  // ensure CSS size
-  function setCanvasCSS(){
-    // keep square on all screens
-    cv.style.width = "100%";
-    cv.style.height = "auto";
-  }
-  setCanvasCSS();
 
-  // ----------------------- Knee diagram -----------------------
-  // Coordinates in "CSS pixels" (we draw in a virtual 900x900 scaled to real)
-  // We'll define a virtual space 900x900 and map to actual by scaling
+  // Виртуальная система координат 900x900
   const V = {w:900, h:900};
+  const kneeCenter = {x:450, y:450};
+  const kneeR = 135;
+  const TOL = 45; // коридор
+
+  // “Туры” — сколько успешных ходов нужно на шаге
+  // Шаг 1: 2 тура ниже; 3: 1 тур выше; 5: 1 тур по колену; диагонали по 1 ходу
+  const STEPS = [
+    { id:1, need:2, kind:"loop",
+      title:"Шаг 1 — 2 фиксирующих тура ниже колена",
+      text:"Сделай два круговых тура на голени (ниже сустава). Каждый тур засчитывается отдельным “ходом”.",
+      criteria:[
+        "Каждый тур проходит вокруг голени ниже колена.",
+        "Тур замкнутый (старт≈финиш).",
+        "Не залезает на сустав."
+      ],
+      path: circlePolyline(kneeCenter.x, kneeCenter.y+210, 170, 0, Math.PI*2, 120)
+    },
+    { id:2, need:1, kind:"diagUp",
+      title:"Шаг 2 — диагональ вверх через сустав",
+      text:"Сделай диагональный ход снизу-вверх через область колена (как элемент “восьмёрки”).",
+      criteria:[
+        "Пересекает область колена.",
+        "Направление снизу-вверх.",
+        "Держится возле сустава (не уходит далеко)."
+      ],
+      path: linePolyline(330, 635, 610, 300, 80)
+    },
+    { id:3, need:1, kind:"loop",
+      title:"Шаг 3 — 1 тур выше колена (на бедре)",
+      text:"Сделай круговой тур на бедре выше сустава — закрепляешь верхнюю петлю.",
+      criteria:[
+        "Тур вокруг бедра выше колена.",
+        "Замкнутый (старт≈финиш).",
+        "Не уходит ниже линии сустава."
+      ],
+      path: circlePolyline(kneeCenter.x, kneeCenter.y-210, 175, 0, Math.PI*2, 120)
+    },
+    { id:4, need:1, kind:"diagDown",
+      title:"Шаг 4 — диагональ вниз через сустав",
+      text:"Вторая диагональ: сверху-вниз через колено, формируя “восьмёрку”.",
+      criteria:[
+        "Пересекает область колена.",
+        "Направление сверху-вниз.",
+        "Похожа на зеркальную к шагу 2."
+      ],
+      path: linePolyline(330, 300, 610, 635, 80)
+    },
+    { id:5, need:1, kind:"loop",
+      title:"Шаг 5 — закрепляющий тур вокруг колена",
+      text:"Закрепи повязку круговым туром вокруг области колена (по ситуации чуть шире).",
+      criteria:[
+        "Тур вокруг колена.",
+        "Замкнутый (старт≈финиш).",
+        "Закрепляет пересечения диагоналей."
+      ],
+      path: circlePolyline(kneeCenter.x, kneeCenter.y, 195, 0, Math.PI*2, 120)
+    }
+  ];
+
+  // Состояние тренировки
+  let stepIndex = 0;
+  let showHint = true;
+  let examMode = false;
+  let nightMode = false;
+
+  let drawing = false;
+  let rawPts = [];
+  let pts = [];            // сглаженные
+  let stepDone = 0;        // сколько засчитано ходов на шаге
+  let triesLeft = 3;       // экзамен
+
+  let startMs = null;      // экзамен таймер
+
+  // ----------------------- Геометрия -----------------------
   function scale(){
     const rect = cv.getBoundingClientRect();
+    // квадрат, поэтому базируем на width
     const sx = rect.width / V.w;
-    const sy = rect.width / V.w; // square based on width
+    const sy = rect.height / V.h;
     return {sx, sy};
   }
   function toCanvas(p){
-    const rect = cv.getBoundingClientRect();
     const s = scale();
     return {x: p.x * s.sx, y: p.y * s.sy};
   }
@@ -209,72 +325,7 @@
     return {x: x / s.sx, y: y / s.sy};
   }
 
-  // Simple silhouette: thigh -> knee -> calf
-  const kneeCenter = {x:450, y:450};
-  const kneeR = 135;
-
-  function drawBody(){
-    // background
-    ctx.clearRect(0,0,cv.clientWidth, cv.clientWidth);
-    // white background already; add subtle grid
-    ctx.save();
-    ctx.globalAlpha = 0.06;
-    ctx.lineWidth = 1;
-    for(let i=0;i<=900;i+=50){
-      ctx.beginPath(); ctx.moveTo(toCanvas({x:i,y:0}).x,toCanvas({x:i,y:0}).y);
-      ctx.lineTo(toCanvas({x:i,y:900}).x,toCanvas({x:i,y:900}).y); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(toCanvas({x:0,y:i}).x,toCanvas({x:0,y:i}).y);
-      ctx.lineTo(toCanvas({x:900,y:i}).x,toCanvas({x:900,y:i}).y); ctx.stroke();
-    }
-    ctx.restore();
-
-    // limb outline (stylized)
-    ctx.save();
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = "#222";
-    ctx.globalAlpha = 0.9;
-
-    // thigh/calf shape
-    // outer contour
-    ctx.beginPath();
-    ctx.moveTo(toCanvas({x:320,y:140}).x, toCanvas({x:320,y:140}).y);
-    ctx.quadraticCurveTo(toCanvas({x:250,y:320}).x,toCanvas({x:250,y:320}).y, toCanvas({x:295,y:420}).x,toCanvas({x:295,y:420}).y);
-    ctx.quadraticCurveTo(toCanvas({x:250,y:520}).x,toCanvas({x:250,y:520}).y, toCanvas({x:295,y:760}).x,toCanvas({x:295,y:760}).y);
-    ctx.quadraticCurveTo(toCanvas({x:320,y:840}).x,toCanvas({x:320,y:840}).y, toCanvas({x:360,y:860}).x,toCanvas({x:360,y:860}).y);
-
-    ctx.moveTo(toCanvas({x:580,y:140}).x, toCanvas({x:580,y:140}).y);
-    ctx.quadraticCurveTo(toCanvas({x:650,y:320}).x,toCanvas({x:650,y:320}).y, toCanvas({x:605,y:420}).x,toCanvas({x:605,y:420}).y);
-    ctx.quadraticCurveTo(toCanvas({x:650,y:520}).x,toCanvas({x:650,y:520}).y, toCanvas({x:605,y:760}).x,toCanvas({x:605,y:760}).y);
-    ctx.quadraticCurveTo(toCanvas({x:580,y:840}).x,toCanvas({x:580,y:840}).y, toCanvas({x:540,y:860}).x,toCanvas({x:540,y:860}).y);
-    ctx.stroke();
-
-    // joint circle (knee)
-    ctx.save();
-    ctx.globalAlpha = 0.7;
-    ctx.lineWidth = 5;
-    ctx.beginPath();
-    const kc = toCanvas(kneeCenter);
-    ctx.arc(kc.x,kc.y, kneeR*scale().sx, 0, Math.PI*2);
-    ctx.stroke();
-    ctx.restore();
-
-    // labels
-    ctx.fillStyle="#111";
-    ctx.globalAlpha = 0.65;
-    ctx.font = "bold 16px system-ui, Arial";
-    ctx.fillText("БЕДРО", toCanvas({x:390,y:120}).x, toCanvas({x:390,y:120}).y);
-    ctx.fillText("КОЛЕНО", toCanvas({x:382,y:465}).x, toCanvas({x:382,y:465}).y);
-    ctx.fillText("ГОЛЕНЬ", toCanvas({x:392,y:835}).x, toCanvas({x:392,y:835}).y);
-
-    ctx.restore();
-  }
-
-  // ----------------------- Trainer steps -----------------------
-  // We model "ideal paths" as polylines in virtual coordinates (V=900).
-  // We'll allow a tolerance corridor (px in virtual space).
-  const TOL = 45; // corridor radius in virtual units
-
-  function circlePolyline(cx,cy,r, startA, endA, steps=70){
+  function circlePolyline(cx,cy,r,startA,endA,steps=90){
     const pts=[];
     const dir = endA>=startA ? 1 : -1;
     const span = Math.abs(endA-startA);
@@ -285,7 +336,7 @@
     }
     return pts;
   }
-  function linePolyline(x1,y1,x2,y2, steps=40){
+  function linePolyline(x1,y1,x2,y2,steps=40){
     const pts=[];
     for(let i=0;i<=steps;i++){
       const t=i/steps;
@@ -294,236 +345,463 @@
     return pts;
   }
 
-  // Define 5 steps for "черепашья (расходящаяся)" around knee:
-  // 1) anchor circle below knee (calf)
-  // 2) diagonal up crossing knee (lower left -> upper right)
-  // 3) circle above knee (thigh)
-  // 4) diagonal down crossing knee (upper left -> lower right)
-  // 5) finishing around knee (mid circle) to secure
-  const STEPS = [
-    {
-      id:1,
-      title:"Шаг 1 — фиксирующий тур ниже колена",
-      text:"Сделай 1 круговой тур ниже сустава (на голени). Это стартовая фиксация.",
-      criteria:[
-        "Тур проходит вокруг голени (ниже колена).",
-        "Форма близка к окружности/овалу.",
-        "Не “залезает” на сустав."
-      ],
-      path: circlePolyline(kneeCenter.x, kneeCenter.y+210, 170, 0, Math.PI*2, 90)
-    },
-    {
-      id:2,
-      title:"Шаг 2 — диагональ вверх через сустав",
-      text:"Проведи бинт по диагонали вверх через колено. Представь “восьмёрку”.",
-      criteria:[
-        "Траектория пересекает область колена.",
-        "Диагональ направлена снизу-вверх.",
-        "Не уходит слишком в сторону от сустава."
-      ],
-      path: linePolyline(330, 635, 610, 300, 55)
-    },
-    {
-      id:3,
-      title:"Шаг 3 — тур выше колена (на бедре)",
-      text:"Теперь круговой тур выше сустава (на бедре) для фиксации второй петли.",
-      criteria:[
-        "Тур проходит вокруг бедра (выше колена).",
-        "Форма близка к окружности/овалу.",
-        "Не уходит ниже линии сустава."
-      ],
-      path: circlePolyline(kneeCenter.x, kneeCenter.y-210, 175, 0, Math.PI*2, 90)
-    },
-    {
-      id:4,
-      title:"Шаг 4 — диагональ вниз через сустав",
-      text:"Вторая диагональ: сверху вниз через колено, формируя “восьмёрку”.",
-      criteria:[
-        "Траектория снова пересекает область колена.",
-        "Направление сверху-вниз.",
-        "Симметрично относительно прошлого диагонального хода."
-      ],
-      path: linePolyline(330, 300, 610, 635, 55)
-    },
-    {
-      id:5,
-      title:"Шаг 5 — закрепление (тур на уровне сустава)",
-      text:"Закрепи повязку круговым туром вокруг области колена (чуть шире/по ситуации).",
-      criteria:[
-        "Тур проходит вокруг колена.",
-        "Покрывает центральную часть без сильного смещения.",
-        "Закрепляет пересечения диагоналей."
-      ],
-      path: circlePolyline(kneeCenter.x, kneeCenter.y, 195, 0, Math.PI*2, 90)
+  function distPointToSegment(p,a,b){
+    const vx=b.x-a.x, vy=b.y-a.y;
+    const wx=p.x-a.x, wy=p.y-a.y;
+    const c1=vx*wx+vy*wy;
+    if(c1<=0) return Math.hypot(p.x-a.x,p.y-a.y);
+    const c2=vx*vx+vy*vy;
+    if(c2<=c1) return Math.hypot(p.x-b.x,p.y-b.y);
+    const t=c1/c2;
+    const px=a.x+t*vx, py=a.y+t*vy;
+    return Math.hypot(p.x-px,p.y-py);
+  }
+  function distPointToPolyline(p, poly){
+    let best=Infinity;
+    for(let i=0;i<poly.length-1;i++){
+      const d=distPointToSegment(p, poly[i], poly[i+1]);
+      if(d<best) best=d;
     }
-  ];
+    return best;
+  }
 
-  let stepIndex = 0;
-  let showHint = true;
+  function bboxOf(poly){
+    let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+    for(const p of poly){
+      if(p.x<minX) minX=p.x;
+      if(p.y<minY) minY=p.y;
+      if(p.x>maxX) maxX=p.x;
+      if(p.y>maxY) maxY=p.y;
+    }
+    return {minX,minY,maxX,maxY};
+  }
 
-  // User drawing
-  let drawing = false;
-  let userPts = [];
+  // проверка “замкнутости” тура
+  function isClosed(poly){
+    if(poly.length<12) return false;
+    const a=poly[0], b=poly[poly.length-1];
+    return Math.hypot(a.x-b.x, a.y-b.y) < 110; // допуск
+  }
 
+  // проверка “пересекает колено”
+  function crossesKnee(poly){
+    // хотя бы N точек в зоне радиуса kneeR+tol
+    let hit=0;
+    const rr = kneeR + 35;
+    const rr2 = rr*rr;
+    for(const p of poly){
+      const dx=p.x-kneeCenter.x, dy=p.y-kneeCenter.y;
+      if(dx*dx+dy*dy <= rr2) hit++;
+    }
+    return hit >= 10;
+  }
+
+  // ----------------------- Оценка хода -----------------------
+  function evaluateStroke(step, userPoly){
+    if(userPoly.length < 18) return {ok:false, msg:"Слишком коротко. Сделай ход длиннее."};
+
+    // точность по коридору
+    let good=0;
+    for(const p of userPoly){
+      if(distPointToPolyline(p, step.path) <= TOL) good++;
+    }
+    const score = good / userPoly.length;
+
+    // базовая планка
+    const okScore = score >= 0.62;
+
+    // дополнительные правила по типу шага
+    if(step.kind === "loop"){
+      if(!isClosed(userPoly)) return {ok:false, msg:`Тур должен быть замкнутым (старт≈финиш).`};
+      // ограничим “не тот уровень”: сравним bbox по Y с bbox эталона
+      const bbU = bboxOf(userPoly);
+      const bbR = bboxOf(step.path);
+      const centerU = (bbU.minY+bbU.maxY)/2;
+      const centerR = (bbR.minY+bbR.maxY)/2;
+      if(Math.abs(centerU-centerR) > 120) return {ok:false, msg:"Тур ушёл не туда по высоте. Держись ближе к зоне подсказки."};
+      if(!okScore) return {ok:false, msg:`Почти. Тяни ближе к коридору (точность ${(score*100).toFixed(0)}%).`};
+      return {ok:true, msg:`Зачёт ✅ (точность ${(score*100).toFixed(0)}%)`};
+    }
+
+    if(step.kind === "diagUp"){
+      if(!crossesKnee(userPoly)) return {ok:false, msg:"Диагональ должна проходить через область колена."};
+      const dy = userPoly[userPoly.length-1].y - userPoly[0].y;
+      if(dy > 30) return {ok:false, msg:"Диагональ должна идти СНИЗУ ВВЕРХ."};
+      if(!okScore) return {ok:false, msg:`Ушёл от коридора (точность ${(score*100).toFixed(0)}%).`};
+      return {ok:true, msg:`Зачёт ✅ (точность ${(score*100).toFixed(0)}%)`};
+    }
+
+    if(step.kind === "diagDown"){
+      if(!crossesKnee(userPoly)) return {ok:false, msg:"Диагональ должна проходить через область колена."};
+      const dy = userPoly[userPoly.length-1].y - userPoly[0].y;
+      if(dy < -30) return {ok:false, msg:"Диагональ должна идти СВЕРХУ ВНИЗ."};
+      if(!okScore) return {ok:false, msg:`Ушёл от коридора (точность ${(score*100).toFixed(0)}%).`};
+      return {ok:true, msg:`Зачёт ✅ (точность ${(score*100).toFixed(0)}%)`};
+    }
+
+    return okScore
+      ? {ok:true, msg:`Зачёт ✅ (точность ${(score*100).toFixed(0)}%)`}
+      : {ok:false, msg:`Почти. Тяни ближе к подсказке (точность ${(score*100).toFixed(0)}%).`};
+  }
+
+  // ----------------------- Рисование: “бинт-лента” -----------------------
+  function drawBody(){
+    const rect = cv.getBoundingClientRect();
+    const w = rect.width, h = rect.height;
+
+    // фон
+    ctx.clearRect(0,0,w,h);
+
+    // легкая сетка (в день)
+    if(!nightMode){
+      ctx.save();
+      ctx.globalAlpha = 0.05;
+      ctx.strokeStyle = "#000";
+      ctx.lineWidth = 1;
+      for(let i=0;i<=900;i+=50){
+        const a = toCanvas({x:i,y:0}); const b = toCanvas({x:i,y:900});
+        ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+        const c = toCanvas({x:0,y:i}); const d = toCanvas({x:900,y:i});
+        ctx.beginPath(); ctx.moveTo(c.x,c.y); ctx.lineTo(d.x,d.y); ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // контур конечности
+    ctx.save();
+    ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue("--ink").trim() || "#111";
+    ctx.globalAlpha = nightMode ? 0.9 : 0.85;
+    ctx.lineWidth = 4;
+
+    // левая/правая границы
+    ctx.beginPath();
+    // left
+    let p = toCanvas({x:320,y:140});
+    ctx.moveTo(p.x,p.y);
+    ctx.quadraticCurveTo(...pt(250,320), ...pt(295,420));
+    ctx.quadraticCurveTo(...pt(250,520), ...pt(295,760));
+    ctx.quadraticCurveTo(...pt(320,840), ...pt(360,860));
+    ctx.stroke();
+
+    ctx.beginPath();
+    // right
+    p = toCanvas({x:580,y:140});
+    ctx.moveTo(p.x,p.y);
+    ctx.quadraticCurveTo(...pt(650,320), ...pt(605,420));
+    ctx.quadraticCurveTo(...pt(650,520), ...pt(605,760));
+    ctx.quadraticCurveTo(...pt(580,840), ...pt(540,860));
+    ctx.stroke();
+
+    // колено
+    ctx.save();
+    ctx.globalAlpha = nightMode ? 0.85 : 0.65;
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    const kc = toCanvas(kneeCenter);
+    const s = scale().sx;
+    ctx.arc(kc.x,kc.y, kneeR*s, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
+
+    // подписи
+    ctx.fillStyle = getComputedStyle(document.body).getPropertyValue("--ink").trim() || "#111";
+    ctx.globalAlpha = nightMode ? 0.75 : 0.6;
+    ctx.font = "bold 16px system-ui, Arial";
+    ctx.fillText("БЕДРО", ...txt(390,120));
+    ctx.fillText("КОЛЕНО", ...txt(382,465));
+    ctx.fillText("ГОЛЕНЬ", ...txt(392,835));
+
+    ctx.restore();
+
+    function pt(x,y){ const q=toCanvas({x,y}); return [q.x,q.y]; }
+    function txt(x,y){ const q=toCanvas({x,y}); return [q.x,q.y]; }
+  }
+
+  function drawHint(step){
+    if(examMode) return;
+    if(!showHint) return;
+
+    const poly = step.path;
+    const s = scale().sx;
+
+    // коридор (широкая лента)
+    ctx.save();
+    ctx.globalAlpha = 0.18;
+    ctx.lineWidth = (TOL*2) * s;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "rgba(249,168,37,0.9)";
+    strokePolyline(poly);
+    ctx.restore();
+
+    // “идеальный” путь
+    ctx.save();
+    ctx.globalAlpha = 0.28;
+    ctx.lineWidth = 16 * s;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "rgba(25,118,210,0.95)";
+    strokePolyline(poly);
+    ctx.restore();
+
+    function strokePolyline(p){
+      ctx.beginPath();
+      const p0 = toCanvas(p[0]);
+      ctx.moveTo(p0.x,p0.y);
+      for(let i=1;i<p.length;i++){
+        const pi = toCanvas(p[i]);
+        ctx.lineTo(pi.x,pi.y);
+      }
+      ctx.stroke();
+    }
+  }
+
+  // Основная лента + подсветка попадания
+  function drawBandage(userPoly, step){
+    if(userPoly.length < 2) return;
+
+    const s = scale().sx;
+    const w = 28 * s; // ширина “ленты”
+    const edge = 2.5 * s;
+
+    // нарисуем сегментами: если midpoint в коридоре -> зелёная подсветка
+    for(let i=0;i<userPoly.length-1;i++){
+      const a = userPoly[i], b = userPoly[i+1];
+      const mid = {x:(a.x+b.x)/2, y:(a.y+b.y)/2};
+      const d = distPointToPolyline(mid, step.path);
+      const ok = d <= TOL;
+
+      const A = toCanvas(a), B = toCanvas(b);
+
+      // 1) основная лента
+      ctx.save();
+      ctx.lineCap = "round";
+      ctx.lineWidth = w;
+      ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue("--bandage").trim() || "#e9e2d3";
+      ctx.globalAlpha = 0.92;
+      ctx.beginPath(); ctx.moveTo(A.x,A.y); ctx.lineTo(B.x,B.y); ctx.stroke();
+      ctx.restore();
+
+      // 2) края ленты
+      ctx.save();
+      ctx.lineCap = "round";
+      ctx.lineWidth = w + edge*2;
+      ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue("--bandageEdge").trim() || "#d6cfbf";
+      ctx.globalAlpha = 0.18;
+      ctx.beginPath(); ctx.moveTo(A.x,A.y); ctx.lineTo(B.x,B.y); ctx.stroke();
+      ctx.restore();
+
+      // 3) “тканевая” текстура (штрихи)
+      ctx.save();
+      ctx.lineCap = "round";
+      ctx.lineWidth = 1.5 * s;
+      ctx.strokeStyle = nightMode ? "rgba(0,0,0,0.18)" : "rgba(0,0,0,0.12)";
+      ctx.setLineDash([6*s, 10*s]);
+      ctx.globalAlpha = 0.75;
+      ctx.beginPath(); ctx.moveTo(A.x,A.y); ctx.lineTo(B.x,B.y); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+
+      // 4) подсветка попадания
+      if(ok){
+        ctx.save();
+        ctx.lineCap="round";
+        ctx.lineWidth = w * 0.72;
+        ctx.strokeStyle = nightMode ? "rgba(0,255,120,0.25)" : "rgba(15,123,44,0.22)";
+        ctx.beginPath(); ctx.moveTo(A.x,A.y); ctx.lineTo(B.x,B.y); ctx.stroke();
+        ctx.restore();
+      }else{
+        // лёгкая тёмная подсказка “мимо”
+        ctx.save();
+        ctx.lineCap="round";
+        ctx.lineWidth = w * 0.55;
+        ctx.strokeStyle = nightMode ? "rgba(255,100,100,0.10)" : "rgba(183,28,28,0.08)";
+        ctx.beginPath(); ctx.moveTo(A.x,A.y); ctx.lineTo(B.x,B.y); ctx.stroke();
+        ctx.restore();
+      }
+    }
+  }
+
+  function redraw(){
+    // ВАЖНО: rect.height (исправление смещения)
+    const rect = cv.getBoundingClientRect();
+    const w = rect.width, h = rect.height;
+    ctx.clearRect(0,0,w,h);
+
+    const step = STEPS[stepIndex];
+    drawBody();
+    drawHint(step);
+    drawBandage(pts, step);
+
+    // мини-индикатор прогресса шага (слева сверху на холсте)
+    ctx.save();
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = nightMode ? "rgba(255,255,255,0.9)" : "rgba(0,0,0,0.85)";
+    ctx.font = "bold 14px system-ui, Arial";
+    ctx.fillText(`Ходы: ${stepDone}/${step.need}`, 14, 22);
+    ctx.restore();
+  }
+
+  // ----------------------- Сглаживание (простое) -----------------------
+  function smoothAppend(p){
+    // low-pass filter: smoothed = prev*0.7 + new*0.3
+    if(pts.length === 0){
+      pts.push(p);
+      return;
+    }
+    const prev = pts[pts.length-1];
+    const sp = {x: prev.x*0.7 + p.x*0.3, y: prev.y*0.7 + p.y*0.3};
+    pts.push(sp);
+  }
+
+  // ----------------------- Координаты пальца (исправлено) -----------------------
+  function addPointFromEvent(e){
+    const rect = cv.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const xx = Math.max(0, Math.min(rect.width, x));
+    const yy = Math.max(0, Math.min(rect.height, y)); // ВАЖНО: height
+
+    const v = fromCanvas(xx, yy);
+    rawPts.push(v);
+    smoothAppend(v);
+  }
+
+  // ----------------------- Управление шагами / режимами -----------------------
   function setStatus(type, text){
     statusPill.textContent = text;
     statusPill.classList.remove("good","warn","bad");
     statusPill.classList.add(type);
   }
 
-  function updateStepUI(){
+  function updateUI(){
     const s = STEPS[stepIndex];
     stepPill.textContent = `Шаг ${s.id}/5`;
     stepTitle.textContent = s.title;
     stepText.textContent = s.text;
 
-    criteria.innerHTML = "";
+    criteriaEl.innerHTML = "";
     for(const c of s.criteria){
       const li = document.createElement("li");
       li.textContent = c;
-      criteria.appendChild(li);
+      criteriaEl.appendChild(li);
     }
 
-    btnNext.disabled = true;
-    setStatus("warn","Нарисуй линию и нажми “Проверить”");
+    modePill.textContent = `Режим: ${examMode ? "ЭКЗАМЕН" : "ОБУЧЕНИЕ"}`;
+    triesPill.textContent = examMode ? `Попытки: ${triesLeft}/3` : "Попытки: —";
+
+    btnHint.disabled = examMode;
+    btnHint.textContent = `ПОДСКАЗКА: ${(!examMode && showHint) ? "ВКЛ" : "ВЫКЛ"}`;
+
+    btnMode.textContent = `ЭКЗАМЕН: ${examMode ? "ВКЛ" : "ВЫКЛ"}`;
+    btnNight.textContent = `НОЧЬ: ${nightMode ? "ВКЛ" : "ВЫКЛ"}`;
+
+    btnNext.disabled = !(stepDone >= s.need);
+    if(stepDone >= s.need){
+      setStatus("good", "Шаг выполнен ✅ Нажми “ДАЛЬШЕ”");
+    }else{
+      setStatus("warn", "Сделай ход и нажми “Проверить”");
+    }
+
+    updateTimeUI();
+    updateBestUI();
     redraw();
   }
 
-  // distance point -> polyline (min segment distance)
-  function distPointToSegment(p,a,b){
-    const vx = b.x-a.x, vy = b.y-a.y;
-    const wx = p.x-a.x, wy = p.y-a.y;
-    const c1 = vx*wx + vy*wy;
-    if(c1 <= 0) return Math.hypot(p.x-a.x, p.y-a.y);
-    const c2 = vx*vx + vy*vy;
-    if(c2 <= c1) return Math.hypot(p.x-b.x, p.y-b.y);
-    const t = c1 / c2;
-    const px = a.x + t*vx;
-    const py = a.y + t*vy;
-    return Math.hypot(p.x-px, p.y-py);
-  }
-  function distPointToPolyline(p, poly){
-    let best = Infinity;
-    for(let i=0;i<poly.length-1;i++){
-      const d = distPointToSegment(p, poly[i], poly[i+1]);
-      if(d < best) best = d;
+  function updateTimeUI(){
+    if(!examMode || startMs === null){
+      timePill.textContent = "Время: —";
+      return;
     }
-    return best;
+    timePill.textContent = `Время: ${fmtTime(Date.now()-startMs)}`;
   }
 
-  // Evaluate: percentage of user points within corridor around ideal path
-  function evaluate(step){
-    if(userPts.length < 10) return {ok:false, score:0, msg:"Слишком коротко. Проведи линию длиннее."};
-
-    const poly = step.path;
-
-    // coverage: what fraction of user points are close enough
-    let good = 0;
-    for(const p of userPts){
-      const d = distPointToPolyline(p, poly);
-      if(d <= TOL) good++;
-    }
-    const score = good / userPts.length;
-
-    // direction check for diagonal steps: compare start/end y trend
-    if(step.id === 2){
-      const dy = userPts[userPts.length-1].y - userPts[0].y;
-      // should go up: end y smaller
-      if(dy > 30) return {ok:false, score, msg:"Диагональ должна идти СНИЗУ ВВЕРХ. Попробуй снова."};
-    }
-    if(step.id === 4){
-      const dy = userPts[userPts.length-1].y - userPts[0].y;
-      // should go down: end y larger
-      if(dy < -30) return {ok:false, score, msg:"Диагональ должна идти СВЕРХУ ВНИЗ. Попробуй снова."};
-    }
-
-    const ok = score >= 0.62; // lenient for finger drawing
-    if(ok) return {ok:true, score, msg:`Зачёт ✅ (точность ${(score*100).toFixed(0)}%)`};
-    return {ok:false, score, msg:`Почти. Тяни ближе к подсказке (точность ${(score*100).toFixed(0)}%).`};
+  function updateBestUI(){
+    const best = loadBest();
+    bestPill.textContent = best ? `Лучшее: ${fmtTime(best)}` : "Лучшее: —";
   }
 
-  // ----------------------- Drawing rendering -----------------------
-  function drawHint(step){
-    if(!showHint) return;
-    const poly = step.path;
-    ctx.save();
-    ctx.globalAlpha = 0.28;
-    ctx.lineWidth = 16;
-    ctx.lineCap = "round";
-    ctx.strokeStyle = "#1976d2";
-    ctx.beginPath();
-    const p0 = toCanvas(poly[0]);
-    ctx.moveTo(p0.x,p0.y);
-    for(let i=1;i<poly.length;i++){
-      const pi = toCanvas(poly[i]);
-      ctx.lineTo(pi.x,pi.y);
+  function resetStroke(){
+    rawPts = [];
+    pts = [];
+    redraw();
+  }
+
+  function resetAll(){
+    stepIndex = 0;
+    stepDone = 0;
+    triesLeft = 3;
+    startMs = examMode ? Date.now() : null;
+    resetStroke();
+    saveState();
+    updateUI();
+  }
+
+  function stepNext(){
+    if(stepIndex < STEPS.length-1){
+      stepIndex++;
+      stepDone = 0;
+      triesLeft = 3;
+      resetStroke();
+      saveState();
+      updateUI();
+      toast("Следующий шаг");
+      return;
     }
-    ctx.stroke();
-    ctx.restore();
 
-    // corridor outline
-    ctx.save();
-    ctx.globalAlpha = 0.14;
-    ctx.lineWidth = (TOL*2)*scale().sx;
-    ctx.lineCap = "round";
-    ctx.strokeStyle = "#f9a825";
-    ctx.beginPath();
-    ctx.moveTo(p0.x,p0.y);
-    for(let i=1;i<poly.length;i++){
-      const pi = toCanvas(poly[i]);
-      ctx.lineTo(pi.x,pi.y);
+    // завершение
+    setStatus("good", "Готово ✅ Повязка собрана (учебный тренажёр)");
+    btnNext.disabled = true;
+
+    if(examMode && startMs !== null){
+      const total = Date.now() - startMs;
+      const best = loadBest();
+      if(!best || total < best){
+        saveBest(total);
+        toast(`Новый рекорд 🎯 ${fmtTime(total)}`, 2600);
+      }else{
+        toast(`Экзамен завершён ✅ ${fmtTime(total)}`, 2600);
+      }
+      updateBestUI();
+    }else{
+      toast("Тренировка завершена ✅", 2400);
     }
-    ctx.stroke();
-    ctx.restore();
+
+    saveState();
   }
 
-  function drawUser(){
-    if(userPts.length < 2) return;
-    ctx.save();
-    ctx.globalAlpha = 0.95;
-    ctx.lineWidth = 14;
-    ctx.lineCap = "round";
-    ctx.strokeStyle = "#111";
-    ctx.beginPath();
-    const p0 = toCanvas(userPts[0]);
-    ctx.moveTo(p0.x,p0.y);
-    for(let i=1;i<userPts.length;i++){
-      const pi = toCanvas(userPts[i]);
-      ctx.lineTo(pi.x,pi.y);
-    }
-    ctx.stroke();
-    ctx.restore();
+  // ----------------------- LocalStorage -----------------------
+  function saveState(){
+    const st = { stepIndex, stepDone, showHint, examMode, nightMode, triesLeft, startMs };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(st));
+  }
+  function loadState(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return;
+      const st = JSON.parse(raw);
+      if(!st || typeof st !== "object") return;
+      if(typeof st.stepIndex==="number") stepIndex = Math.max(0, Math.min(STEPS.length-1, st.stepIndex));
+      if(typeof st.stepDone==="number") stepDone = Math.max(0, st.stepDone);
+      if(typeof st.showHint==="boolean") showHint = st.showHint;
+      if(typeof st.examMode==="boolean") examMode = st.examMode;
+      if(typeof st.nightMode==="boolean") nightMode = st.nightMode;
+      if(typeof st.triesLeft==="number") triesLeft = st.triesLeft;
+      if(typeof st.startMs==="number") startMs = st.startMs;
+    }catch(_){}
+  }
+  function saveBest(ms){ localStorage.setItem(BEST_KEY, String(ms)); }
+  function loadBest(){
+    const v = localStorage.getItem(BEST_KEY);
+    const n = v ? parseInt(v,10) : NaN;
+    return Number.isFinite(n) ? n : null;
   }
 
-  function redraw(){
-    // clear visible area: use clientWidth square
-    const rect = cv.getBoundingClientRect();
-    const w = rect.width;
-    const h = rect.width;
-    ctx.clearRect(0,0,w,h);
-
-    drawBody();
-    drawHint(STEPS[stepIndex]);
-    drawUser();
-  }
-
-  // ----------------------- Pointer handling -----------------------
-  function addPointFromEvent(e){
-    const rect = cv.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    // keep inside square
-    const xx = Math.max(0, Math.min(rect.width, x));
-    const yy = Math.max(0, Math.min(rect.width, y));
-    const v = fromCanvas(xx, yy);
-    userPts.push(v);
-  }
-
+  // ----------------------- Pointer events -----------------------
   cv.addEventListener("pointerdown", (e)=>{
     e.preventDefault();
     cv.setPointerCapture(e.pointerId);
     drawing = true;
-    userPts = [];
+    resetStroke();
     addPointFromEvent(e);
     redraw();
   });
@@ -532,70 +810,134 @@
     if(!drawing) return;
     e.preventDefault();
     addPointFromEvent(e);
-    // throttle a bit
-    if(userPts.length % 2 === 0) redraw();
+    if(pts.length % 2 === 0) redraw();
   });
 
-  function endDraw(e){
+  function endDraw(){
     if(!drawing) return;
     drawing = false;
     redraw();
   }
-  cv.addEventListener("pointerup", endDraw);
-  cv.addEventListener("pointercancel", endDraw);
+  cv.addEventListener("pointerup", (e)=>{ e.preventDefault(); endDraw(); });
+  cv.addEventListener("pointercancel", (e)=>{ e.preventDefault(); endDraw(); });
 
   // ----------------------- Buttons -----------------------
-  btnToggleHint.addEventListener("pointerdown", (e)=>{
+  btnNight.addEventListener("pointerdown", (e)=>{
     e.preventDefault();
+    nightMode = !nightMode;
+    document.body.classList.toggle("night", nightMode);
+    saveState();
+    updateUI();
+  });
+
+  btnMode.addEventListener("pointerdown", (e)=>{
+    e.preventDefault();
+    examMode = !examMode;
+
+    // экзамен: подсказка всегда выкл
+    if(examMode){
+      showHint = false;
+      triesLeft = 3;
+      startMs = Date.now();
+      toast("Экзамен: подсказки выключены, 3 попытки на шаг", 2600);
+    }else{
+      startMs = null;
+      toast("Обучение: можно подсказку", 1800);
+    }
+    saveState();
+    updateUI();
+  });
+
+  btnHint.addEventListener("pointerdown", (e)=>{
+    e.preventDefault();
+    if(examMode) return;
     showHint = !showHint;
-    btnToggleHint.textContent = showHint ? "ПОДСКАЗКА: ВКЛ" : "ПОДСКАЗКА: ВЫКЛ";
-    toast(showHint ? "Подсказка включена" : "Подсказка выключена");
-    redraw();
+    saveState();
+    updateUI();
   });
 
   btnClear.addEventListener("pointerdown", (e)=>{
     e.preventDefault();
-    userPts = [];
-    btnNext.disabled = true;
-    setStatus("warn","Нарисуй линию и нажми “Проверить”");
-    redraw();
+    resetStroke();
+    setStatus("warn","Ход стёрт. Нарисуй заново и проверь.");
+    toast("Ход стёрт");
   });
 
   btnCheck.addEventListener("pointerdown", (e)=>{
     e.preventDefault();
     const step = STEPS[stepIndex];
-    const r = evaluate(step);
+
+    const r = evaluateStroke(step, pts);
+
     if(r.ok){
-      setStatus("good", r.msg);
-      btnNext.disabled = false;
-      toast("Шаг засчитан ✅");
-    }else{
-      setStatus("bad", r.msg);
-      btnNext.disabled = true;
-      toast(r.msg, 2400);
+      stepDone++;
+      resetStroke();
+
+      if(stepDone >= step.need){
+        setStatus("good", `Шаг выполнен ✅ (${stepDone}/${step.need})`);
+        btnNext.disabled = false;
+        toast("Шаг закрыт ✅", 1800);
+      }else{
+        setStatus("good", `Зачёт ✅ Ходов: ${stepDone}/${step.need}`);
+        toast(`Зачёт ✅ Осталось: ${step.need-stepDone}`, 1800);
+      }
+      saveState();
+      redraw();
+      return;
+    }
+
+    // не ок
+    setStatus("bad", r.msg);
+    toast(r.msg, 2400);
+
+    if(examMode){
+      triesLeft = Math.max(0, triesLeft-1);
+      if(triesLeft === 0){
+        toast("Попытки кончились. Сброс шага.", 2600);
+        // сброс шага
+        stepDone = 0;
+        triesLeft = 3;
+        resetStroke();
+      }else{
+        resetStroke();
+      }
+      saveState();
+      updateUI();
     }
   });
 
   btnNext.addEventListener("pointerdown", (e)=>{
     e.preventDefault();
-    if(stepIndex < STEPS.length-1){
-      stepIndex++;
-      userPts = [];
-      updateStepUI();
-      toast("Следующий шаг");
-    }else{
-      // finish
-      setStatus("good","Готово ✅ Повязка собрана (учебный режим)");
-      btnNext.disabled = true;
-      toast("Тренировка завершена ✅", 2600);
-    }
+    stepNext();
+    saveState();
+    updateUI();
   });
 
-  // ----------------------- Init & resize -----------------------
-  updateStepUI();
-  window.addEventListener("resize", ()=>{ redraw(); });
-  // slight delay so layout settles
-  setTimeout(()=>{ redraw(); }, 50);
+  // ----------------------- Canvas sizing -----------------------
+  function fitCanvasToCSS(){
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    const rect = cv.getBoundingClientRect();
+    const w = Math.round(rect.width * dpr);
+    const h = Math.round(rect.height * dpr);
+    if(cv.width !== w || cv.height !== h){
+      cv.width = w;
+      cv.height = h;
+    }
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    redraw();
+  }
+  window.addEventListener("resize", ()=>{ fitCanvasToCSS(); });
+
+  // тик времени (для экзамена)
+  setInterval(()=>{
+    if(examMode) updateTimeUI();
+  }, 250);
+
+  // ----------------------- INIT -----------------------
+  loadState();
+  document.body.classList.toggle("night", nightMode);
+  fitCanvasToCSS();
+  updateUI();
 
 })();
 </script>
