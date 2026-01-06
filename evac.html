@@ -1,262 +1,823 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Эвакуация — быстрая оценка</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Эвакуация — PRO</title>
+  <style>
+    :root{
+      --bg:#f4f6f8;
+      --card:#ffffff;
+      --text:#111;
+      --muted:#556;
+      --line:#dde2e8;
+      --shadow:0 2px 10px rgba(0,0,0,.06);
 
-<style>
-body{
-  margin:0;
-  font-family:Arial, sans-serif;
-  background:#f5f5f5;
-  color:#111;
-}
-.header{
-  background:#1b5e20;
-  color:#fff;
-  padding:14px;
-  text-align:center;
-  font-size:18px;
-  font-weight:700;
-}
-.wrap{ padding:12px; }
+      --red:#b71c1c;
+      --redBg:#ffecec;
 
-a{ text-decoration:none; }
+      --orange:#ef6c00;
+      --orangeBg:#fff2e6;
 
-.back-btn{
-  display:inline-block;
-  background:#fff;
-  border:1px solid #999;
-  border-radius:10px;
-  padding:10px 14px;
-  font-size:15px;
-  margin-bottom:12px;
-}
+      --yellow:#b37b00;
+      --yellowBg:#fff8de;
 
-.card{
-  background:#fff;
-  border-radius:14px;
-  padding:14px;
-  margin-bottom:12px;
-  box-shadow:0 2px 6px rgba(0,0,0,.08);
-}
+      --green:#1b5e20;
+      --greenBg:#e9f6ec;
 
-.item{
-  display:flex;
-  gap:12px;
-  align-items:flex-start;
-  padding:10px 0;
-  border-bottom:1px solid #eee;
-}
-.item:last-child{ border-bottom:none; }
+      --blue:#1976d2;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);}
+    header{
+      position:sticky;top:0;z-index:50;
+      background:linear-gradient(0deg, rgba(0,0,0,.06), rgba(0,0,0,.06)), var(--green);
+      color:#fff;padding:12px 14px;box-shadow:var(--shadow);
+    }
+    .hTitle{font-weight:900;text-align:center;font-size:18px;letter-spacing:.2px;}
+    .hSub{margin-top:6px;text-align:center;font-size:12px;opacity:.92;line-height:1.25}
 
-input[type=checkbox]{
-  width:22px;
-  height:22px;
-}
+    .wrap{max-width:980px;margin:0 auto;padding:12px;}
+    .topRow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:10px}
+    .btn{
+      border:none;border-radius:14px;padding:12px 14px;font-weight:900;font-size:15px;
+      touch-action:manipulation;cursor:pointer;
+    }
+    .btn:active{opacity:.88}
+    .btnBack{background:#fff;border:1px solid rgba(255,255,255,.35); box-shadow:var(--shadow); }
+    .btnBackWrap{display:flex;gap:10px;align-items:center}
+    .pill{
+      border-radius:999px;padding:8px 12px;font-size:12px;font-weight:900;
+      border:1px solid var(--line);background:#fff;white-space:nowrap;
+    }
 
-.item-title{
-  font-weight:700;
-}
-.item-sub{
-  font-size:13px;
-  color:#555;
-}
+    .grid2{display:grid;grid-template-columns:1fr;gap:10px}
+    @media (min-width: 860px){
+      .grid2{grid-template-columns: 1.2fr .8fr;}
+    }
 
-.result{
-  border-radius:14px;
-  padding:14px;
-  font-weight:700;
-  margin-top:10px;
-}
+    .card{
+      background:var(--card);border:1px solid var(--line);border-radius:18px;
+      padding:14px;box-shadow:var(--shadow);
+    }
+    .secTitle{font-weight:900;color:#223;margin:0 0 10px 0;display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .secHint{font-size:12px;color:var(--muted);line-height:1.25;margin-top:6px}
 
-.green{ background:#e8f5e9; border:2px solid #2e7d32; }
-.yellow{ background:#fffde7; border:2px solid #f9a825; }
-.red{ background:#ffebee; border:2px solid #c62828; }
+    /* пункты */
+    .item{
+      display:block;
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:12px;
+      margin-top:10px;
+      background:#fff;
+      user-select:none;
+    }
+    .itemRow{display:flex;gap:12px;align-items:flex-start}
+    .item input{width:22px;height:22px;margin-top:2px;flex:0 0 auto}
+    .itT{font-weight:900;line-height:1.15}
+    .itD{margin-top:6px;font-size:13px;color:var(--muted);line-height:1.25}
+    .chips{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}
+    .chip{font-size:12px;font-weight:900;border-radius:999px;padding:4px 8px;border:1px solid var(--line);background:#f7f9fb;color:#234}
+    .chip.crit{border-color:rgba(183,28,28,.35);background:rgba(183,28,28,.10);color:#7b1212}
+    .chip.urg{border-color:rgba(239,108,0,.35);background:rgba(239,108,0,.10);color:#8a3b00}
+    .chip.plan{border-color:rgba(179,123,0,.35);background:rgba(179,123,0,.12);color:#6a4b00}
+    .chip.obs{border-color:rgba(27,94,32,.35);background:rgba(27,94,32,.10);color:#0f4f2b}
 
-.actions{
-  display:flex;
-  gap:10px;
-  margin-top:12px;
-}
-.actions button{
-  width:100%;
-  padding:14px;
-  border:none;
-  border-radius:12px;
-  font-size:16px;
-  color:#fff;
-}
-.copy{ background:#1565c0; }
-.reset{ background:#555; }
+    /* результат */
+    .resultBox{
+      border-radius:18px;border:2px solid rgba(0,0,0,.08);
+      padding:14px;margin-top:10px;
+    }
+    .resultBox.red{background:var(--redBg);border-color:rgba(183,28,28,.35)}
+    .resultBox.orange{background:var(--orangeBg);border-color:rgba(239,108,0,.35)}
+    .resultBox.yellow{background:var(--yellowBg);border-color:rgba(179,123,0,.35)}
+    .resultBox.green{background:var(--greenBg);border-color:rgba(27,94,32,.35)}
+    .rTitle{margin:0;font-size:18px;font-weight:900}
+    .rSub{margin-top:6px;font-size:13px;color:var(--muted);line-height:1.3}
+    .split{
+      margin-top:10px;border-top:1px dashed var(--line);padding-top:10px;
+    }
+    ul{margin:8px 0 0 18px;padding:0}
+    li{margin:6px 0;line-height:1.25}
 
-pre{
-  white-space:pre-wrap;
-  font-size:13px;
-  background:#fff;
-  padding:12px;
-  border-radius:12px;
-  margin-top:10px;
-}
-</style>
+    /* таймеры */
+    .timerBtns{display:flex;gap:8px;flex-wrap:wrap}
+    .btnTiny{
+      width:auto;border-radius:12px;padding:10px 12px;font-size:13px;font-weight:900;
+      border:1px solid var(--line);background:#fff;color:#111;
+    }
+    .btnTiny.blue{background:rgba(25,118,210,.10);border-color:rgba(25,118,210,.25);color:#0e4f95}
+    .btnTiny.red{background:rgba(183,28,28,.10);border-color:rgba(183,28,28,.25);color:#7b1212}
+    .btnTiny.green{background:rgba(27,94,32,.10);border-color:rgba(27,94,32,.25);color:#0f4f2b}
+    .btnTiny:active{opacity:.86}
+
+    .timerList{margin-top:10px;display:flex;flex-direction:column;gap:10px}
+    .tItem{
+      border:1px solid var(--line);border-radius:14px;padding:10px;background:#fff;
+      display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+    }
+    .tName{font-weight:900}
+    .tMeta{margin-top:4px;font-size:12px;color:var(--muted)}
+    .tTime{font-weight:900;font-size:14px}
+    .tLeft.warn{color:#7b1212}
+    .tRight{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+    .btnStop{padding:8px 10px;border-radius:12px;border:1px solid rgba(183,28,28,.35);background:rgba(183,28,28,.10);color:#7b1212;font-weight:900;font-size:12px}
+
+    /* журнал */
+    .log{
+      margin-top:10px;white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;
+      background:#0f172a;color:#e5e7eb;border-radius:14px;padding:12px;font-size:12px;line-height:1.35;
+    }
+
+    /* экспорт */
+    .actionRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    .btnWide{flex:1;min-width:170px}
+    .btnBlue{background:var(--blue);color:#fff}
+    .btnGray{background:#515a63;color:#fff}
+    .btnGreen{background:var(--green);color:#fff}
+
+    .toast{
+      position:fixed;left:50%;bottom:16px;transform:translateX(-50%);
+      background:rgba(0,0,0,.85);color:#fff;padding:10px 12px;border-radius:12px;
+      font-size:14px;max-width:92%;display:none;z-index:9999;white-space:pre-wrap;
+    }
+  </style>
 </head>
 
 <body>
-
-<div class="header">ЭВАКУАЦИЯ — БЫСТРАЯ ОЦЕНКА</div>
+<header>
+  <div class="hTitle">ЭВАКУАЦИЯ — PRO</div>
+  <div class="hSub">Оффлайн. Выбор признаков → приоритет эвакуации + рекомендации. Таймеры и журнал сохраняются.</div>
+</header>
 
 <div class="wrap">
 
-<a href="/med-map/">
-  <div class="back-btn">← К карте ранений</div>
-</a>
-
-<div class="card">
-  <label class="item">
-    <input type="checkbox" data-critical data-text="Неконтролируемое или рецидивирующее кровотечение">
-    <div>
-      <div class="item-title">Тяжёлое кровотечение</div>
-      <div class="item-sub">жгут / тампонада / риск срыва</div>
+  <div class="topRow">
+    <div class="btnBackWrap">
+      <button class="btn btnBack" id="btnBack">← К карте ранений</button>
+      <span class="pill" id="pickedPill">Выбрано: 0</span>
     </div>
-  </label>
+    <span class="pill" id="modePill">Режим: Оценка</span>
+  </div>
 
-  <label class="item">
-    <input type="checkbox" data-critical data-text="Ранение груди">
-    <div>
-      <div class="item-title">Ранение груди</div>
-      <div class="item-sub">клапан закрыт, риск ухудшения</div>
-    </div>
-  </label>
+  <div class="grid2">
 
-  <label class="item">
-    <input type="checkbox" data-critical data-text="Подозрение на проникающее ранение живота/таза">
-    <div>
-      <div class="item-title">Проникающее ранение живота / таза</div>
-      <div class="item-sub">боль, напряжение, ухудшение</div>
-    </div>
-  </label>
+    <!-- LEFT: признаки -->
+    <div class="card">
+      <div class="secTitle">
+        <span>Признаки</span>
+        <span class="pill" id="catPill">—</span>
+      </div>
 
-  <label class="item">
-    <input type="checkbox" data-text="Серьёзная травма конечности">
-    <div>
-      <div class="item-title">Серьёзная травма конечности</div>
-      <div class="item-sub">перелом, деформация, сильная боль</div>
-    </div>
-  </label>
+      <div class="secHint">
+        Правило: если есть любой <b>критический</b> пункт → <b>ЭВАК СЕЙЧАС</b>.
+        Иначе “срочно/планово/наблюдать” по смыслу выбранных факторов.
+      </div>
 
-  <label class="item">
-    <input type="checkbox" data-text="Проникающая травма глаза">
-    <div>
-      <div class="item-title">Проникающая травма глаза</div>
-    </div>
-  </label>
+      <div id="items"></div>
 
-  <label class="item">
-    <input type="checkbox" data-text="Ожоги 10–20%">
-    <div>
-      <div class="item-title">Ожоги 10–20% поверхности</div>
-    </div>
-  </label>
+      <div class="split">
+        <div class="secTitle" style="margin:0 0 6px 0;">
+          <span>Сводка 1 строка</span>
+          <span class="pill" id="oneLinePill">готово</span>
+        </div>
+        <div class="secHint" id="oneLineText">—</div>
 
-  <label class="item">
-    <input type="checkbox" data-text="Амбулаторные красные флаги">
-    <div>
-      <div class="item-title">Амбулаторные «красные флаги»</div>
-      <div class="item-sub">температура + ухудшение</div>
+        <div class="actionRow">
+          <button class="btn btnWide btnBlue" id="btnCopy">КОПИРОВАТЬ</button>
+          <button class="btn btnWide btnGreen" id="btnTg">В TELEGRAM</button>
+          <button class="btn btnWide btnGray" id="btnReset">СБРОС</button>
+        </div>
+      </div>
     </div>
-  </label>
 
-  <label class="item">
-    <input type="checkbox" data-text="Нуждается в поддержке и наблюдении">
-    <div>
-      <div class="item-title">Нужна поддержка / наблюдение</div>
-      <div class="item-sub">не может идти сам</div>
-    </div>
-  </label>
+    <!-- RIGHT: результат + таймеры -->
+    <div class="card">
+      <div class="secTitle">
+        <span>Результат</span>
+        <span class="pill" id="timePill">время: —</span>
+      </div>
 
-  <label class="item">
-    <input type="checkbox" data-stable>
-    <div>
-      <div class="item-title">Стабильно, поверхностно</div>
-      <div class="item-sub">без прогрессии</div>
+      <div id="resultBox" class="resultBox green">
+        <h3 class="rTitle" id="resTitle">Не оценено</h3>
+        <div class="rSub" id="resSub">Отметь пункты слева.</div>
+
+        <div class="split">
+          <b>Причины</b>
+          <ul id="whyList"><li>—</li></ul>
+        </div>
+
+        <div class="split">
+          <b>Рекомендации на месте</b>
+          <ul id="recList"><li>—</li></ul>
+        </div>
+      </div>
+
+      <div class="split">
+        <div class="secTitle" style="margin:0 0 6px 0;">
+          <span>Таймеры</span>
+          <span class="pill">офлайн</span>
+        </div>
+
+        <div class="timerBtns">
+          <button class="btnTiny red" data-timer="tourniquet">ЖГУТ 60</button>
+          <button class="btnTiny blue" data-timer="recheck15">ПЕРЕОЦЕНКА 15</button>
+          <button class="btnTiny blue" data-timer="recheck30">ПЕРЕОЦЕНКА 30</button>
+          <button class="btnTiny green" data-timer="pain30">ОБЕЗБОЛ 30</button>
+        </div>
+
+        <div class="secHint">
+          Нажал — таймер стартовал и записался в журнал. По нулю: вибрация (если доступна) + пометка.
+        </div>
+
+        <div class="timerList" id="timerList"></div>
+      </div>
+
+      <div class="split">
+        <div class="secTitle" style="margin:0 0 6px 0;">
+          <span>Журнал</span>
+          <button class="btnTiny" id="btnClearLog" type="button">Очистить</button>
+        </div>
+        <div class="log" id="logBox"></div>
+      </div>
+
     </div>
-  </label>
+
+  </div>
 </div>
 
-<div id="result" class="result green">
-  Пока не оценено
-</div>
-
-<pre id="export"></pre>
-
-<div class="actions">
-  <button class="copy" onclick="copyResult()">КОПИРОВАТЬ</button>
-  <button class="reset" onclick="resetAll()">СБРОСИТЬ</button>
-</div>
-
-</div>
+<div class="toast" id="toast"></div>
 
 <script>
-function recalc(){
-  const checks=[...document.querySelectorAll("input[type=checkbox]")];
-  const critical=checks.some(c=>c.checked && c.dataset.critical!==undefined);
-  const stable=checks.some(c=>c.checked && c.dataset.stable!==undefined);
-  const marked=checks.filter(c=>c.checked && !c.dataset.stable);
+(() => {
+  // ---------- CONFIG ----------
+  const STORAGE_KEY = "evak_pro_v1_state";
 
-  let res=document.getElementById("result");
-  let exp=document.getElementById("export");
+  // Back link: лучше так для GitHub Pages: /med-map/
+  // Если когда-то поменяешь имя репо — измени только эту строку:
+  const BACK_URL = "/med-map/"; // или "/med-map/index.html"
 
-  let text="";
+  const ITEM_DEFS = [
+    // critical -> эвак сейчас
+    {id:"crit_bleed_uncontrolled", level:"critical", title:"Кровотечение не контролируется / срыв контроля",
+      desc:"жгут/тампонада не держит, быстрое промокание, повторное активное кровотечение",
+      tags:["bleed"]},
+    {id:"crit_airway", level:"critical", title:"Угроза дыхательным путям",
+      desc:"обструкция/аспирация/не может говорить/нарастающее удушье",
+      tags:["airway"]},
+    {id:"crit_shock", level:"critical", title:"Признаки шока / резкое ухудшение",
+      desc:"холодный пот, сильная слабость, спутанность, выраженная бледность, падение давления (если меряете)",
+      tags:["shock"]},
+    {id:"crit_neuro", level:"critical", title:"Неврологическое ухудшение",
+      desc:"потеря сознания, судороги, прогресс симптомов",
+      tags:["neuro"]},
 
-  if(critical){
-    res.className="result red";
-    res.textContent="ЭВАКУАЦИЯ СРОЧНО";
-    text="Категория: СРОЧНО\nПричины:\n";
-  }else if(marked.length>0){
-    res.className="result yellow";
-    res.textContent="ЭВАКУАЦИЯ ПЛАНОВАЯ";
-    text="Категория: ПЛАНОВАЯ\nПричины:\n";
-  }else if(stable){
-    res.className="result green";
-    res.textContent="НАБЛЮДАТЬ НА МЕСТЕ";
-    text="Категория: НАБЛЮДАТЬ\nПричины:\nСтабильное состояние\n";
-  }else{
-    res.className="result green";
-    res.textContent="Пока не оценено";
-    exp.textContent="";
-    return;
+    // urgent -> эвак срочно/приоритет
+    {id:"urg_chest", level:"urgent", title:"Ранение груди / риск ухудшения",
+      desc:"одышка/боль/подозрение, даже если “пока держится”",
+      tags:["chest"]},
+    {id:"urg_abd_pelvis", level:"urgent", title:"Подозрение на проникающее ранение живота/таза",
+      desc:"боль/напряжение/ухудшение, риск скрытого повреждения",
+      tags:["abd"]},
+    {id:"urg_head_eye", level:"urgent", title:"Травма головы/глаза с риском ухудшения",
+      desc:"проникающая травма глаза, нарастающие симптомы, выраженная головная боль/спутанность",
+      tags:["head","eye"]},
+    {id:"urg_major_burn", level:"urgent", title:"Ожоги значимой зоны",
+      desc:"площадь/суставы/лицо/кисти/промежность или риск ухудшения",
+      tags:["burn"]},
+
+    // planned -> планово/по ресурсу
+    {id:"plan_limb_serious", level:"planned", title:"Серьёзная травма конечности",
+      desc:"перелом/деформация/не может опереться, нужна фиксация/хирургия",
+      tags:["limb"]},
+    {id:"plan_infection_flags", level:"planned", title:"Красные флаги инфекции/воспаления",
+      desc:"температура + ухудшение, быстрый отёк/покраснение, гной + слабость",
+      tags:["infection"]},
+    {id:"plan_support_need", level:"planned", title:"Нуждается в постоянном наблюдении/поддержке",
+      desc:"не может идти сам, выраженная слабость, нужен контроль",
+      tags:["support"]},
+
+    // observe -> наблюдать на месте
+    {id:"obs_stable_minor", level:"observe", title:"Стабильно, поверхностно",
+      desc:"контроль держится, нет прогрессии, состояние ровное",
+      tags:["stable"]},
+    {id:"obs_aftercare", level:"observe", title:"Нужна только перевязка/уход",
+      desc:"без системных признаков ухудшения",
+      tags:["aftercare"]}
+  ];
+
+  const TIMER_DEFS = {
+    tourniquet: {label:"Жгут — контроль", minutes:60},
+    recheck15:  {label:"Повторная оценка", minutes:15},
+    recheck30:  {label:"Повторная оценка", minutes:30},
+    pain30:     {label:"Обезбол — контроль", minutes:30}
+  };
+
+  // ---------- STATE ----------
+  const defaultState = {
+    checked: {},      // id -> true
+    timers: [],       // {id, label, startMs, durationMs}
+    log: []           // ["HH:MM событие", ...]
+  };
+
+  let state = loadState();
+
+  function loadState(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return structuredClone(defaultState);
+      const obj = JSON.parse(raw);
+      if(!obj || typeof obj !== "object") return structuredClone(defaultState);
+      obj.checked = obj.checked && typeof obj.checked==="object" ? obj.checked : {};
+      obj.timers = Array.isArray(obj.timers) ? obj.timers : [];
+      obj.log = Array.isArray(obj.log) ? obj.log : [];
+      return obj;
+    }catch(_){
+      return structuredClone(defaultState);
+    }
+  }
+  function saveState(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }
 
-  marked.forEach(c=>{
-    if(c.dataset.text) text+="- "+c.dataset.text+"\n";
+  // ---------- UI HELPERS ----------
+  const $ = (id)=>document.getElementById(id);
+  const toastEl = $("toast");
+
+  function toast(msg, ms=2000){
+    toastEl.textContent = msg;
+    toastEl.style.display = "block";
+    clearTimeout(toastEl._t);
+    toastEl._t = setTimeout(()=>toastEl.style.display="none", ms);
+  }
+
+  function pad2(n){ return String(n).padStart(2,"0"); }
+  function nowHHMM(){
+    const d = new Date();
+    return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+  }
+
+  function fmtMMSS(ms){
+    const s = Math.max(0, Math.floor(ms/1000));
+    const m = Math.floor(s/60);
+    const r = s % 60;
+    return `${pad2(m)}:${pad2(r)}`;
+  }
+
+  function addLog(line){
+    const entry = `${nowHHMM()} ${line}`;
+    state.log.push(entry);
+    // ограничим размер журнала
+    if(state.log.length > 200) state.log = state.log.slice(state.log.length - 200);
+    saveState();
+    renderLog();
+  }
+
+  // ---------- BUILD ITEMS ----------
+  function chipFor(level){
+    if(level==="critical") return `<span class="chip crit">КРИТИЧЕСКИ</span>`;
+    if(level==="urgent") return `<span class="chip urg">СРОЧНО</span>`;
+    if(level==="planned") return `<span class="chip plan">ПЛАНОВО</span>`;
+    return `<span class="chip obs">НАБЛЮДАТЬ</span>`;
+  }
+
+  function renderItems(){
+    const wrap = $("items");
+    wrap.innerHTML = "";
+
+    for(const it of ITEM_DEFS){
+      const label = document.createElement("label");
+      label.className = "item";
+      label.htmlFor = `cb_${it.id}`;
+
+      const row = document.createElement("div");
+      row.className = "itemRow";
+
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.id = `cb_${it.id}`;
+      cb.checked = !!state.checked[it.id];
+      cb.dataset.itemId = it.id;
+
+      cb.addEventListener("change", ()=>{
+        state.checked[it.id] = cb.checked;
+        if(!cb.checked) delete state.checked[it.id];
+        saveState();
+        recalcAndRender();
+      });
+
+      const box = document.createElement("div");
+      box.innerHTML = `
+        <div class="itT">${it.title}</div>
+        <div class="itD">${it.desc || ""}</div>
+        <div class="chips">${chipFor(it.level)}<span class="chip">${(it.tags||[]).join(" · ")}</span></div>
+      `;
+
+      row.appendChild(cb);
+      row.appendChild(box);
+      label.appendChild(row);
+
+      wrap.appendChild(label);
+    }
+  }
+
+  // ---------- DECISION ENGINE ----------
+  function selectedItems(){
+    const ids = Object.keys(state.checked);
+    const out = [];
+    for(const id of ids){
+      const def = ITEM_DEFS.find(x=>x.id===id);
+      if(def) out.push(def);
+    }
+    return out;
+  }
+
+  function uniq(arr){
+    const s = new Set();
+    const out = [];
+    for(const x of arr){ if(!s.has(x)){ s.add(x); out.push(x);} }
+    return out;
+  }
+
+  function decideCategory(sel){
+    if(sel.length===0) return {cat:"NONE"};
+
+    const hasCritical = sel.some(x=>x.level==="critical");
+    if(hasCritical) return {cat:"NOW"};
+
+    // если только observe
+    const onlyObserve = sel.every(x=>x.level==="observe");
+    if(onlyObserve) return {cat:"OBSERVE"};
+
+    // если есть urgent -> срочно
+    const hasUrgent = sel.some(x=>x.level==="urgent");
+    if(hasUrgent) return {cat:"URGENT"};
+
+    // если есть planned (и нет urgent/critical) -> планово
+    const hasPlanned = sel.some(x=>x.level==="planned");
+    if(hasPlanned) return {cat:"PLANNED"};
+
+    // fallback
+    return {cat:"OBSERVE"};
+  }
+
+  function buildRecommendations(sel, cat){
+    // базовые универсальные
+    const rec = [];
+
+    // всегда полезно
+    if(cat!=="NONE"){
+      rec.push("Тепло, покой, минимизация движений. Контроль динамики состояния.");
+      rec.push("Повторная оценка: сознание/дыхание/кровотечение/боль/цвет конечности.");
+    }
+
+    const tags = uniq(sel.flatMap(x=>x.tags||[]));
+
+    // Комбинационные подсказки (без назначения лекарств)
+    if(tags.includes("bleed")){
+      rec.push("Кровотечение: контроль повязок/жгута/тампонады, фиксация, готовность к повторному контролю.");
+    }
+    if(tags.includes("chest")){
+      rec.push("Грудь: контроль дыхания, положение как переносит, отслеживать ухудшение/нарастание одышки.");
+    }
+    if(tags.includes("abd")){
+      rec.push("Живот/таз: минимизировать нагрузку, контроль боли/ухудшения, готовность к эвакуации.");
+    }
+    if(tags.includes("neuro") || tags.includes("head")){
+      rec.push("Голова/неврология: наблюдение сознания, защита головы, избегать нагрузки.");
+    }
+    if(tags.includes("eye")){
+      rec.push("Глаз: защита/не давить на глаз, аккуратная фиксация повязкой, избегать трения.");
+    }
+    if(tags.includes("limb")){
+      rec.push("Конечность: иммобилизация, контроль кровообращения/чувствительности дистально, тепло.");
+    }
+    if(tags.includes("burn")){
+      rec.push("Ожоги: защита чистой повязкой, тепло, контроль боли/ухудшения.");
+    }
+    if(tags.includes("infection")){
+      rec.push("Инфекция: контроль температуры/ухудшения, перевязка/гигиена, при прогрессии — повышать приоритет.");
+    }
+
+    // Категорийные
+    if(cat==="NOW"){
+      rec.unshift("ЭВАКУАЦИЯ: немедленно. Подготовить транспортировку и связь, держать готовность к ухудшению.");
+    } else if(cat==="URGENT"){
+      rec.unshift("ЭВАКУАЦИЯ: приоритетно (срочно). Подготовить эвак заранее, наблюдать до передачи.");
+    } else if(cat==="PLANNED"){
+      rec.unshift("ЭВАКУАЦИЯ: планово/по ресурсу. При ухудшении — повышать приоритет.");
+    } else if(cat==="OBSERVE"){
+      rec.unshift("НА МЕСТЕ: наблюдать и купировать. Эвакуация не обязательна при стабильности.");
+    }
+
+    // компактно
+    return uniq(rec).slice(0, 10);
+  }
+
+  function buildOneLine(sel, cat){
+    if(cat==="NONE") return "—";
+    const map = {NOW:"ЭВАК СЕЙЧАС", URGENT:"ЭВАК СРОЧНО", PLANNED:"ЭВАК ПЛАНОВО", OBSERVE:"НАБЛЮДАТЬ"};
+    const reasons = sel.slice(0,4).map(x=>x.title).join("; ");
+    const more = sel.length>4 ? ` +${sel.length-4}` : "";
+    return `${map[cat]}: ${reasons}${more}`;
+  }
+
+  function categoryUi(cat){
+    if(cat==="NOW") return {pill:"СЕЙЧАС", cls:"red", title:"ЭВАКУАЦИЯ СЕЙЧАС", sub:"Есть критические признаки. Приоритет — немедленная эвакуация."};
+    if(cat==="URGENT") return {pill:"СРОЧНО", cls:"orange", title:"ЭВАКУАЦИЯ СРОЧНО", sub:"Риск ухудшения. Эвакуация при первой возможности/приоритет."};
+    if(cat==="PLANNED") return {pill:"ПЛАНОВО", cls:"yellow", title:"ЭВАКУАЦИЯ ПЛАНОВО", sub:"Стабильно, но требуется помощь/наблюдение/лечение. При ухудшении — повысить."};
+    if(cat==="OBSERVE") return {pill:"НА МЕСТЕ", cls:"green", title:"НАБЛЮДАТЬ НА МЕСТЕ", sub:"Сейчас нет явных показаний к срочной эвакуации. Главное — динамика."};
+    return {pill:"—", cls:"green", title:"Не оценено", sub:"Отметь пункты слева."};
+  }
+
+  // ---------- TIMERS ----------
+  function startTimer(key){
+    const def = TIMER_DEFS[key];
+    if(!def) return;
+
+    const t = {
+      id: "t_" + Math.random().toString(36).slice(2) + "_" + Date.now(),
+      label: def.label,
+      startMs: Date.now(),
+      durationMs: def.minutes * 60 * 1000
+    };
+    state.timers.push(t);
+    saveState();
+    renderTimers();
+    addLog(`Таймер: старт — ${def.label} (${def.minutes} мин)`);
+    toast(`Таймер: ${def.label}`);
+  }
+
+  function stopTimer(id){
+    const idx = state.timers.findIndex(x=>x.id===id);
+    if(idx<0) return;
+    const label = state.timers[idx].label;
+    state.timers.splice(idx,1);
+    saveState();
+    renderTimers();
+    addLog(`Таймер: стоп — ${label}`);
+    toast("Таймер остановлен");
+  }
+
+  function renderTimers(){
+    const box = $("timerList");
+    box.innerHTML = "";
+
+    if(!state.timers.length){
+      const empty = document.createElement("div");
+      empty.className = "secHint";
+      empty.textContent = "Таймеров нет.";
+      box.appendChild(empty);
+      return;
+    }
+
+    for(const t of state.timers){
+      const end = t.startMs + t.durationMs;
+      const left = end - Date.now();
+      const done = left <= 0;
+
+      const row = document.createElement("div");
+      row.className = "tItem";
+
+      const leftBox = document.createElement("div");
+      leftBox.innerHTML = `
+        <div class="tName">${t.label}</div>
+        <div class="tMeta">Старт: ${new Date(t.startMs).toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"})}</div>
+      `;
+
+      const right = document.createElement("div");
+      right.className = "tRight";
+
+      const time = document.createElement("div");
+      time.className = "tTime";
+
+      if(done){
+        time.innerHTML = `<span class="tLeft warn">⏰ 00:00</span>`;
+      }else{
+        time.textContent = "Осталось " + fmtMMSS(left);
+      }
+
+      const btn = document.createElement("button");
+      btn.className = "btnStop";
+      btn.type = "button";
+      btn.textContent = "Стоп";
+      btn.addEventListener("pointerdown",(e)=>{ e.preventDefault(); stopTimer(t.id); });
+
+      right.appendChild(time);
+      right.appendChild(btn);
+
+      row.appendChild(leftBox);
+      row.appendChild(right);
+      box.appendChild(row);
+    }
+  }
+
+  function tickTimers(){
+    if(!state.timers.length) return;
+
+    // Проверим какие закончились впервые
+    let anyFinished = false;
+    for(const t of state.timers){
+      const end = t.startMs + t.durationMs;
+      const left = end - Date.now();
+      if(left <= 0 && !t._notified){
+        t._notified = true;
+        anyFinished = true;
+        addLog(`⏰ Таймер: ВРЕМЯ — ${t.label}`);
+        try{ navigator.vibrate && navigator.vibrate([120,80,120]); }catch(_){}
+        toast(`ВРЕМЯ: ${t.label}`, 2600);
+      }
+    }
+    if(anyFinished) saveState();
+    renderTimers();
+  }
+
+  // ---------- LOG ----------
+  function renderLog(){
+    const box = $("logBox");
+    if(!state.log.length){
+      box.textContent = "(пусто)";
+      return;
+    }
+    box.textContent = state.log.slice(-80).join("\n");
+  }
+
+  // ---------- EXPORT ----------
+  function buildFullText(sel, cat, recs){
+    const ui = categoryUi(cat);
+    const time = new Date().toLocaleString("ru-RU");
+    const reasons = sel.length ? sel.map(x=>`- ${x.title}`).join("\n") : "- (нет)";
+
+    // таймеры
+    const timers = state.timers.length ? state.timers.map(t=>{
+      const end = t.startMs + t.durationMs;
+      const left = end - Date.now();
+      const leftStr = left<=0 ? "00:00" : fmtMMSS(left);
+      return `- ${t.label}: осталось ${leftStr}`;
+    }).join("\n") : "- (нет)";
+
+    const log = state.log.length ? state.log.slice(-30).join("\n") : "(пусто)";
+
+    return (
+`ЭВАКУАЦИЯ — ОТЧЁТ (офлайн)
+Время: ${time}
+
+Категория: ${ui.title}
+
+Причины:
+${reasons}
+
+Рекомендации:
+${recs.map(x=>`- ${x}`).join("\n")}
+
+Таймеры:
+${timers}
+
+Журнал (последние):
+${log}`
+    );
+  }
+
+  // ---------- MAIN RENDER ----------
+  function recalcAndRender(){
+    const sel = selectedItems();
+    const picked = sel.length;
+    $("pickedPill").textContent = `Выбрано: ${picked}`;
+
+    const time = nowHHMM();
+    $("timePill").textContent = `время: ${time}`;
+
+    const {cat} = decideCategory(sel);
+    const ui = categoryUi(cat);
+    $("catPill").textContent = ui.pill;
+
+    const resBox = $("resultBox");
+    resBox.className = "resultBox " + ui.cls;
+    $("resTitle").textContent = ui.title;
+    $("resSub").textContent = ui.sub;
+
+    // why
+    const why = $("whyList");
+    why.innerHTML = "";
+    if(!sel.length){
+      const li = document.createElement("li");
+      li.textContent = "—";
+      why.appendChild(li);
+    }else{
+      for(const it of sel){
+        const li = document.createElement("li");
+        li.textContent = it.title;
+        why.appendChild(li);
+      }
+    }
+
+    // rec
+    const recs = buildRecommendations(sel, cat);
+    const rlist = $("recList");
+    rlist.innerHTML = "";
+    if(!recs.length){
+      const li = document.createElement("li");
+      li.textContent = "—";
+      rlist.appendChild(li);
+    }else{
+      for(const r of recs){
+        const li = document.createElement("li");
+        li.textContent = r;
+        rlist.appendChild(li);
+      }
+    }
+
+    // one-line
+    const one = buildOneLine(sel, cat);
+    $("oneLineText").textContent = one;
+
+    // save last computed export
+    window.__EVAK_ONE__ = one;
+    window.__EVAK_FULL__ = buildFullText(sel, cat, recs);
+
+    // если категория сменилась — логируем (только при реальном изменении)
+    if(state._lastCat !== cat){
+      if(state._lastCat !== undefined) addLog(`Категория: ${categoryUi(state._lastCat).pill} → ${ui.pill}`);
+      state._lastCat = cat;
+      saveState();
+    }
+  }
+
+  // ---------- BUTTONS ----------
+  $("btnBack").addEventListener("pointerdown",(e)=>{
+    e.preventDefault();
+    window.location.href = BACK_URL;
   });
 
-  if(critical){
-    text+="\nРекомендации:\n- Немедленная эвакуация\n- Подготовка к ухудшению\n";
-  }else if(marked.length){
-    text+="\nРекомендации:\n- Контроль состояния\n- Эвакуация при возможности\n";
-  }else{
-    text+="\nРекомендации:\n- Наблюдение\n- Симптоматическое лечение\n";
-  }
+  $("btnCopy").addEventListener("pointerdown", async (e)=>{
+    e.preventDefault();
+    const text = window.__EVAK_FULL__ || "";
+    if(!text){ toast("Нечего копировать"); return; }
+    try{
+      await navigator.clipboard.writeText(text);
+      toast("✅ Скопировано");
+    }catch(_){
+      toast("Не удалось скопировать (браузер). Попробуй выделить вручную.", 2600);
+    }
+  });
 
-  exp.textContent=text;
-}
+  $("btnTg").addEventListener("pointerdown", async (e)=>{
+    e.preventDefault();
+    const text = window.__EVAK_FULL__ || "";
+    if(!text){ toast("Нечего отправлять"); return; }
 
-document.querySelectorAll("input").forEach(i=>{
-  i.addEventListener("change", recalc);
-});
+    // Надёжно: сначала в буфер, потом открыть Telegram share
+    try{ await navigator.clipboard.writeText(text); }catch(_){}
 
-function copyResult(){
-  if(!export.textContent) return;
-  navigator.clipboard.writeText(export.textContent);
-}
+    // t.me/share/url: можно без url, только text
+    const shareUrl = "https://t.me/share/url?url=&text=" + encodeURIComponent(text);
+    window.open(shareUrl, "_blank");
+    toast("Открыл Telegram share (текст в буфере тоже есть)", 2600);
+  });
 
-function resetAll(){
-  document.querySelectorAll("input").forEach(i=>i.checked=false);
-  document.getElementById("result").textContent="Пока не оценено";
-  document.getElementById("export").textContent="";
-}
+  $("btnReset").addEventListener("pointerdown",(e)=>{
+    e.preventDefault();
+    state.checked = {};
+    state.timers = [];
+    state._lastCat = undefined;
+    saveState();
+    renderItems();      // пересоздать чекбоксы
+    renderTimers();
+    addLog("Сброс: признаки и таймеры очищены");
+    recalcAndRender();
+    toast("Сброшено");
+  });
+
+  $("btnClearLog").addEventListener("pointerdown",(e)=>{
+    e.preventDefault();
+    state.log = [];
+    saveState();
+    renderLog();
+    toast("Журнал очищен");
+  });
+
+  document.querySelectorAll("[data-timer]").forEach(btn=>{
+    btn.addEventListener("pointerdown",(e)=>{
+      e.preventDefault();
+      const key = btn.getAttribute("data-timer");
+      startTimer(key);
+    });
+  });
+
+  // ---------- INIT ----------
+  renderItems();
+  renderTimers();
+  renderLog();
+  recalcAndRender();
+
+  // обновление времени/таймеров
+  setInterval(()=>{
+    $("timePill").textContent = `время: ${nowHHMM()}`;
+    tickTimers();
+  }, 1000);
+
+})();
 </script>
 
 </body>
