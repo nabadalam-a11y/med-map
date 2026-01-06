@@ -3,640 +3,261 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Эвакуация — PRO оценка</title>
+<title>Эвакуация — быстрая оценка</title>
+
 <style>
-  :root{
-    --bg:#f4f6f8;
-    --card:#fff;
-    --text:#111;
-    --muted:#556;
-    --green:#1f6f3d;
-    --red:#b71c1c;
-    --amber:#f9a825;
-    --blue:#1976d2;
-    --line:#d9dde3;
-    --shadow: 0 1px 10px rgba(0,0,0,0.06);
-  }
-  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text);}
-  header{
-    position:sticky;top:0;z-index:20;
-    background:linear-gradient(0deg, rgba(0,0,0,0.06), rgba(0,0,0,0.06)), var(--green);
-    color:#fff;padding:12px 14px;
-    box-shadow:var(--shadow);
-  }
-  header .t{font-size:18px;font-weight:800;text-align:center;letter-spacing:.2px}
-  header .sub{margin-top:6px;font-size:12px;opacity:.9;text-align:center;line-height:1.25}
-  .wrap{padding:12px;max-width:900px;margin:0 auto;}
-  .grid{display:grid;grid-template-columns:1fr;gap:10px}
-  .secTitle{
-    font-weight:900;color:#233; margin:12px 2px 2px;
-    display:flex;align-items:center;justify-content:space-between;gap:10px
-  }
-  .badge{
-    font-size:12px;font-weight:800;border-radius:999px;padding:6px 10px;
-    background:#eef2f6;color:#223;border:1px solid var(--line);
-    white-space:nowrap
-  }
+body{
+  margin:0;
+  font-family:Arial, sans-serif;
+  background:#f5f5f5;
+  color:#111;
+}
+.header{
+  background:#1b5e20;
+  color:#fff;
+  padding:14px;
+  text-align:center;
+  font-size:18px;
+  font-weight:700;
+}
+.wrap{ padding:12px; }
 
-  .item{
-    background:var(--card); border:1px solid var(--line);
-    border-radius:16px; padding:12px;
-    display:flex; gap:12px; align-items:flex-start;
-    touch-action:pan-y;
-    box-shadow:var(--shadow);
-  }
-  .item.leftRed{border-left:7px solid var(--red)}
-  .item.leftAmber{border-left:7px solid var(--amber)}
-  .item.leftBlue{border-left:7px solid var(--blue)}
-  .item.leftGreen{border-left:7px solid var(--green)}
-  .item input{width:22px;height:22px;flex:0 0 auto;margin-top:2px}
-  .itTitle{font-weight:800;line-height:1.15}
-  .itDesc{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.25}
-  .itMeta{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}
-  .chip{
-    font-size:12px; padding:4px 8px; border-radius:999px;
-    border:1px solid var(--line); background:#f7f9fb; color:#234; font-weight:700;
-  }
-  .chip.crit{border-color:rgba(183,28,28,.35); background:rgba(183,28,28,.08); color:#7b1212}
-  .chip.score{opacity:.85}
+a{ text-decoration:none; }
 
-  .panel{
-    background:var(--card);
-    border:1px solid var(--line);
-    border-radius:18px;
-    padding:14px;
-    box-shadow:var(--shadow);
-    margin-top:12px;
-  }
-  .resHead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-  .resTitle{font-size:18px;font-weight:900;margin:0}
-  .resSmall{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.25}
-  .pill{
-    border-radius:999px;padding:8px 12px;font-size:12px;font-weight:900;
-    border:1px solid var(--line); background:#fff; white-space:nowrap
-  }
-  .pill.red{border-color:rgba(183,28,28,.4);background:rgba(183,28,28,.10);color:#7b1212}
-  .pill.amb{border-color:rgba(249,168,37,.45);background:rgba(249,168,37,.14);color:#6a4b00}
-  .pill.blue{border-color:rgba(25,118,210,.35);background:rgba(25,118,210,.10);color:#0e4f95}
-  .pill.green{border-color:rgba(31,111,61,.35);background:rgba(31,111,61,.10);color:#0f4f2b}
+.back-btn{
+  display:inline-block;
+  background:#fff;
+  border:1px solid #999;
+  border-radius:10px;
+  padding:10px 14px;
+  font-size:15px;
+  margin-bottom:12px;
+}
 
-  .why, .recs{
-    margin-top:10px;
-    border-top:1px dashed var(--line);
-    padding-top:10px;
-  }
-  .why ul, .recs ul{margin:8px 0 0 18px;padding:0}
-  .why li, .recs li{margin:6px 0;line-height:1.25}
-  .muted{color:var(--muted)}
-  .rowBtns{display:flex;gap:10px; margin-top:12px}
-  button{
-    width:100%;
-    border:none;border-radius:14px;
-    padding:14px;font-weight:900;font-size:15px;
-    touch-action:manipulation;
-  }
-  button:active{opacity:.86}
-  .bBlue{background:var(--blue);color:#fff}
-  .bGray{background:#515a63;color:#fff}
-  .bGreen{background:var(--green);color:#fff}
-  .bOutline{background:#fff;color:#111;border:1px solid var(--line)}
-  .tiny{font-size:12px;padding:10px 12px;border-radius:12px}
-  details{margin-top:10px}
-  summary{cursor:pointer;font-weight:900}
-  pre{
-    white-space:pre-wrap;
-    background:#0f172a;
-    color:#e5e7eb;
-    border-radius:14px;
-    padding:12px;
-    font-size:12px;
-    line-height:1.35;
-    overflow:auto;
-  }
+.card{
+  background:#fff;
+  border-radius:14px;
+  padding:14px;
+  margin-bottom:12px;
+  box-shadow:0 2px 6px rgba(0,0,0,.08);
+}
 
-  .toast{
-    position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
-    background:rgba(17,17,17,0.92);color:#fff;
-    padding:10px 12px;border-radius:12px;font-size:14px;
-    max-width:92%;display:none;z-index:9999
-  }
+.item{
+  display:flex;
+  gap:12px;
+  align-items:flex-start;
+  padding:10px 0;
+  border-bottom:1px solid #eee;
+}
+.item:last-child{ border-bottom:none; }
 
-  .timerBox{
-    display:flex;align-items:center;justify-content:space-between;gap:10px;
-    border-top:1px dashed var(--line);
-    margin-top:10px;padding-top:10px;
-  }
-  .timerState{font-weight:900}
-  .timerBtns{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-  .timerBtns button{width:auto}
-  .warn{color:#7b1212;font-weight:900}
-  .note{
-    margin-top:10px;font-size:12px;color:var(--muted);line-height:1.25
-  }
+input[type=checkbox]{
+  width:22px;
+  height:22px;
+}
 
-  /* Блокировка “случайного тыка” при скролле — сделано в JS */
+.item-title{
+  font-weight:700;
+}
+.item-sub{
+  font-size:13px;
+  color:#555;
+}
+
+.result{
+  border-radius:14px;
+  padding:14px;
+  font-weight:700;
+  margin-top:10px;
+}
+
+.green{ background:#e8f5e9; border:2px solid #2e7d32; }
+.yellow{ background:#fffde7; border:2px solid #f9a825; }
+.red{ background:#ffebee; border:2px solid #c62828; }
+
+.actions{
+  display:flex;
+  gap:10px;
+  margin-top:12px;
+}
+.actions button{
+  width:100%;
+  padding:14px;
+  border:none;
+  border-radius:12px;
+  font-size:16px;
+  color:#fff;
+}
+.copy{ background:#1565c0; }
+.reset{ background:#555; }
+
+pre{
+  white-space:pre-wrap;
+  font-size:13px;
+  background:#fff;
+  padding:12px;
+  border-radius:12px;
+  margin-top:10px;
+}
 </style>
 </head>
+
 <body>
 
-<header>
-  <div class="t">ЭВАКУАЦИЯ — PRO ОЦЕНКА</div>
-  <div class="sub">
-    Быстро: отметь признаки → получи категорию + “почему” + что делать на месте.<br>
-    Это шпаргалка поддержки решения, не заменяет клиническое мышление и команду/протокол.
-  </div>
-</header>
+<div class="header">ЭВАКУАЦИЯ — БЫСТРАЯ ОЦЕНКА</div>
 
-  <div style="padding:10px;">
-  <button id="btnBackMap" style="
-    background:#fff;
-    border:1px solid #999;
-    border-radius:10px;
-    padding:10px 14px;
-    font-size:15px;
-  ">
-    ← К карте ранений
-  </button>
-  </div>
 <div class="wrap">
-  <div class="panel">
-    <div class="resHead">
-      <div>
-        <h2 class="resTitle" id="catTitle">Пока не оценено</h2>
-        <div class="resSmall" id="catSmall">Отметь пункты ниже — появится категория и рекомендации.</div>
-      </div>
-      <div class="pill green" id="catPill">—</div>
+
+<a href="/med-map/">
+  <div class="back-btn">← К карте ранений</div>
+</a>
+
+<div class="card">
+  <label class="item">
+    <input type="checkbox" data-critical data-text="Неконтролируемое или рецидивирующее кровотечение">
+    <div>
+      <div class="item-title">Тяжёлое кровотечение</div>
+      <div class="item-sub">жгут / тампонада / риск срыва</div>
     </div>
+  </label>
 
-    <div class="why">
-      <div class="muted"><b>Причины:</b></div>
-      <ul id="whyList"><li class="muted">(нет)</li></ul>
+  <label class="item">
+    <input type="checkbox" data-critical data-text="Ранение груди">
+    <div>
+      <div class="item-title">Ранение груди</div>
+      <div class="item-sub">клапан закрыт, риск ухудшения</div>
     </div>
+  </label>
 
-    <div class="recs">
-      <div class="muted"><b>Рекомендации на месте:</b></div>
-      <ul id="recList"><li class="muted">(нет)</li></ul>
-      <div class="note" id="noteLine"></div>
+  <label class="item">
+    <input type="checkbox" data-critical data-text="Подозрение на проникающее ранение живота/таза">
+    <div>
+      <div class="item-title">Проникающее ранение живота / таза</div>
+      <div class="item-sub">боль, напряжение, ухудшение</div>
     </div>
+  </label>
 
-    <div class="timerBox">
-      <div>
-        <div class="muted">Повторная оценка</div>
-        <div class="timerState" id="timerState">не запущена</div>
-      </div>
-      <div class="timerBtns">
-        <button class="bOutline tiny" type="button" data-t="10">+10 мин</button>
-        <button class="bOutline tiny" type="button" data-t="15">+15 мин</button>
-        <button class="bOutline tiny" type="button" data-t="30">+30 мин</button>
-        <button class="bGray tiny" type="button" id="timerStop">Стоп</button>
-      </div>
+  <label class="item">
+    <input type="checkbox" data-text="Серьёзная травма конечности">
+    <div>
+      <div class="item-title">Серьёзная травма конечности</div>
+      <div class="item-sub">перелом, деформация, сильная боль</div>
     </div>
+  </label>
 
-    <div class="rowBtns">
-      <button class="bBlue" type="button" id="btnCopy">КОПИРОВАТЬ</button>
-      <button class="bGreen" type="button" id="btnShare">ПОДЕЛИТЬСЯ</button>
-      <button class="bGray" type="button" id="btnReset">СБРОСИТЬ</button>
+  <label class="item">
+    <input type="checkbox" data-text="Проникающая травма глаза">
+    <div>
+      <div class="item-title">Проникающая травма глаза</div>
     </div>
+  </label>
 
-    <details>
-      <summary>Показать детали расчёта (PRO)</summary>
-      <div class="note">Если критический признак отмечен — баллы не важны: категория “СЕЙЧАС”.</div>
-      <pre id="debug"></pre>
-    </details>
-  </div>
-
-  <div class="secTitle">
-    <div>Критические (если хоть один — “СЕЙЧАС”)</div>
-    <div class="badge">триггеры</div>
-  </div>
-  <div class="grid" id="secCritical"></div>
-
-  <div class="secTitle">
-    <div>Высокий риск (обычно “СРОЧНО / ПРИОРИТЕТ”)</div>
-    <div class="badge">усилители</div>
-  </div>
-  <div class="grid" id="secHigh"></div>
-
-  <div class="secTitle">
-    <div>Умеренный риск (часто “ПЛАНОВО” или “НАБЛЮДАТЬ”)</div>
-    <div class="badge">контроль</div>
-  </div>
-  <div class="grid" id="secMed"></div>
-
-  <div class="secTitle">
-    <div>Стабильно / поверхностно (если только это — “НАБЛЮДАТЬ”)</div>
-    <div class="badge">без эвак</div>
-  </div>
-  <div class="grid" id="secStable"></div>
-
-  <div class="panel">
-    <div class="note">
-      <b>Важно:</b> категория — это <b>приоритет</b>, а не “обязан эвакуировать”.
-      “НАБЛЮДАТЬ” означает: <b>остаться на месте</b>, купировать симптомы, контроль динамики и повторная оценка.
+  <label class="item">
+    <input type="checkbox" data-text="Ожоги 10–20%">
+    <div>
+      <div class="item-title">Ожоги 10–20% поверхности</div>
     </div>
-  </div>
+  </label>
+
+  <label class="item">
+    <input type="checkbox" data-text="Амбулаторные красные флаги">
+    <div>
+      <div class="item-title">Амбулаторные «красные флаги»</div>
+      <div class="item-sub">температура + ухудшение</div>
+    </div>
+  </label>
+
+  <label class="item">
+    <input type="checkbox" data-text="Нуждается в поддержке и наблюдении">
+    <div>
+      <div class="item-title">Нужна поддержка / наблюдение</div>
+      <div class="item-sub">не может идти сам</div>
+    </div>
+  </label>
+
+  <label class="item">
+    <input type="checkbox" data-stable>
+    <div>
+      <div class="item-title">Стабильно, поверхностно</div>
+      <div class="item-sub">без прогрессии</div>
+    </div>
+  </label>
 </div>
 
-<div class="toast" id="toast"></div>
+<div id="result" class="result green">
+  Пока не оценено
+</div>
+
+<pre id="export"></pre>
+
+<div class="actions">
+  <button class="copy" onclick="copyResult()">КОПИРОВАТЬ</button>
+  <button class="reset" onclick="resetAll()">СБРОСИТЬ</button>
+</div>
+
+</div>
 
 <script>
-(() => {
-  const LS_KEY = "evac_pro_state_v1";
-  const toastEl = document.getElementById("toast");
-  const $ = (id)=>document.getElementById(id);
+function recalc(){
+  const checks=[...document.querySelectorAll("input[type=checkbox]")];
+  const critical=checks.some(c=>c.checked && c.dataset.critical!==undefined);
+  const stable=checks.some(c=>c.checked && c.dataset.stable!==undefined);
+  const marked=checks.filter(c=>c.checked && !c.dataset.stable);
 
-  function toast(msg, ms=1800){
-    toastEl.textContent = msg;
-    toastEl.style.display="block";
-    clearTimeout(toastEl._t);
-    toastEl._t = setTimeout(()=>toastEl.style.display="none", ms);
+  let res=document.getElementById("result");
+  let exp=document.getElementById("export");
+
+  let text="";
+
+  if(critical){
+    res.className="result red";
+    res.textContent="ЭВАКУАЦИЯ СРОЧНО";
+    text="Категория: СРОЧНО\nПричины:\n";
+  }else if(marked.length>0){
+    res.className="result yellow";
+    res.textContent="ЭВАКУАЦИЯ ПЛАНОВАЯ";
+    text="Категория: ПЛАНОВАЯ\nПричины:\n";
+  }else if(stable){
+    res.className="result green";
+    res.textContent="НАБЛЮДАТЬ НА МЕСТЕ";
+    text="Категория: НАБЛЮДАТЬ\nПричины:\nСтабильное состояние\n";
+  }else{
+    res.className="result green";
+    res.textContent="Пока не оценено";
+    exp.textContent="";
+    return;
   }
 
-  // --- Items: critical triggers override everything ---
-  // score: вес для non-critical режима (скрыт, но используется)
-  // rec: рекомендации (короткие, без “мед. назначений”)
-  const ITEMS = [
-    // CRITICAL
-    {id:"airway", group:"crit", title:"Нарушение проходимости дыхательных путей", desc:"угроза дыханию/аспирации/обструкция", score:999, critical:true,
-      rec:["Обеспечить проходимость ДП, позиционирование, контроль сознания/дыхания.","Готовить срочную эвакуацию."]},
-    {id:"breath_fail", group:"crit", title:"Дыхательная недостаточность / выраженная одышка", desc:"сатурация/клиника, прогрессия", score:999, critical:true,
-      rec:["Контроль дыхания, положение, тепло, минимизация нагрузки.","Срочная эвакуация."]},
-    {id:"shock", group:"crit", title:"Признаки шока", desc:"слабость, холодный пот, нарушение сознания, бледность, ухудшение", score:999, critical:true,
-      rec:["Тепло, горизонтально/как переносит, контроль кровотечения.","Срочная эвакуация."]},
-    {id:"uncontrolled_bleed", group:"crit", title:"Кровотечение не контролируется", desc:"жгут/тампонада не держит или риск срыва", score:999, critical:true,
-      rec:["Повторный контроль, фиксация жгута/тампонады, минимизировать движения.","Срочная эвакуация."]},
-    {id:"worsening_neuro", group:"crit", title:"Неврологическое ухудшение", desc:"потеря сознания/судороги/нарастает", score:999, critical:true,
-      rec:["Защита головы, контроль дыхания, наблюдение.","Срочная эвакуация."]},
-
-    // HIGH
-    {id:"chest", group:"high", title:"Ранение груди / подозрение", desc:"даже “закрыто”, но риск ухудшения", score:4,
-      rec:["Контроль дыхания, положение, тепло.","Подготовить эвакуацию."]},
-    {id:"abd_pelvis", group:"high", title:"Подозрение на проникающее ранение живота/таза", desc:"боль/напряжение/ухудшение", score:4,
-      rec:["Минимум еды/воды, тепло, контроль боли по протоколу подразделения.","Эвакуация при первой возможности."]},
-    {id:"head_eye", group:"high", title:"Травма глаза/головы с риском ухудшения", desc:"проникающая/нарастающая симптоматика", score:4,
-      rec:["Защита глаза/головы, исключить нагрузку.","Эвакуация при первой возможности."]},
-    {id:"major_fract", group:"high", title:"Тяжёлая травма конечности", desc:"перелом/деформация/невозможно опереться", score:3,
-      rec:["Иммобилизация, контроль кровотечения, тепло.","Эвакуация при первой возможности."]},
-    {id:"burn_mid", group:"high", title:"Ожоги ~10–20% поверхности", desc:"или лицо/кисти/промежность/суставы", score:3,
-      rec:["Охлаждение по возможности, защита/чистая повязка, тепло.","Эвакуация (по состоянию/площади)."]},
-
-    // MED
-    {id:"redflags_amb", group:"med", title:"Амбулаторные “красные флаги”", desc:"температура + ухудшение / нарастающий отёк/гной/слабость", score:2,
-      rec:["Наблюдать динамику, регидратация по возможности, тепло.","Если ухудшается — повышать приоритет эвакуации."]},
-    {id:"cant_walk", group:"med", title:"Не может идти сам", desc:"нужна поддержка/переноска", score:2,
-      rec:["Не перегружать, беречь тепло, контроль сознания.","Эвакуация планово/по ситуации."]},
-    {id:"pain_high", group:"med", title:"Сильная боль, мешает функции", desc:"но без критики", score:1,
-      rec:["Иммобилизация/покой, тепло, контроль динамики.","Если нарастает — повышать приоритет."]},
-    {id:"infection_local", group:"med", title:"Локальная инфекция/воспаление", desc:"покраснение/отёк/боль, но стабильное", score:1,
-      rec:["Гигиена/перевязка, контроль температуры и ухудшения.","Наблюдать, при ухудшении — эвакуация."]},
-
-    // STABLE
-    {id:"stable_minor", group:"stable", title:"Стабильно, поверхностно", desc:"без прогрессии, состояние контролируемое", score:0, stable:true,
-      rec:["Наблюдать на месте, контроль динамики.","Повторная оценка через 10–30 мин или при жалобах."]},
-    {id:"only_aftercare", group:"stable", title:"Нужен только уход/перевязка", desc:"без системных признаков ухудшения", score:0, stable:true,
-      rec:["Перевязка/уход, гигиена, тепло.","Наблюдать, фиксировать изменения."]}
-  ];
-
-  const groups = {
-    crit: $("secCritical"),
-    high: $("secHigh"),
-    med: $("secMed"),
-    stable: $("secStable")
-  };
-
-  // --- State ---
-  let state = loadState();
-  function loadState(){
-    try{
-      const raw = localStorage.getItem(LS_KEY);
-      return raw ? JSON.parse(raw) : {checked:{}};
-    }catch(_){
-      return {checked:{}};
-    }
-  }
-  function saveState(){
-    localStorage.setItem(LS_KEY, JSON.stringify(state));
-  }
-
-  // --- Scroll-safe tap: do not toggle on swipe ---
-  function bindTapSafeToggle(card, checkbox, onChange){
-    let startY = 0, startX = 0, moved = false, pointerId = null;
-    card.addEventListener("pointerdown", (e)=>{
-      pointerId = e.pointerId;
-      startY = e.clientY; startX = e.clientX;
-      moved = false;
-    });
-    card.addEventListener("pointermove", (e)=>{
-      if(pointerId !== e.pointerId) return;
-      if(Math.abs(e.clientY - startY) > 8 || Math.abs(e.clientX - startX) > 8) moved = true;
-    });
-    card.addEventListener("pointerup", (e)=>{
-      if(pointerId !== e.pointerId) return;
-      pointerId = null;
-      if(moved) return;                 // this was scroll
-      if(e.target === checkbox) return; // native click
-      checkbox.checked = !checkbox.checked;
-      checkbox.dispatchEvent(new Event("change"));
-    });
-
-    checkbox.addEventListener("change", onChange);
-  }
-
-  // --- Render ---
-  function render(){
-    Object.values(groups).forEach(el => el.innerHTML = "");
-    ITEMS.forEach(it=>{
-      const card = document.createElement("div");
-      card.className = "item";
-
-      if(it.group === "crit") card.classList.add("leftRed");
-      else if(it.group === "high") card.classList.add("leftAmber");
-      else if(it.group === "med") card.classList.add("leftBlue");
-      else card.classList.add("leftGreen");
-
-      const cb = document.createElement("input");
-      cb.type = "checkbox";
-      cb.checked = !!state.checked[it.id];
-
-      const box = document.createElement("div");
-      const chips = [];
-      if(it.critical) chips.push(`<span class="chip crit">КРИТИЧЕСКИ</span>`);
-      chips.push(`<span class="chip score">вес: ${it.critical ? "—" : it.score}</span>`);
-
-      box.innerHTML = `
-        <div class="itTitle">${it.title}</div>
-        <div class="itDesc">${it.desc || ""}</div>
-        <div class="itMeta">${chips.join("")}</div>
-      `;
-
-      bindTapSafeToggle(card, cb, ()=>{
-        state.checked[it.id] = cb.checked;
-        saveState();
-        recalc();
-      });
-
-      card.appendChild(cb);
-      card.appendChild(box);
-      groups[it.group].appendChild(card);
-    });
-  }
-
-  // --- Engine ---
-  function uniq(arr){
-    const s = new Set();
-    const out = [];
-    for(const x of arr){ if(!s.has(x)){ s.add(x); out.push(x); } }
-    return out;
-  }
-
-  function pick(items){
-    return items.filter(it => !!state.checked[it.id]);
-  }
-
-  function recalc(){
-    const chosen = pick(ITEMS);
-    const chosenIds = new Set(chosen.map(x=>x.id));
-    const any = chosen.length > 0;
-
-    const criticalChosen = chosen.filter(x=>x.critical);
-    const onlyStable = any && chosen.every(x=>x.stable);
-
-    let score = 0;
-    for(const it of chosen){
-      if(!it.critical) score += (it.score || 0);
-    }
-
-    // Category logic:
-    // 1) Any critical => NOW
-    // 2) Only stable => OBSERVE
-    // 3) Else score thresholds -> SOON / ROUTINE / OBSERVE
-    // plus some “boosters”: if any HIGH selected -> minimum = PRIORITY
-    const anyHigh = chosen.some(x=>x.group==="high");
-    const anyMed = chosen.some(x=>x.group==="med");
-
-    let cat = "Пока не оценено";
-    let pill = {cls:"green", text:"—"};
-    let reasons = [];
-    let recs = [];
-    let note = "";
-
-    if(!any){
-      cat = "Пока не оценено";
-      pill = {cls:"green", text:"—"};
-      reasons = ["(нет)"];
-      recs = ["Отметь признаки выше — появится категория и рекомендации."];
-      note = "";
-    } else if(criticalChosen.length){
-      cat = "ЭВАКУАЦИЯ СЕЙЧАС";
-      pill = {cls:"red", text:"СЕЙЧАС"};
-      reasons = criticalChosen.map(x=>x.title);
-      recs = uniq(criticalChosen.flatMap(x=>x.rec || []));
-      note = "Есть критические признаки — решение по приоритету не зависит от “баллов”.";
-    } else if(onlyStable){
-      cat = "НАБЛЮДАТЬ НА МЕСТЕ";
-      pill = {cls:"green", text:"НАБЛЮДАТЬ"};
-      reasons = chosen.map(x=>x.title);
-      recs = uniq(chosen.flatMap(x=>x.rec || []));
-      note = "Стабильно: эвакуация не обязательна. Важна динамика и повторная оценка.";
-    } else {
-      // score-based with “minimum floors”
-      // Floors:
-      // - if anyHigh => at least PRIORITY
-      // - else if score >= 4 => PRIORITY
-      // - else if score >= 2 => PLANNED
-      // - else => OBSERVE
-      let level = "OBSERVE"; // OBSERVE / PLANNED / PRIORITY
-
-      if(anyHigh) level = "PRIORITY";
-      else if(score >= 4) level = "PRIORITY";
-      else if(score >= 2) level = "PLANNED";
-      else level = "OBSERVE";
-
-      if(level==="PRIORITY"){
-        cat = "ЭВАКУАЦИЯ В ПРИОРИТЕТЕ";
-        pill = {cls:"red", text:"ПРИОРИТЕТ"};
-        note = "Есть значимые риски: лучше эвакуация при первой возможности (без паники, но не тянуть).";
-      }else if(level==="PLANNED"){
-        cat = "ЭВАКУАЦИЯ ПЛАНОВО";
-        pill = {cls:"amb", text:"ПЛАНОВО"};
-        note = "Риски умеренные: эвакуация планово/по ресурсу. Если ухудшается — повысить приоритет.";
-      }else{
-        cat = "НАБЛЮДАТЬ НА МЕСТЕ";
-        pill = {cls:"green", text:"НАБЛЮДАТЬ"};
-        note = "Сейчас похоже на контролируемое состояние. Главная угроза — пропустить ухудшение.";
-      }
-
-      reasons = chosen.map(x=>x.title);
-      recs = uniq(chosen.flatMap(x=>x.rec || []));
-
-      // Add universal recommendation for non-critical cases
-      if(!chosenIds.has("stable_minor")){
-        recs = uniq([...recs, "Повторная оценка по таймеру или при любых новых жалобах."]);
-      }
-    }
-
-    // Render
-    $("catTitle").textContent = cat;
-    $("catPill").className = "pill " + pill.cls;
-    $("catPill").textContent = pill.text;
-    $("catSmall").textContent = any ? "Категория и рекомендации обновляются автоматически." : "Отметь пункты ниже — появится категория и рекомендации.";
-
-    const whyEl = $("whyList");
-    whyEl.innerHTML = "";
-    for(const r of reasons){
-      const li = document.createElement("li");
-      li.textContent = r;
-      whyEl.appendChild(li);
-    }
-
-    const recEl = $("recList");
-    recEl.innerHTML = "";
-    for(const r of recs){
-      const li = document.createElement("li");
-      li.textContent = r;
-      recEl.appendChild(li);
-    }
-
-    $("noteLine").textContent = note;
-
-    // Export text
-    const exportText =
-`ЭВАКУАЦИЯ — БЫСТРАЯ ОЦЕНКА
-Категория: ${cat}
-Причины: ${reasons.join("; ")}
-Рекомендации: ${recs.join("; ")}
-Примечание: ${note || "-"}`;
-    window.__EVAC_EXPORT__ = exportText;
-
-    // Debug
-    $("debug").textContent =
-`Выбрано: ${chosen.length}
-Критические: ${criticalChosen.length ? "ДА" : "НЕТ"}
-Баллы (для некрит.): ${score}
-Пороговая логика:
-- Если есть критический пункт → “СЕЙЧАС”
-- Если отмечено только “Стабильно/уход” → “НАБЛЮДАТЬ”
-- Иначе:
-  - если есть пункты “Высокий риск” → минимум “ПРИОРИТЕТ”
-  - иначе score>=4 → “ПРИОРИТЕТ”
-  - иначе score>=2 → “ПЛАНОВО”
-  - иначе → “НАБЛЮДАТЬ”`;
-  }
-
-  // --- Buttons ---
-  $("btnCopy").addEventListener("pointerdown", async (e)=>{
-    e.preventDefault();
-    const text = window.__EVAC_EXPORT__ || "";
-    if(!text){ toast("Нечего копировать"); return; }
-    try{
-      await navigator.clipboard.writeText(text);
-      toast("✅ Скопировано");
-    }catch(_){
-      toast("Не удалось скопировать. Выдели текст вручную (в деталях).", 2600);
-    }
+  marked.forEach(c=>{
+    if(c.dataset.text) text+="- "+c.dataset.text+"\n";
   });
 
-  $("btnShare").addEventListener("pointerdown", async (e)=>{
-    e.preventDefault();
-    const text = window.__EVAC_EXPORT__ || "";
-    if(!text){ toast("Нечего отправлять"); return; }
-    // Android: откроется системное меню — там выбираешь Telegram
-    if(navigator.share){
-      try{
-        await navigator.share({ text, title:"Эвакуация — оценка" });
-        toast("Отправлено");
-      }catch(_){
-        // user cancelled -> ignore
-      }
-    }else{
-      try{ await navigator.clipboard.writeText(text); toast("Нет Share API — скопировано"); }
-      catch(_){ toast("Нет Share API и не удалось скопировать", 2600); }
-    }
-  });
-
-  $("btnReset").addEventListener("pointerdown", (e)=>{
-    e.preventDefault();
-    state = {checked:{}};
-    saveState();
-    render();
-    recalc();
-    toast("Сброшено");
-  });
-
-  // --- Timer: re-evaluation ---
-  let timerEnd = 0;
-  let timerTick = null;
-
-  function fmt(ms){
-    const s = Math.max(0, Math.floor(ms/1000));
-    const m = Math.floor(s/60);
-    const r = s%60;
-    return `${String(m).padStart(2,"0")}:${String(r).padStart(2,"0")}`;
+  if(critical){
+    text+="\nРекомендации:\n- Немедленная эвакуация\n- Подготовка к ухудшению\n";
+  }else if(marked.length){
+    text+="\nРекомендации:\n- Контроль состояния\n- Эвакуация при возможности\n";
+  }else{
+    text+="\nРекомендации:\n- Наблюдение\n- Симптоматическое лечение\n";
   }
 
-  function setTimerState(text, isWarn=false){
-    const el = $("timerState");
-    el.textContent = text;
-    el.classList.toggle("warn", !!isWarn);
-  }
+  exp.textContent=text;
+}
 
-  function stopTimer(){
-    timerEnd = 0;
-    if(timerTick) clearInterval(timerTick);
-    timerTick = null;
-    setTimerState("не запущена", false);
-  }
-
-  function startTimer(minutes){
-    const now = Date.now();
-    const add = minutes * 60 * 1000;
-    timerEnd = Math.max(timerEnd, now) + add; // если уже идёт — добавляем время
-    if(timerTick) clearInterval(timerTick);
-
-    timerTick = setInterval(()=>{
-      const left = timerEnd - Date.now();
-      if(left <= 0){
-        clearInterval(timerTick); timerTick = null;
-        timerEnd = 0;
-        setTimerState("⏰ ВРЕМЯ ПОВТОРНОЙ ОЦЕНКИ", true);
-        // лёгкий вибро-алерт если доступно
-        try{ navigator.vibrate && navigator.vibrate([120,80,120]); }catch(_){}
-        toast("Повторная оценка!", 2400);
-        return;
-      }
-      setTimerState("осталось " + fmt(left), false);
-    }, 500);
-    toast(`Таймер +${minutes} мин`);
-  }
-
-  document.querySelectorAll('[data-t]').forEach(btn=>{
-    btn.addEventListener("pointerdown",(e)=>{
-      e.preventDefault();
-      const m = parseInt(btn.getAttribute("data-t"),10);
-      if(!isFinite(m)) return;
-      startTimer(m);
-    });
-  });
-
-  document.getElementById("btnBackMap").addEventListener("pointerdown", (e)=>{
-  e.preventDefault();
-  window.location.href = "../index.html";
+document.querySelectorAll("input").forEach(i=>{
+  i.addEventListener("change", recalc);
 });
-  $("timerStop").addEventListener("pointerdown",(e)=>{
-    e.preventDefault();
-    stopTimer();
-    toast("Таймер остановлен");
-  });
 
-  // Init
-  render();
-  recalc();
-})();
+function copyResult(){
+  if(!export.textContent) return;
+  navigator.clipboard.writeText(export.textContent);
+}
+
+function resetAll(){
+  document.querySelectorAll("input").forEach(i=>i.checked=false);
+  document.getElementById("result").textContent="Пока не оценено";
+  document.getElementById("export").textContent="";
+}
 </script>
 
 </body>
-  document.getElementById("btnBackMap").addEventListener("pointerdown", (e)=>{
-  e.preventDefault();
-  window.location.href = "../index.html";
-});
 </html>
