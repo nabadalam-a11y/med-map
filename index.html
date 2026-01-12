@@ -132,7 +132,7 @@
     .bar button:disabled{ opacity:.55; }
 
     .bar .tg{ background:#2a76d2; }
-    .bar .wh{ background:#4b5563; } /* склад */
+    .bar .wh{ background:#5b5b5b; } /* склад */
 
     .miniRow{
       display:flex;
@@ -167,21 +167,28 @@
     <div class="row">
       <div class="col">
         <label>Дата/время (обязательно)</label>
-        <input id="dt" type="datetime-local"/>
+        <input id="dt" type="datetime-local" autocomplete="off"/>
       </div>
       <div class="col">
         <label>Позывной (обязательно)</label>
-        <input id="call" placeholder="например: БАРС-12"/>
+        <input
+          id="call"
+          name="call_medmap__no_save"
+          placeholder="например: БАРС-12"
+          autocomplete="off"
+          autocapitalize="characters"
+          spellcheck="false"
+        />
       </div>
     </div>
 
     <label>Комментарий (обязательно)</label>
-    <textarea id="comment" placeholder="кратко..."></textarea>
+    <textarea id="comment" placeholder="кратко..." autocomplete="off" spellcheck="false"></textarea>
 
     <div class="row" style="margin-top:10px;">
       <div class="col">
         <label>Ввести номер зоны (для текущей стороны)</label>
-        <input id="zoneNum" type="number" inputmode="numeric" placeholder="например: 12"/>
+        <input id="zoneNum" type="number" inputmode="numeric" placeholder="например: 12" autocomplete="off"/>
         <div class="hint">Нажми “Добавить/убрать” — это переключатель.</div>
       </div>
       <div class="col" style="display:flex;align-items:flex-end;">
@@ -270,9 +277,6 @@
   const SEL_BACK="medmap_sel_back_v4";
   const META_FRONT="medmap_meta_front_v4";    // { [num]: { lr:"L"/"R", shrapnel:bool, ... } }
   const META_BACK="medmap_meta_back_v4";
-
-  // ✅ регистрация один раз (позывной)
-  const USER_CALLSIGN_KEY = "med_user_callsign_v1";
 
   function loadJSON(key, fallback){
     try{ const raw=localStorage.getItem(key); return raw?JSON.parse(raw):fallback; }catch(_){ return fallback; }
@@ -368,25 +372,20 @@
     return "trunk";
   }
   function allowedForClass(cls){
-    // перелом + шина: только конечности
     if(cls==="limb_upper" || cls==="limb_lower") return {shrapnel:1,sor:1,mvt:1,burn:1,fracture:1,splint:1};
-    // голова/шея: без перелома и шины
     if(cls==="head" || cls==="neck") return {shrapnel:1,sor:1,mvt:1,burn:1,fracture:0,splint:0};
-    // туловище: без перелома и шины
     return {shrapnel:1,sor:1,mvt:1,burn:1,fracture:0,splint:0};
   }
 
   /* ===== ЛЕВО/ПРАВО: для всего, кроме позвоночной и пупочной ===== */
   function needsLR(name){
     const s=(name||"").toLowerCase();
-    if(s.indexOf("позвоночн")!==-1) return false;  // позвоночная область
-    if(s.indexOf("пупочн")!==-1) return false;     // пупочная область
+    if(s.indexOf("позвоночн")!==-1) return false;
+    if(s.indexOf("пупочн")!==-1) return false;
     return true;
   }
 
-  function lrLabel(lr){
-    return lr==="R" ? "правая" : "левая";
-  }
+  function lrLabel(lr){ return lr==="R" ? "правая" : "левая"; }
 
   function limbGroupByName(name){
     const cls=zoneClassByName(name);
@@ -405,9 +404,8 @@
     return out;
   }
 
-  /* ===== НОВАЯ ФИШКА: авто-сторона по координате метки ===== */
+  /* ===== авто-сторона по координате ===== */
   function autoLRForZone(side, num){
-    // если есть координаты точки: x < 50 => L, иначе R
     const points=loadPoints();
     const map = side==="front" ? points.front : points.back;
     const p = map && map[num];
@@ -443,12 +441,10 @@
 
     clearPins();
 
-    // сначала выбранные
     for(let i=0;i<sel.length;i++){
       const k=sel[i];
       if(map[k]) addPin(k, map[k].x, map[k].y, true);
     }
-    // потом остальные
     const keys=Object.keys(map);
     for(let i=0;i<keys.length;i++){
       const k=keys[i];
@@ -476,11 +472,9 @@
       return;
     }
 
-    // добавить
     sel.push(n);
     saveSel(view, uniqNums(sel));
 
-    // авто-сторона, если нужна
     const dict=dictFor(view);
     const name=dict[parseInt(n,10)] || "";
     if(needsLR(name)){
@@ -547,7 +541,6 @@
       head.appendChild(delBtn);
       card.appendChild(head);
 
-      /* ЛЕВО/ПРАВО — для всего, кроме позвоночной/пупочной */
       if(needsLR(name)){
         const curLR = (cur.lr==="L" || cur.lr==="R") ? cur.lr : autoLRForZone(view, num);
 
@@ -666,7 +659,6 @@ ${comment || "-"}`
     );
   }
 
-  /* ===== НОВАЯ ФИШКА №2: короткая сводка “для рации” ===== */
   function shortSummary(){
     const selFront=loadSel("front");
     const selBack=loadSel("back");
@@ -675,7 +667,7 @@ ${comment || "-"}`
     const df=dictFor("front");
     const db=dictFor("back");
 
-    function pack(side, sel, meta, dict){
+    function pack(sel, meta, dict){
       const parts=[];
       for(const num of sel){
         const name=dict[parseInt(num,10)] || "";
@@ -699,8 +691,8 @@ ${comment || "-"}`
     }
 
     const all = [].concat(
-      pack("front", selFront, mf, df),
-      pack("back", selBack, mb, db)
+      pack(selFront, mf, df),
+      pack(selBack,  mb, db)
     );
 
     if(!all.length) return "Сводка: (нет выбранных зон)";
@@ -761,15 +753,7 @@ ${comment || "-"}`
   $("btnAddZone").addEventListener("pointerdown",(e)=>{ e.preventDefault(); addZoneFromInput(); });
   zoneNumEl.addEventListener("keydown",(e)=>{ if(e.key==="Enter"){ e.preventDefault(); addZoneFromInput(); } });
 
-  /* ✅ регистрация один раз: сохранить позывной */
-  function saveCallsignIfAny(){
-    const c=(callEl.value||"").trim();
-    if(c) localStorage.setItem(USER_CALLSIGN_KEY, c);
-  }
-  callEl.addEventListener("change", saveCallsignIfAny);
-  callEl.addEventListener("blur", saveCallsignIfAny);
-
-  /* ===== TELEGRAM (deep-link + fallback, без ссылки на сайт) ===== */
+  /* ===== TELEGRAM ===== */
   btnTG.addEventListener("pointerdown",(e)=>{
     e.preventDefault();
     const v=validateRequired();
@@ -790,21 +774,13 @@ ${comment || "-"}`
     toast("Открываю Telegram…", 1800);
   });
 
-  /* ✅ СКЛАД: переход + передать позывной в URL (на всякий) */
+  /* ===== СКЛАД: просто переход, БЕЗ сохранения/протаскивания позывного ===== */
   btnWarehouse.addEventListener("pointerdown",(e)=>{
     e.preventDefault();
-    const c = encodeURIComponent((callEl.value||"").trim());
-    const url = c ? `med_inventory.html?call=${c}` : "med_inventory.html";
-    /* ✅ СКЛАД: переход + передать позывной в URL (на всякий) */
-btnWarehouse.addEventListener("pointerdown",(e)=>{
-  e.preventDefault();
-  const c = encodeURIComponent((callEl.value||"").trim());
-  const url = c ? `med_inventory.html?call=${c}` : "med_inventory.html";
-  window.location.href = url;
-});
+    window.location.href = "med_inventory.html";
   });
 
-  /* ===== PDF (2 страницы, без пароля, русский как картинка) ===== */
+  /* ===== PDF ===== */
   function mkFileName(){
     const dt=(dtEl.value||"").trim();
     const call=(callEl.value||"").trim();
@@ -856,7 +832,7 @@ btnWarehouse.addEventListener("pointerdown",(e)=>{
     ctx.fillRect(0,0,c.width,c.height);
     ctx.drawImage(baseImg,0,0,c.width,c.height);
 
-    const fill = "rgba(255, 200, 0, 0.98)"; // выбранное на PDF тоже желтым
+    const fill = "rgba(255, 200, 0, 0.98)";
 
     for(let i=0;i<sel.length;i++){
       const k=sel[i];
@@ -1026,21 +1002,13 @@ btnWarehouse.addEventListener("pointerdown",(e)=>{
       dtEl.value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     }
 
-    // ✅ позывной подставить автоматически (регистрация один раз)
-    const savedCall = (localStorage.getItem(USER_CALLSIGN_KEY)||"").trim();
-    if(savedCall && !(callEl.value||"").trim()){
-      callEl.value = savedCall;
-    }
+    // ВАЖНО: в карте ранений позывной НЕ сохраняем и НЕ тянем откуда-либо.
+    // Чтобы он не "прилипал" от склада/браузера — принудительно очищаем при загрузке.
+    callEl.value = "";
+    commentEl.value = "";
 
     setView("front");
     finalEl.textContent=buildTextReport();
-
-    // подсказка если меток вообще нет (чтобы ты сразу понял, почему не кликается)
-    const p=loadPoints();
-    const hasAny = (Object.keys(p.front||{}).length + Object.keys(p.back||{}).length) > 0;
-    if(!hasAny){
-      toast("⚠️ ВНИМАНИЕ: координаты меток не найдены (POINTS_KEY пуст). Метки не появятся, пока их нет в localStorage.", 5200);
-    }
   }
 
   init();
