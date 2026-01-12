@@ -1,0 +1,228 @@
+Enter<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+  <title>Медицинский склад</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f6f8;
+      color: #333;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+    .header {
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+    .subheader {
+      text-align: center;
+      font-size: 16px;
+      color: #666;
+    }
+    .med-item {
+      display: flex;
+      justify-content: space-between;
+      margin: 10px 0;
+      padding: 10px;
+      background-color: #f9f9f9;
+      border-radius: 8px;
+    }
+    .med-item input {
+      width: 60px;
+      padding: 5px;
+      margin-right: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    .btn {
+      padding: 10px;
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .btn:hover {
+      background-color: #0056b3;
+    }
+    .error {
+      color: red;
+      margin-top: 20px;
+      text-align: center;
+    }
+    .success {
+      color: green;
+      margin-top: 20px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">Медицинский склад</div>
+  <div class="subheader" id="last-update">Последнее обновление: ещё ни разу не было.</div>
+  
+  <div id="userInfo">
+    <label for="callSign">Позывной:</label>
+    <input type="text" id="callSign" placeholder="Введите ваш позывной" />
+    <button class="btn" id="registerBtn">Зарегистрировать</button>
+    <div id="errorMessage" class="error"></div>
+  </div>
+
+  <div id="inventory" style="display:none;">
+    <div class="med-item">
+      <span>🔴 Цефтриаксон</span>
+      <span>есть: <span id="ceftQty">0</span> флак., нужно: 100 флак., не хватает: <span id="ceftMissing">100</span> флак.</span>
+      <input type="number" id="ceftInput" value="0" min="0" />
+    </div>
+    <div class="med-item">
+      <span>🔴 Лидокаин/новокаин/вода для инъекций</span>
+      <span>есть: <span id="lidocQty">0</span> амп., нужно: 50 амп., не хватает: <span id="lidocMissing">50</span> амп.</span>
+      <input type="number" id="lidocInput" value="0" min="0" />
+    </div>
+    <div class="med-item">
+      <span>🔴 Кеторол в/м 30 мг</span>
+      <span>есть: <span id="ketorolQty">0</span> амп., нужно: 20 амп., не хватает: <span id="ketorolMissing">20</span> амп.</span>
+      <input type="number" id="ketorolInput" value="0" min="0" />
+    </div>
+    <div class="med-item">
+      <span>🔴 Дексаметазон 2–4 мг</span>
+      <span>есть: <span id="dexQty">0</span> амп., нужно: 20 амп., не хватает: <span id="dexMissing">20</span> амп.</span>
+      <input type="number" id="dexInput" value="0" min="0" />
+    </div>
+    <div class="med-item">
+      <span>🔴 Левомеколь</span>
+      <span>есть: <span id="levomQty">0</span> тюб., нужно: 20 тюб., не хватает: <span id="levomMissing">20</span> тюб.</span>
+      <input type="number" id="levomInput" value="0" min="0" />
+    </div>
+    <div class="med-item">
+      <span>🔴 Шприцы 5/10 мл</span>
+      <span>есть: <span id="syringeQty">0</span> шт, нужно: 100 шт, не хватает: <span id="syringeMissing">100</span> шт</span>
+      <input type="number" id="syringeInput" value="0" min="0" />
+    </div>
+    <div class="med-item">
+      <span>🔴 Ибупрофен 400 мг</span>
+      <span>есть: <span id="ibuprofQty">0</span> уп., нужно: 5 уп., не хватает: <span id="ibuprofMissing">5</span> уп.</span>
+      <input type="number" id="ibuprofInput" value="0" min="0" />
+    </div>
+    <div class="med-item">
+      <span>🔴 Кеторол табл. 10 мг</span>
+      <span>есть: <span id="ketorolTabQty">0</span> уп., нужно: 5 уп., не хватает: <span id="ketorolTabMissing">5</span> уп.</span>
+      <input type="number" id="ketorolTabInput" value="0" min="0" />
+    </div>
+
+    <button class="btn" id="saveInventoryBtn">Сохранить изменения</button>
+    <div id="successMessage" class="success"></div>
+  </div>
+</div>
+
+<script>
+  const callSignInput = document.getElementById('callSign');
+  const registerBtn = document.getElementById('registerBtn');
+  const inventoryDiv = document.getElementById('inventory');
+  const userInfoDiv = document.getElementById('userInfo');
+  const lastUpdateDiv = document.getElementById('last-update');
+  
+  const ceftInput = document.getElementById('ceftInput');
+  const lidocInput = document.getElementById('lidocInput');
+  const ketorolInput = document.getElementById('ketorolInput');
+  const dexInput = document.getElementById('dexInput');
+  const levomInput = document.getElementById('levomInput');
+  const syringeInput = document.getElementById('syringeInput');
+  const ibuprofInput = document.getElementById('ibuprofInput');
+  const ketorolTabInput = document.getElementById('ketorolTabInput');
+
+  const saveInventoryBtn = document.getElementById('saveInventoryBtn');
+  const errorMessageDiv = document.getElementById('errorMessage');
+  const successMessageDiv = document.getElementById('successMessage');
+
+  const medData = {
+    ceft: { name: 'Цефтриаксон', need: 100 },
+    lidoc: { name: 'Лидокаин/новокаин/вода для инъекций', need: 50 },
+    ketorol: { name: 'Кеторол в/м 30 мг', need: 20 },
+    dex: { name: 'Дексаметазон 2–4 мг', need: 20 },
+    levom: { name: 'Левомеколь', need: 20 },
+    syringe: { name: 'Шприцы 5/10 мл', need: 100 },
+    ibuprof: { name: 'Ибупрофен 400 мг', need: 5 },
+    ketorolTab: { name: 'Кеторол табл. 10 мг', need: 5 }
+  };
+
+  let user = null;
+
+  const getUserData = () => {
+    return JSON.parse(localStorage.getItem('userData')) || null;
+  }
+
+  const saveUserData = (data) => {
+    localStorage.setItem('userData', JSON.stringify(data));
+  }
+
+  const updateInventoryUI = () => {
+    Object.keys(medData).forEach((key) => {
+      const med = medData[key];
+      const currentQty = user[key] || 0;
+      const missingQty = med.need - currentQty;
+      const qtyElement = document.getElementById(`${key}Qty`);
+      const missingElement = document.getElementById(`${key}Missing`);
+      const inputElement = document.getElementById(`${key}Input`);
+
+      qtyElement.textContent = currentQty;
+      missingElement.textContent = missingQty;
+      inputElement.value = currentQty;
+    });
+
+    lastUpdateDiv.textContent = `Последнее обновление: ${user ? user.lastUpdated : 'ещё ни разу не было.'}`;
+  }
+
+  const registerUser = () => {
+    const callSign = callSignInput.value.trim();
+
+    if (!callSign) {
+      errorMessageDiv.textContent = 'Пожалуйста, введите позывной!';
+      return;
+    }
+
+    user = {
+      callSign,
+      ceft: 0, lidoc: 0, ketorol: 0, dex: 0, levom: 0, syringe: 0, ibuprof: 0, ketorolTab: 0,
+      lastUpdated: new Date().toLocaleString()
+    };
+
+    saveUserData(user);
+    userInfoDiv.style.display = 'none';
+    inventoryDiv.style.display = 'block';
+    updateInventoryUI();
+  }
+
+  const saveInventory = () => {
+    Object.keys(medData).forEach((key) => {
+      const inputElement = document.getElementById(`${key}Input`);
+      const newQty = parseInt(inputElement.value, 10);
+      user[key] = newQty || 0;
+    });
+
+    user.lastUpdated = new Date().toLocaleString();
+    saveUserData(user);
+    successMessageDiv.textContent = 'Изменения успешно сохранены!';
+    updateInventoryUI();
+  }
+
+  registerBtn.addEventListener('click', registerUser);
+  saveInventoryBtn.addEventListener('click', saveInventory);
+</script>
+
+</body>
+</html>
