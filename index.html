@@ -132,6 +132,7 @@
     .bar button:disabled{ opacity:.55; }
 
     .bar .tg{ background:#2a76d2; }
+    .bar .wh{ background:#4b5563; } /* склад */
 
     .miniRow{
       display:flex;
@@ -209,6 +210,7 @@
   <div class="bar">
     <button id="btnMakePDF" type="button">СДЕЛАТЬ PDF (2 страницы)</button>
     <button id="btnTG" class="tg" type="button">TELEGRAM</button>
+    <button id="btnWarehouse" class="wh" type="button">СКЛАД</button>
   </div>
 
   <div id="toast"></div>
@@ -269,6 +271,9 @@
   const META_FRONT="medmap_meta_front_v4";    // { [num]: { lr:"L"/"R", shrapnel:bool, ... } }
   const META_BACK="medmap_meta_back_v4";
 
+  // ✅ регистрация один раз (позывной)
+  const USER_CALLSIGN_KEY = "med_user_callsign_v1";
+
   function loadJSON(key, fallback){
     try{ const raw=localStorage.getItem(key); return raw?JSON.parse(raw):fallback; }catch(_){ return fallback; }
   }
@@ -321,6 +326,7 @@
   const commentEl=$("comment");
   const btnMakePDF=$("btnMakePDF");
   const btnTG=$("btnTG");
+  const btnWarehouse=$("btnWarehouse");
 
   let view="front";
   let pdfBusy=false;
@@ -755,6 +761,14 @@ ${comment || "-"}`
   $("btnAddZone").addEventListener("pointerdown",(e)=>{ e.preventDefault(); addZoneFromInput(); });
   zoneNumEl.addEventListener("keydown",(e)=>{ if(e.key==="Enter"){ e.preventDefault(); addZoneFromInput(); } });
 
+  /* ✅ регистрация один раз: сохранить позывной */
+  function saveCallsignIfAny(){
+    const c=(callEl.value||"").trim();
+    if(c) localStorage.setItem(USER_CALLSIGN_KEY, c);
+  }
+  callEl.addEventListener("change", saveCallsignIfAny);
+  callEl.addEventListener("blur", saveCallsignIfAny);
+
   /* ===== TELEGRAM (deep-link + fallback, без ссылки на сайт) ===== */
   btnTG.addEventListener("pointerdown",(e)=>{
     e.preventDefault();
@@ -774,6 +788,15 @@ ${comment || "-"}`
 
     setTimeout(()=>{ try{ window.open(tgWeb, "_blank"); }catch(_){ } }, 700);
     toast("Открываю Telegram…", 1800);
+  });
+
+  /* ✅ СКЛАД: переход + передать позывной в URL (на всякий) */
+  btnWarehouse.addEventListener("pointerdown",(e)=>{
+    e.preventDefault();
+    saveCallsignIfAny();
+    const c = encodeURIComponent((callEl.value||"").trim());
+    const url = c ? `med_inventory.html?call=${c}` : "med_inventory.html";
+    window.location.href = url;
   });
 
   /* ===== PDF (2 страницы, без пароля, русский как картинка) ===== */
@@ -997,8 +1020,22 @@ ${comment || "-"}`
       const pad=(n)=>String(n).padStart(2,"0");
       dtEl.value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     }
+
+    // ✅ позывной подставить автоматически (регистрация один раз)
+    const savedCall = (localStorage.getItem(USER_CALLSIGN_KEY)||"").trim();
+    if(savedCall && !(callEl.value||"").trim()){
+      callEl.value = savedCall;
+    }
+
     setView("front");
     finalEl.textContent=buildTextReport();
+
+    // подсказка если меток вообще нет (чтобы ты сразу понял, почему не кликается)
+    const p=loadPoints();
+    const hasAny = (Object.keys(p.front||{}).length + Object.keys(p.back||{}).length) > 0;
+    if(!hasAny){
+      toast("⚠️ ВНИМАНИЕ: координаты меток не найдены (POINTS_KEY пуст). Метки не появятся, пока их нет в localStorage.", 5200);
+    }
   }
 
   init();
@@ -1006,4 +1043,3 @@ ${comment || "-"}`
 </script>
 </body>
 </html>
-```0
