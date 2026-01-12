@@ -793,13 +793,11 @@ ${comment || "-"}`
   /* ✅ СКЛАД: переход + передать позывной в URL (на всякий) */
   btnWarehouse.addEventListener("pointerdown",(e)=>{
     e.preventDefault();
-    saveCallsignIfAny();
     const c = encodeURIComponent((callEl.value||"").trim());
     const url = c ? `med_inventory.html?call=${c}` : "med_inventory.html";
     /* ✅ СКЛАД: переход + передать позывной в URL (на всякий) */
 btnWarehouse.addEventListener("pointerdown",(e)=>{
   e.preventDefault();
-  saveCallsignIfAny();
   const c = encodeURIComponent((callEl.value||"").trim());
   const url = c ? `med_inventory.html?call=${c}` : "med_inventory.html";
   window.location.href = url;
