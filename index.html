@@ -1,231 +1,310 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Карта ранений</title>
-
-  <!-- jsPDF -->
-  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Эвакуация — PRO оценка</title>
   <style>
-    body { margin: 0; font-family: Arial, sans-serif; background: #fff; color: #111; }
-    .title { padding: 10px; text-align: center; font-weight: 700; font-size: 18px; }
-    .topStatus { padding: 10px 12px; font-size: 14px; background: #dff7df; border-bottom: 1px solid #a9d9a9; color: #333; white-space: pre-wrap; }
-    .topStatus.bad { background: #ffe1e1; border-bottom: 1px solid #f0a6a6; color: #8a1f1f; }
-    /* Стили для кнопок, карт и панелей */
-    .panel { padding: 12px; border-top: 1px solid #ddd; background: #fafafa; }
-    .btn2 {
-      width: 100%; padding: 12px; font-size: 16px; border: 1px solid #222;
-      background: #fff; color: #222; border-radius: 10px; margin-top: 10px;
-      touch-action: manipulation;
+    :root{
+      --bg:#f4f6f8;
+      --card:#fff;
+      --text:#111;
+      --muted:#556;
+      --green:#1f6f3d;
+      --red:#b71c1c;
+      --amber:#f9a825;
+      --blue:#1976d2;
+      --line:#d9dde3;
+      --shadow: 0 1px 10px rgba(0,0,0,0.06);
     }
-    .btn2:active { opacity: .85; }
-    .btn2:disabled { opacity: .55; }
-    .bar { display: flex; gap: 10px; padding: 10px 12px; border-top: 1px solid #ddd;
-      background: #fafafa; position: sticky; bottom: 0; z-index: 30; }
-    .bar button { width: 100%; padding: 14px; font-size: 16px; border: none; border-radius: 10px;
-      color: #fff; background: #0b6623; touch-action: manipulation; }
-    .bar button:active { opacity: .85; }
-    .bar .tg { background: #2a76d2; }
-    .miniRow{
-      display:flex;
-      gap:10px;
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text);}
+    header{
+      position:sticky;top:0;z-index:20;
+      background:linear-gradient(0deg, rgba(0,0,0,0.06), rgba(0,0,0,0.06)), var(--green);
+      color:#fff;padding:12px 14px;
+      box-shadow:var(--shadow);
+    }
+    header .t{font-size:18px;font-weight:800;text-align:center;letter-spacing:.2px}
+    header .sub{margin-top:6px;font-size:12px;opacity:.9;text-align:center;line-height:1.25}
+    .wrap{padding:12px;max-width:900px;margin:0 auto;}
+    .grid{display:grid;grid-template-columns:1fr;gap:10px}
+    .secTitle{
+      font-weight:900;color:#233; margin:12px 2px 2px;
+      display:flex;align-items:center;justify-content:space-between;gap:10px
+    }
+    .badge{
+      font-size:12px;font-weight:800;border-radius:999px;padding:6px 10px;
+      background:#eef2f6;color:#223;border:1px solid var(--line);
+      white-space:nowrap
+    }
+
+    .item{
+      background:var(--card); border:1px solid var(--line);
+      border-radius:16px; padding:12px;
+      display:flex; gap:12px; align-items:flex-start;
+      touch-action:pan-y;
+      box-shadow:var(--shadow);
+    }
+    .item.leftRed{border-left:7px solid var(--red)}
+    .item.leftAmber{border-left:7px solid var(--amber)}
+    .item.leftBlue{border-left:7px solid var(--blue)}
+    .item.leftGreen{border-left:7px solid var(--green)}
+    .item input{width:22px;height:22px;flex:0 0 auto;margin-top:2px}
+    .itTitle{font-weight:800;line-height:1.15}
+    .itDesc{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.25}
+    .itMeta{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}
+    .chip{
+      font-size:12px; padding:4px 8px; border-radius:999px;
+      border:1px solid var(--line); background:#f7f9fb; color:#234; font-weight:700;
+    }
+    .chip.crit{border-color:rgba(183,28,28,.35); background:rgba(183,28,28,.08); color:#7b1212}
+    .chip.score{opacity:.85}
+
+    .panel{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:14px;
+      box-shadow:var(--shadow);
+      margin-top:12px;
+    }
+    .resHead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+    .resTitle{font-size:18px;font-weight:900;margin:0}
+    .resSmall{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.25}
+    .pill{
+      border-radius:999px;padding:8px 12px;font-size:12px;font-weight:900;
+      border:1px solid var(--line); background:#fff; white-space:nowrap
+    }
+    .pill.red{border-color:rgba(183,28,28,.4);background:rgba(183,28,28,.10);color:#7b1212}
+    .pill.amb{border-color:rgba(249,168,37,.45);background:rgba(249,168,37,.14);color:#6a4b00}
+    .pill.blue{border-color:rgba(25,118,210,.35);background:rgba(25,118,210,.10);color:#0e4f95}
+    .pill.green{border-color:rgba(31,111,61,.35);background:rgba(31,111,61,.10);color:#0f4f2b}
+
+    .why, .recs{
       margin-top:10px;
+      border-top:1px dashed var(--line);
+      padding-top:10px;
     }
-    .miniRow .btn2{ margin-top:0; }
-    #toast{
-      position:fixed; left:50%; bottom:16px; transform:translateX(-50%);
-      background:rgba(0,0,0,0.85); color:#fff; padding:10px 12px; border-radius:12px;
-      font-size:14px; max-width:92%; z-index:9999; display:none; white-space:pre-wrap;
+    .why ul, .recs ul{margin:8px 0 0 18px;padding:0}
+    .why li, .recs li{margin:6px 0;line-height:1.25}
+    .muted{color:var(--muted)}
+    .rowBtns{display:flex;gap:10px; margin-top:12px}
+    button{
+      width:100%;
+      border:none;border-radius:14px;
+      padding:14px;font-weight:900;font-size:15px;
+      touch-action:manipulation;
     }
+    button:active{opacity:.86}
+    .bBlue{background:var(--blue);color:#fff}
+    .bGray{background:#515a63;color:#fff}
+    .bGreen{background:var(--green);color:#fff}
+    .bOutline{background:#fff;color:#111;border:1px solid var(--line)}
+    .tiny{font-size:12px;padding:10px 12px;border-radius:12px}
+    details{margin-top:10px}
+    summary{cursor:pointer;font-weight:900}
+    pre{
+      white-space:pre-wrap;
+      background:#0f172a;
+      color:#e5e7eb;
+      border-radius:14px;
+      padding:12px;
+      font-size:12px;
+      line-height:1.35;
+      overflow:auto;
+    }
+
+    .toast{
+      position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
+      background:rgba(17,17,17,0.92);color:#fff;
+      padding:10px 12px;border-radius:12px;font-size:14px;
+      max-width:92%;display:none;z-index:9999
+    }
+
+    .timerBox{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      border-top:1px dashed var(--line);
+      margin-top:10px;padding-top:10px;
+    }
+    .timerState{font-weight:900}
+    .timerBtns{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .timerBtns button{width:auto}
+    .warn{color:#7b1212;font-weight:900}
+    .note{
+      margin-top:10px;font-size:12px;color:var(--muted);line-height:1.25
+    }
+
+    /* Блокировка “случайного тыка” при скролле — сделано в JS */
   </style>
 </head>
-
 <body>
-  <div class="title">КАРТА РАНЕНИЙ И СКЛАД МЕДИКАМЕНТОВ</div>
-  <div id="topStatus" class="topStatus">JS: OK</div>
 
-  <div class="tabs">
-    <button class="tab" id="btnFront" type="button">ПЕРЕД</button>
-    <button class="tab" id="btnBack" type="button">СПИНА</button>
+<header>
+  <div class="t">ЭВАКУАЦИЯ — PRO ОЦЕНКА</div>
+  <div class="sub">
+    Быстро: отметь признаки → получи категорию + “почему” + что делать на месте.<br>
+    Это шпаргалка поддержки решения, не заменяет клиническое мышление и команду/протокол.
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="panel">
+    <div class="resHead">
+      <div>
+        <h2 class="resTitle" id="catTitle">Пока не оценено</h2>
+        <div class="resSmall" id="catSmall">Отметь пункты ниже — появится категория и рекомендации.</div>
+      </div>
+      <div class="pill green" id="catPill">—</div>
+    </div>
+
+    <div class="why">
+      <div class="muted"><b>Причины:</b></div>
+      <ul id="whyList"><li class="muted">(нет)</li></ul>
+    </div>
+
+    <div class="recs">
+      <div class="muted"><b>Рекомендации на месте:</b></div>
+      <ul id="recList"><li class="muted">(нет)</li></ul>
+      <div class="note" id="noteLine"></div>
+    </div>
+
+    <div class="timerBox">
+      <div>
+        <div class="muted">Повторная оценка</div>
+        <div class="timerState" id="timerState">не запущена</div>
+      </div>
+      <div class="timerBtns">
+        <button class="bOutline tiny" type="button" data-t="10">+10 мин</button>
+        <button class="bOutline tiny" type="button" data-t="15">+15 мин</button>
+        <button class="bOutline tiny" type="button" data-t="30">+30 мин</button>
+        <button class="bGray tiny" type="button" id="timerStop">Стоп</button>
+      </div>
+    </div>
+
+    <div class="rowBtns">
+      <button class="bBlue" type="button" id="btnCopy">КОПИРОВАТЬ</button>
+      <button class="bGreen" type="button" id="btnShare">ПОДЕЛИТЬСЯ</button>
+      <button class="bGray" type="button" id="btnReset">СБРОСИТЬ</button>
+    </div>
+
+    <details>
+      <summary>Показать детали расчёта (PRO)</summary>
+      <div class="note">Если критический признак отмечен — баллы не важны: категория “СЕЙЧАС”.</div>
+      <pre id="debug"></pre>
+    </details>
   </div>
 
-  <div class="wrap">
-    <img id="bodyImage" class="map" src="body_front.png" alt="body">
-    <div id="pinsLayer"></div>
+  <div class="secTitle">
+    <div>Критические (если хоть один — “СЕЙЧАС”)</div>
+    <div class="badge">триггеры</div>
   </div>
+  <div class="grid" id="secCritical"></div>
+
+  <div class="secTitle">
+    <div>Высокий риск (обычно “СРОЧНО / ПРИОРИТЕТ”)</div>
+    <div class="badge">усилители</div>
+  </div>
+  <div class="grid" id="secHigh"></div>
+
+  <div class="secTitle">
+    <div>Умеренный риск (часто “ПЛАНОВО” или “НАБЛЮДАТЬ”)</div>
+    <div class="badge">контроль</div>
+  </div>
+  <div class="grid" id="secMed"></div>
+
+  <div class="secTitle">
+    <div>Стабильно / поверхностно (если только это — “НАБЛЮДАТЬ”)</div>
+    <div class="badge">без эвак</div>
+  </div>
+  <div class="grid" id="secStable"></div>
 
   <div class="panel">
-    <div class="row">
-      <div class="col">
-        <label>Дата/время (обязательно)</label>
-        <input id="dt" type="datetime-local"/>
-      </div>
-      <div class="col">
-        <label>Позывной (обязательно)</label>
-        <input id="call" placeholder="например: БАРС-12"/>
-      </div>
+    <div class="note">
+      <b>Важно:</b> категория — это <b>приоритет</b>, а не “обязан эвакуировать”.
+      “НАБЛЮДАТЬ” означает: <b>остаться на месте</b>, купировать симптомы, контроль динамики и повторная оценка.
     </div>
-
-    <label>Комментарий (обязательно)</label>
-    <textarea id="comment" placeholder="кратко..."></textarea>
-
-    <div class="row" style="margin-top:10px;">
-      <div class="col">
-        <label>Ввести номер зоны (для текущей стороны)</label>
-        <input id="zoneNum" type="number" inputmode="numeric" placeholder="например: 12"/>
-        <div class="hint">Нажми “Добавить/убрать” — это переключатель.</div>
-      </div>
-      <div class="col" style="display:flex;align-items:flex-end;">
-        <button class="btn2" id="btnAddZone" type="button" style="margin-top:0;">ДОБАВИТЬ/УБРАТЬ</button>
-      </div>
-    </div>
-
-    <div class="hint" style="margin-top:10px;">
-      Теперь ЛЕВО/ПРАВО есть для всех зон, кроме:
-      <b>Позвоночной области</b> и <b>Пупочной области</b>.
-      <br/>🎁 Новая фишка: при добавлении зоны сторона ставится автоматически по положению метки (если есть координата) — можно изменить кнопками.
-    </div>
-
-    <div id="zonesUI"></div>
-
-    <div class="miniRow">
-      <button class="btn2" id="btnRefresh" type="button">ОБНОВИТЬ ОТЧЁТ</button>
-      <button class="btn2" id="btnCopy" type="button">КОПИРОВАТЬ</button>
-    </div>
-
-    <button class="btn2" id="btnShort" type="button">КОРОТКАЯ СВОДКА (для рации)</button>
-
-    <div class="out" id="finalMsg"></div>
   </div>
 
-  <div class="bar">
-    <button id="btnMakePDF" type="button">СДЕЛАТЬ PDF (2 страницы)</button>
-    <button id="btnTG" class="tg" type="button">TELEGRAM</button>
-    <button id="btnHelp" type="button" style="background:#444;">ИНСТРУКЦИЯ</button>
-    <button type="button" style="background:#444;" onclick="location.href='./evac.html'">ЭВАКУАЦИЯ</button>
+  <!-- Склад медикаментов -->
+  <div class="panel" id="inventoryPanel">
+    <div class="secTitle">
+      <div>📦 Твой склад</div>
+      <div class="badge">медикаменты</div>
+    </div>
+    <ul id="inventoryList">
+      <!-- Список медикаментов будет добавлен через JS -->
+    </ul>
+    <div class="rowBtns">
+      <button class="bGreen" type="button" id="btnOrder">Отправить остатки медикаментов в Telegram</button>
+    </div>
   </div>
 
-  <!-- Кнопка перехода на склад медикаментов -->
-  <div style="text-align: center; margin-top: 20px;">
-    <a href="med_inventory.html">
-      <button style="padding: 12px 20px; font-size: 16px; background-color: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer;">
-        Перейти на склад медикаментов
-      </button>
-    </a>
-  </div>
+</div>
+
+<div class="toast" id="toast"></div>
 
 <script>
-// === Картинка и зоны ===
-const BACK = {
-  1: "Подошва", 2: "Тыльная область стопы", 3: "Передняя область голени", 4: "Задняя область голени",
-  5: "Задняя область колена", 6: "Заднепроходная область", 7: "Задняя область бедра", 8: "Крестцовая область",
-  9: "Ягодичная область", 10: "Боковая область живота", 11: "Поясничная область", 12: "Позвоночная область",
-  13: "Подлопаточная область", 14: "Задняя локтевая область", 15: "Задняя область плеча", 16: "Задняя область предплечья",
-  17: "Передняя область плеча", 18: "Тыл кисти", 19: "Надлопаточная область", 20: "Задняя область шеи",
-  21: "Затылочная область", 22: "Скуловая область", 23: "Теменная область", 24: "Височная область",
-  25: "Лобная область", 26: "Глазница", 27: "Щёчная область", 28: "Поднижнечелюстной треугольник",
-  29: "Грудино-ключично-сосцевидная область", 30: "Акромиальная область", 31: "Межлопаточная область",
-  32: "Дельтовидная область", 33: "Лопаточная область", 34: "Задняя область плеча", 35: "Латеральная область груди",
-  36: "Задняя локтевая область", 37: "Задняя область предплечья", 38: "Передняя область предплечья",
-  39: "Кисть, ладонь", 40: "Подрёберная область", 41: "Пяточная область"
-};
-const FRONT = {
-  1: "Пупочная область", 2: "Подчревная (лобковая) область", 3: "Передняя область предплечья", 4: "Тыл кисти",
-  5: "Предплечье", 6: "Задняя область предплечья", 7: "Задняя локтевая область", 8: "Передняя область плеча",
-  9: "Грудная область", 10: "Дельтовидная область", 11: "Ключично-грудной треугольник",
-  12: "Грудино-ключично-сосцевидная область", 13: "Область рта", 14: "Область носа",
-  15: "Височная область", 16: "Глазница", 17: "Лобная область", 18: "Теменная область",
-  19: "Передняя область шеи", 20: "Подбородочная область", 21: "Латеральная область шеи", 22: "Область ключицы",
-  23: "Подключичная ямка", 24: "Ладонь", 25: "Передняя локтевая область", 26: "Задняя область плеча",
-  27: "Подмышечная область", 28: "Грудная область", 29: "Подрёберная область", 30: "Надчревная область",
-  31: "Боковая область живота", 32: "Паховая область", 33: "Бедренный треугольник", 34: "Передняя область бедра",
-  35: "Передняя область колена", 36: "Задняя область голени", 37: "Передняя область голени",
-  38: "Передняя голеностопная область", 39: "Пяточная область", 40: "Тыльная область стопы"
-};
+// Пример данных склада медикаментов
+const inventory = [
+  {name: "Цефтриаксон", quantity: 0, needed: 100},
+  {name: "Лидокаин/новокаин/вода для инъекций", quantity: 0, needed: 50},
+  {name: "Кеторол в/м 30 мг", quantity: 0, needed: 20},
+  {name: "Дексаметазон 2–4 мг", quantity: 0, needed: 20},
+  {name: "Левомеколь", quantity: 0, needed: 20},
+  {name: "Шприцы 5/10 мл", quantity: 0, needed: 100},
+  {name: "Ибупрофен 400 мг", quantity: 0, needed: 5},
+  {name: "Кеторол табл. 10 мг", quantity: 0, needed: 5},
+  {name: "Порошки ТераФлю/аналоги", quantity: 0, needed: 50},
+  {name: "Амоксициллин (табл.)", quantity: 0, needed: 5},
+  {name: "Жгуты", quantity: 0, needed: 5},
+  {name: "Бинты 7×14", quantity: 0, needed: 20},
+  {name: "Омепразол", quantity: 0, needed: 5},
+  {name: "Лоперамид", quantity: 0, needed: 5}
+];
 
-// === ХРАНИЛИЩЕ (Зоны и метки) ===
-const POINTS_KEY="medmap_points_v2";
-const SEL_FRONT="medmap_sel_front_v4";
-const SEL_BACK="medmap_sel_back_v4";
-const META_FRONT="medmap_meta_front_v4";
-const META_BACK="medmap_meta_back_v4";
+// Функция для отображения медикаментов
+function renderInventory() {
+  const inventoryList = document.getElementById("inventoryList");
+  inventoryList.innerHTML = "";
 
-// функции для работы с данными
-function loadJSON(key, fallback){ try{ const raw=localStorage.getItem(key); return raw?JSON.parse(raw):fallback; }catch(_){ return fallback; } }
-function saveJSON(key,val){ localStorage.setItem(key, JSON.stringify(val)); }
-
-function loadPoints(){ const p=loadJSON(POINTS_KEY,{front:{},back:{}}); if(!p.front) p.front={}; if(!p.back) p.back={}; return p; }
-function loadSel(side){ const key = side==="front"?SEL_FRONT:SEL_BACK; const arr=loadJSON(key,[]); return Array.isArray(arr)?arr.map(String):[]; }
-function saveSel(side,arr){ const key = side==="front"?SEL_FRONT:SEL_BACK; saveJSON(key,arr); }
-function loadMeta(side){ const key = side==="front"?META_FRONT:META_BACK; const obj=loadJSON(key,{}); return (obj && typeof obj==="object")?obj:{}; }
-function saveMeta(side,obj){ const key = side==="front"?META_FRONT:META_BACK; saveJSON(key,obj); }
-
-function dictFor(side){ return side==="front"?FRONT:BACK; }
-
-function clearPins(){ pinsLayer.innerHTML=""; }
-
-function addPin(num,x,y,selected){
-  const pin=document.createElement("div");
-  pin.className="pin " + (view==="front"?"front":"back") + (selected?" selected":"");
-  pin.style.left=x+"%";
-  pin.style.top=y+"%";
-  pin.textContent=String(num);
-
-  pin.addEventListener("pointerdown",(e)=>{
-    e.preventDefault(); e.stopPropagation();
-    toggleZone(num);
+  inventory.forEach(item => {
+    const li = document.createElement("li");
+    li.className = "item";
+    li.innerHTML = `
+      <div class="itTitle">${item.name}</div>
+      <div class="itDesc">Есть: ${item.quantity} шт, Нужно: ${item.needed} шт, Не хватает: ${item.needed - item.quantity} шт.</div>
+    `;
+    inventoryList.appendChild(li);
   });
-
-  pinsLayer.appendChild(pin);
 }
 
-// === Основной функционал ===
-function renderPins(){
-  const points=loadPoints();
-  const map=view==="front"?points.front:points.back;
-  const sel=loadSel(view);
-  const selSet={}; for(let i=0;i<sel.length;i++) selSet[sel[i]]=1;
+// Функция отправки информации о медикаментах по Telegram
+document.getElementById("btnOrder").addEventListener("click", () => {
+  const missingItems = inventory.filter(item => item.quantity < item.needed);
+  const message = missingItems.map(item => `${item.name}: не хватает ${item.needed - item.quantity} шт.`).join("\n");
 
-  clearPins();
-  for(let i=0;i<sel.length;i++){
-    const k=sel[i];
-    if(map[k]) addPin(k, map[k].x, map[k].y, true);
+  if (message) {
+    const tgApp = `tg://msg_url?text=${encodeURIComponent(message)}`;
+    const tgWeb = `https://t.me/share/url?text=${encodeURIComponent(message)}`;
+
+    // Открытие Telegram
+    const a = document.createElement("a");
+    a.href = tgApp;
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    setTimeout(() => { window.open(tgWeb, "_blank"); }, 700);
+    toast("Открываю Telegram…", 1800);
+  } else {
+    toast("Нет недостающих медикаментов", 1800);
   }
-  const keys=Object.keys(map);
-  for(let i=0;i<keys.length;i++){
-    const k=keys[i];
-    if(!selSet[k] && map[k]) addPin(k, map[k].x, map[k].y, false);
-  }
-}
+});
 
-function toggleZone(num){
-  const n=String(parseInt(num,10));
-  let sel=loadSel(view);
-
-  let idx=-1;
-  for(let i=0;i<sel.length;i++){ if(sel[i]===n){ idx=i; break; } }
-
-  if(idx>=0){
-    sel.splice(idx,1);
-    saveSel(view, uniqNums(sel));
-    renderAll();
-    return;
-  }
-
-  // добавить
-  sel.push(n);
-  saveSel(view, uniqNums(sel));
-  renderAll();
-}
-
-// ===== Загрузка и рендеринг =====
-function init(){
-  setView("front");
-  renderPins();
-}
-init();
+// Инициализация страницы
+renderInventory();
 </script>
+
 </body>
 </html>
