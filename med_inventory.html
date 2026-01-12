@@ -1,228 +1,519 @@
-Enter<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
-  <title>Медицинский склад</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Склад медикаментов</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f6f8;
-      color: #333;
-      margin: 0;
-      padding: 20px;
+    :root{
+      --bg:#f4f6f8;
+      --card:#fff;
+      --text:#111;
+      --muted:#556;
+      --green:#1f6f3d;
+      --red:#b71c1c;
+      --amber:#f9a825;
+      --blue:#1976d2;
+      --line:#d9dde3;
+      --shadow: 0 1px 10px rgba(0,0,0,0.06);
     }
-    .container {
-      max-width: 800px;
-      margin: auto;
-      background-color: #fff;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text);}
+    header{
+      position:sticky;top:0;z-index:20;
+      background:linear-gradient(0deg, rgba(0,0,0,0.06), rgba(0,0,0,0.06)), var(--blue);
+      color:#fff;padding:12px 14px;
+      box-shadow:var(--shadow);
     }
-    .header {
-      text-align: center;
-      font-size: 24px;
-      font-weight: bold;
-      margin-bottom: 20px;
+    header .t{font-size:18px;font-weight:900;text-align:center;letter-spacing:.2px}
+    header .sub{margin-top:6px;font-size:12px;opacity:.9;text-align:center;line-height:1.25}
+
+    .wrap{padding:12px;max-width:900px;margin:0 auto;}
+    .panel{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:14px;
+      box-shadow:var(--shadow);
+      margin-top:12px;
     }
-    .subheader {
-      text-align: center;
-      font-size: 16px;
-      color: #666;
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    .row > *{flex:1 1 160px}
+
+    label{display:block;font-size:13px;color:var(--muted);margin:10px 0 6px}
+    input{
+      width:100%;box-sizing:border-box;
+      padding:12px 12px;font-size:16px;
+      border:1px solid var(--line);border-radius:14px;
+      background:#fff;outline:none;
     }
-    .med-item {
-      display: flex;
-      justify-content: space-between;
-      margin: 10px 0;
-      padding: 10px;
-      background-color: #f9f9f9;
-      border-radius: 8px;
+    input:focus{border-color:rgba(25,118,210,.5);box-shadow:0 0 0 3px rgba(25,118,210,.12);}
+
+    .btnRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    button{
+      border:none;border-radius:14px;
+      padding:14px 14px;font-weight:900;font-size:15px;
+      touch-action:manipulation;
+      box-shadow:var(--shadow);
+      cursor:pointer;
     }
-    .med-item input {
-      width: 60px;
-      padding: 5px;
-      margin-right: 10px;
-      border: 1px solid #ddd;
-      border-radius: 5px;
+    button:active{opacity:.86}
+    .bBlue{background:var(--blue);color:#fff}
+    .bGreen{background:var(--green);color:#fff}
+    .bGray{background:#515a63;color:#fff}
+    .bOutline{background:#fff;color:#111;border:1px solid var(--line)}
+    .tiny{font-size:12px;padding:10px 12px;border-radius:12px;box-shadow:none}
+
+    .metaLine{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.25}
+    .badge{
+      display:inline-block;
+      font-size:12px;font-weight:900;border-radius:999px;padding:6px 10px;
+      background:#eef2f6;color:#223;border:1px solid var(--line);
+      white-space:nowrap
     }
-    .btn {
-      padding: 10px;
-      background-color: #007bff;
-      color: #fff;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
+
+    .item{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:12px;
+      box-shadow:var(--shadow);
+      margin-top:10px;
     }
-    .btn:hover {
-      background-color: #0056b3;
+    .itemHead{
+      display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
     }
-    .error {
-      color: red;
-      margin-top: 20px;
-      text-align: center;
+    .name{font-weight:900;line-height:1.2}
+    .status{
+      font-size:12px;font-weight:900;border-radius:999px;padding:6px 10px;
+      border:1px solid var(--line); background:#fff;
+      white-space:nowrap
     }
-    .success {
-      color: green;
-      margin-top: 20px;
-      text-align: center;
+    .status.red{border-color:rgba(183,28,28,.4);background:rgba(183,28,28,.10);color:#7b1212}
+    .status.amb{border-color:rgba(249,168,37,.45);background:rgba(249,168,37,.14);color:#6a4b00}
+    .status.green{border-color:rgba(31,111,61,.35);background:rgba(31,111,61,.10);color:#0f4f2b}
+
+    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px}
+    @media (max-width:520px){ .grid3{grid-template-columns:1fr 1fr} }
+
+    .kpi{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:10px;
+      background:#f7f9fb;
     }
+    .kpi .k{font-size:12px;color:var(--muted);font-weight:800}
+    .kpi .v{font-size:16px;font-weight:900;margin-top:4px}
+
+    .toast{
+      position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
+      background:rgba(17,17,17,0.92);color:#fff;
+      padding:10px 12px;border-radius:12px;font-size:14px;
+      max-width:92%;display:none;z-index:9999;white-space:pre-wrap
+    }
+
+    .reqBad{ border-color:#b71c1c !important; box-shadow:0 0 0 3px rgba(183,28,28,0.14); }
+    .hint{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.25}
+    .divider{height:1px;background:var(--line);margin:12px 0}
   </style>
 </head>
+
 <body>
+<header>
+  <div class="t">📦 ТВОЙ СКЛАД</div>
+  <div class="sub">Один раз вводишь позывной → дальше всё хранится на планшете (без интернета).</div>
+</header>
 
-<div class="container">
-  <div class="header">Медицинский склад</div>
-  <div class="subheader" id="last-update">Последнее обновление: ещё ни разу не было.</div>
-  
-  <div id="userInfo">
-    <label for="callSign">Позывной:</label>
-    <input type="text" id="callSign" placeholder="Введите ваш позывной" />
-    <button class="btn" id="registerBtn">Зарегистрировать</button>
-    <div id="errorMessage" class="error"></div>
+<div class="wrap">
+
+  <div class="panel" id="authPanel">
+    <div class="row">
+      <div style="flex:2 1 220px">
+        <label>Позывной (один раз)</label>
+        <input id="callInput" placeholder="например: БАРС-12" autocomplete="off"/>
+        <div class="hint">Хранится в памяти устройства. При следующем открытии вход будет автоматический.</div>
+      </div>
+      <div style="flex:1 1 160px; display:flex; align-items:flex-end;">
+        <button class="bBlue" id="btnLogin" type="button" style="width:100%;">ВОЙТИ</button>
+      </div>
+    </div>
   </div>
 
-  <div id="inventory" style="display:none;">
-    <div class="med-item">
-      <span>🔴 Цефтриаксон</span>
-      <span>есть: <span id="ceftQty">0</span> флак., нужно: 100 флак., не хватает: <span id="ceftMissing">100</span> флак.</span>
-      <input type="number" id="ceftInput" value="0" min="0" />
-    </div>
-    <div class="med-item">
-      <span>🔴 Лидокаин/новокаин/вода для инъекций</span>
-      <span>есть: <span id="lidocQty">0</span> амп., нужно: 50 амп., не хватает: <span id="lidocMissing">50</span> амп.</span>
-      <input type="number" id="lidocInput" value="0" min="0" />
-    </div>
-    <div class="med-item">
-      <span>🔴 Кеторол в/м 30 мг</span>
-      <span>есть: <span id="ketorolQty">0</span> амп., нужно: 20 амп., не хватает: <span id="ketorolMissing">20</span> амп.</span>
-      <input type="number" id="ketorolInput" value="0" min="0" />
-    </div>
-    <div class="med-item">
-      <span>🔴 Дексаметазон 2–4 мг</span>
-      <span>есть: <span id="dexQty">0</span> амп., нужно: 20 амп., не хватает: <span id="dexMissing">20</span> амп.</span>
-      <input type="number" id="dexInput" value="0" min="0" />
-    </div>
-    <div class="med-item">
-      <span>🔴 Левомеколь</span>
-      <span>есть: <span id="levomQty">0</span> тюб., нужно: 20 тюб., не хватает: <span id="levomMissing">20</span> тюб.</span>
-      <input type="number" id="levomInput" value="0" min="0" />
-    </div>
-    <div class="med-item">
-      <span>🔴 Шприцы 5/10 мл</span>
-      <span>есть: <span id="syringeQty">0</span> шт, нужно: 100 шт, не хватает: <span id="syringeMissing">100</span> шт</span>
-      <input type="number" id="syringeInput" value="0" min="0" />
-    </div>
-    <div class="med-item">
-      <span>🔴 Ибупрофен 400 мг</span>
-      <span>есть: <span id="ibuprofQty">0</span> уп., нужно: 5 уп., не хватает: <span id="ibuprofMissing">5</span> уп.</span>
-      <input type="number" id="ibuprofInput" value="0" min="0" />
-    </div>
-    <div class="med-item">
-      <span>🔴 Кеторол табл. 10 мг</span>
-      <span>есть: <span id="ketorolTabQty">0</span> уп., нужно: 5 уп., не хватает: <span id="ketorolTabMissing">5</span> уп.</span>
-      <input type="number" id="ketorolTabInput" value="0" min="0" />
+  <div class="panel" id="mainPanel" style="display:none;">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+      <div>
+        <div style="font-weight:900;font-size:16px" id="whoLine">Позывной: —</div>
+        <div class="metaLine" id="updatedLine">Последнее обновление: ещё ни разу не было.</div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <span class="badge" id="statsBadge">Не хватает: —</span>
+        <button class="bOutline tiny" id="btnLogout" type="button">Сменить позывной</button>
+      </div>
     </div>
 
-    <button class="btn" id="saveInventoryBtn">Сохранить изменения</button>
-    <div id="successMessage" class="success"></div>
+    <div class="btnRow">
+      <button class="bGreen" id="btnSaveAll" type="button" style="flex:2 1 240px;">💾 СОХРАНИТЬ</button>
+      <button class="bBlue" id="btnOrderTG" type="button" style="flex:2 1 240px;">📨 СДЕЛАТЬ ЗАКАЗ (Telegram)</button>
+      <button class="bGray" id="btnHome" type="button" style="flex:1 1 160px;">← ДОМОЙ</button>
+    </div>
+
+    <div class="hint">
+      В каждой позиции вводишь “есть”. “Нужно” можно менять (по умолчанию как ты писал). “Не хватает” считается автоматически.
+    </div>
+
+    <div id="list"></div>
+
+    <div class="divider"></div>
+
+    <details class="panel" style="box-shadow:none;">
+      <summary style="font-weight:900;cursor:pointer;">Экспорт / резерв</summary>
+      <div class="hint">Если надо перенести склад на другое устройство: можно скопировать JSON.</div>
+      <div class="btnRow">
+        <button class="bOutline" id="btnCopyJSON" type="button" style="flex:1 1 220px;">Копировать JSON</button>
+        <button class="bOutline" id="btnImportJSON" type="button" style="flex:1 1 220px;">Импорт JSON</button>
+      </div>
+      <label>Поле для импорта (вставь JSON и нажми “Импорт JSON”)</label>
+      <input id="jsonBox" placeholder='{"items":{...},"updatedAt":...}' />
+    </details>
   </div>
+
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
-  const callSignInput = document.getElementById('callSign');
-  const registerBtn = document.getElementById('registerBtn');
-  const inventoryDiv = document.getElementById('inventory');
-  const userInfoDiv = document.getElementById('userInfo');
-  const lastUpdateDiv = document.getElementById('last-update');
-  
-  const ceftInput = document.getElementById('ceftInput');
-  const lidocInput = document.getElementById('lidocInput');
-  const ketorolInput = document.getElementById('ketorolInput');
-  const dexInput = document.getElementById('dexInput');
-  const levomInput = document.getElementById('levomInput');
-  const syringeInput = document.getElementById('syringeInput');
-  const ibuprofInput = document.getElementById('ibuprofInput');
-  const ketorolTabInput = document.getElementById('ketorolTabInput');
+(() => {
+  const $ = (id)=>document.getElementById(id);
+  const toastEl = $("toast");
 
-  const saveInventoryBtn = document.getElementById('saveInventoryBtn');
-  const errorMessageDiv = document.getElementById('errorMessage');
-  const successMessageDiv = document.getElementById('successMessage');
-
-  const medData = {
-    ceft: { name: 'Цефтриаксон', need: 100 },
-    lidoc: { name: 'Лидокаин/новокаин/вода для инъекций', need: 50 },
-    ketorol: { name: 'Кеторол в/м 30 мг', need: 20 },
-    dex: { name: 'Дексаметазон 2–4 мг', need: 20 },
-    levom: { name: 'Левомеколь', need: 20 },
-    syringe: { name: 'Шприцы 5/10 мл', need: 100 },
-    ibuprof: { name: 'Ибупрофен 400 мг', need: 5 },
-    ketorolTab: { name: 'Кеторол табл. 10 мг', need: 5 }
-  };
-
-  let user = null;
-
-  const getUserData = () => {
-    return JSON.parse(localStorage.getItem('userData')) || null;
+  function toast(msg, ms=2000){
+    toastEl.textContent = msg;
+    toastEl.style.display="block";
+    clearTimeout(toastEl._t);
+    toastEl._t = setTimeout(()=>toastEl.style.display="none", ms);
   }
 
-  const saveUserData = (data) => {
-    localStorage.setItem('userData', JSON.stringify(data));
+  // === Keys ===
+  const ACTIVE_CALL_KEY = "medinv_active_call_v1"; // текущий позывной
+  const STORE_PREFIX = "medinv_store_v1__";        // данные по позывному
+
+  // === Catalog (твои позиции) ===
+  const CATALOG = [
+    {id:"ceftriaxone", name:"Цефтриаксон", unit:"флак.", need:100},
+    {id:"lido_water", name:"Лидокаин/новокаин/вода для инъекций", unit:"амп./флак.", need:50},
+    {id:"ketorol_im", name:"Кеторол в/м 30 мг", unit:"амп.", need:20},
+    {id:"dex", name:"Дексаметазон 2–4 мг", unit:"амп.", need:20},
+    {id:"levomekol", name:"Левомеколь", unit:"тюб.", need:20},
+    {id:"syringes", name:"Шприцы 5/10 мл", unit:"шт", need:100},
+    {id:"ibuprofen", name:"Ибупрофен 400 мг", unit:"уп.", need:5},
+    {id:"ketorol_tab", name:"Кеторол табл. 10 мг", unit:"уп.", need:5},
+    {id:"theraflu", name:"Порошки ТераФлю/аналоги", unit:"пак.", need:50},
+    {id:"amoxicillin", name:"Амоксициллин (табл.)", unit:"уп.", need:5},
+    {id:"tourniquets", name:"Жгуты", unit:"шт", need:5},
+    {id:"bandage_7x14", name:"Бинты 7×14", unit:"шт", need:20},
+    {id:"omeprazole", name:"Омепразол", unit:"уп.", need:5},
+    {id:"loperamide", name:"Лоперамид", unit:"уп.", need:5},
+  ];
+
+  // === State ===
+  let activeCall = "";
+  let store = null; // {items:{id:{have,need}}, updatedAt:number|null}
+
+  function normCall(s){
+    return (s||"").trim().toUpperCase();
+  }
+  function storeKey(call){
+    return STORE_PREFIX + call;
+  }
+  function loadActiveCall(){
+    try{ return normCall(localStorage.getItem(ACTIVE_CALL_KEY) || ""); }catch(_){ return ""; }
+  }
+  function saveActiveCall(call){
+    localStorage.setItem(ACTIVE_CALL_KEY, call);
+  }
+  function clearActiveCall(){
+    localStorage.removeItem(ACTIVE_CALL_KEY);
   }
 
-  const updateInventoryUI = () => {
-    Object.keys(medData).forEach((key) => {
-      const med = medData[key];
-      const currentQty = user[key] || 0;
-      const missingQty = med.need - currentQty;
-      const qtyElement = document.getElementById(`${key}Qty`);
-      const missingElement = document.getElementById(`${key}Missing`);
-      const inputElement = document.getElementById(`${key}Input`);
-
-      qtyElement.textContent = currentQty;
-      missingElement.textContent = missingQty;
-      inputElement.value = currentQty;
-    });
-
-    lastUpdateDiv.textContent = `Последнее обновление: ${user ? user.lastUpdated : 'ещё ни разу не было.'}`;
+  function defaultStore(){
+    const items = {};
+    for(const it of CATALOG){
+      items[it.id] = {have:0, need:it.need};
+    }
+    return {items, updatedAt:null};
   }
 
-  const registerUser = () => {
-    const callSign = callSignInput.value.trim();
+  function loadStore(call){
+    try{
+      const raw = localStorage.getItem(storeKey(call));
+      if(!raw) return defaultStore();
+      const obj = JSON.parse(raw);
+      if(!obj || typeof obj !== "object") return defaultStore();
+      if(!obj.items || typeof obj.items !== "object") obj.items = {};
+      // гарантируем все позиции
+      for(const it of CATALOG){
+        if(!obj.items[it.id] || typeof obj.items[it.id] !== "object"){
+          obj.items[it.id] = {have:0, need:it.need};
+        }else{
+          if(!isFinite(+obj.items[it.id].have)) obj.items[it.id].have = 0;
+          if(!isFinite(+obj.items[it.id].need)) obj.items[it.id].need = it.need;
+        }
+      }
+      if(!("updatedAt" in obj)) obj.updatedAt = null;
+      return obj;
+    }catch(_){
+      return defaultStore();
+    }
+  }
 
-    if (!callSign) {
-      errorMessageDiv.textContent = 'Пожалуйста, введите позывной!';
-      return;
+  function saveStore(){
+    if(!activeCall || !store) return;
+    localStorage.setItem(storeKey(activeCall), JSON.stringify(store));
+  }
+
+  function fmtDate(ts){
+    if(!ts) return "ещё ни разу не было.";
+    const d = new Date(ts);
+    const pad=(n)=>String(n).padStart(2,"0");
+    return `${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  function calcMissing(itId){
+    const it = store.items[itId];
+    const have = Math.max(0, parseInt(it.have,10) || 0);
+    const need = Math.max(0, parseInt(it.need,10) || 0);
+    return Math.max(0, need - have);
+  }
+
+  function statusClass(missing, need){
+    if(need <= 0) return "green";
+    const ratio = missing / Math.max(need,1);
+    if(missing <= 0) return "green";
+    if(ratio >= 0.5) return "red";
+    return "amb";
+  }
+
+  function render(){
+    $("whoLine").textContent = "Позывной: " + activeCall;
+    $("updatedLine").textContent = "Последнее обновление: " + fmtDate(store.updatedAt);
+
+    const list = $("list");
+    list.innerHTML = "";
+
+    let totalMissing = 0;
+
+    for(const it of CATALOG){
+      const s = store.items[it.id];
+      const have = Math.max(0, parseInt(s.have,10) || 0);
+      const need = Math.max(0, parseInt(s.need,10) || 0);
+      const missing = Math.max(0, need - have);
+      totalMissing += missing;
+
+      const cls = statusClass(missing, need);
+      const dot = cls === "red" ? "🔴" : (cls === "amb" ? "🟡" : "🟢");
+
+      const card = document.createElement("div");
+      card.className = "item";
+
+      card.innerHTML = `
+        <div class="itemHead">
+          <div class="name">${dot} ${it.name}</div>
+          <div class="status ${cls}">не хватает: ${missing} ${it.unit}</div>
+        </div>
+
+        <div class="grid3">
+          <div class="kpi">
+            <div class="k">есть (${it.unit})</div>
+            <div class="v"><input inputmode="numeric" type="number" min="0" data-field="have" data-id="${it.id}" value="${have}"></div>
+          </div>
+          <div class="kpi">
+            <div class="k">нужно (${it.unit})</div>
+            <div class="v"><input inputmode="numeric" type="number" min="0" data-field="need" data-id="${it.id}" value="${need}"></div>
+          </div>
+          <div class="kpi">
+            <div class="k">не хватает</div>
+            <div class="v">${missing} ${it.unit}</div>
+          </div>
+        </div>
+      `;
+
+      list.appendChild(card);
     }
 
-    user = {
-      callSign,
-      ceft: 0, lidoc: 0, ketorol: 0, dex: 0, levom: 0, syringe: 0, ibuprof: 0, ketorolTab: 0,
-      lastUpdated: new Date().toLocaleString()
-    };
-
-    saveUserData(user);
-    userInfoDiv.style.display = 'none';
-    inventoryDiv.style.display = 'block';
-    updateInventoryUI();
+    $("statsBadge").textContent = "Не хватает (сумма): " + totalMissing;
   }
 
-  const saveInventory = () => {
-    Object.keys(medData).forEach((key) => {
-      const inputElement = document.getElementById(`${key}Input`);
-      const newQty = parseInt(inputElement.value, 10);
-      user[key] = newQty || 0;
+  function bindInputs(){
+    $("list").addEventListener("input", (e)=>{
+      const t = e.target;
+      if(!t || t.tagName !== "INPUT") return;
+      const id = t.getAttribute("data-id");
+      const field = t.getAttribute("data-field");
+      if(!id || !field) return;
+
+      const v = Math.max(0, parseInt(t.value,10) || 0);
+      store.items[id][field] = v;
+      // без автосейва каждую секунду — но перерисуем расчёт сразу
+      render();
     });
-
-    user.lastUpdated = new Date().toLocaleString();
-    saveUserData(user);
-    successMessageDiv.textContent = 'Изменения успешно сохранены!';
-    updateInventoryUI();
   }
 
-  registerBtn.addEventListener('click', registerUser);
-  saveInventoryBtn.addEventListener('click', saveInventory);
-</script>
+  function requireCall(){
+    if(!activeCall){
+      toast("Сначала введи позывной");
+      return false;
+    }
+    return true;
+  }
 
+  function login(call){
+    call = normCall(call);
+    if(!call){
+      $("callInput").classList.add("reqBad");
+      toast("Введи позывной");
+      return;
+    }
+    $("callInput").classList.remove("reqBad");
+
+    activeCall = call;
+    saveActiveCall(activeCall);
+    store = loadStore(activeCall);
+
+    $("authPanel").style.display = "none";
+    $("mainPanel").style.display = "block";
+    render();
+  }
+
+  function logout(){
+    clearActiveCall();
+    activeCall = "";
+    store = null;
+    $("mainPanel").style.display = "none";
+    $("authPanel").style.display = "block";
+    $("callInput").value = "";
+    toast("Позывной сброшен");
+  }
+
+  function saveAll(){
+    if(!requireCall()) return;
+    store.updatedAt = Date.now();
+    saveStore();
+    render();
+    toast("✅ Сохранено");
+  }
+
+  function buildOrderText(){
+    const lines = [];
+    lines.push("📦 ЗАКАЗ / ПОТРЕБНОСТЬ");
+    lines.push("Позывной: " + activeCall);
+    lines.push("Обновлено: " + fmtDate(store.updatedAt));
+    lines.push("");
+
+    let any = false;
+    for(const it of CATALOG){
+      const s = store.items[it.id];
+      const have = Math.max(0, parseInt(s.have,10) || 0);
+      const need = Math.max(0, parseInt(s.need,10) || 0);
+      const missing = Math.max(0, need - have);
+      if(missing > 0){
+        any = true;
+        lines.push(`🔴 ${it.name}`);
+        lines.push(`есть: ${have} ${it.unit}, нужно: ${need} ${it.unit}, не хватает: ${missing} ${it.unit}`);
+        lines.push("");
+      }
+    }
+    if(!any){
+      lines.push("🟢 По текущим нормам дефицита нет.");
+    }
+    return lines.join("\n");
+  }
+
+  function sendOrderTelegram(){
+    if(!requireCall()) return;
+
+    // перед отправкой сохраним (чтобы "обновлено" было честным)
+    store.updatedAt = Date.now();
+    saveStore();
+    render();
+
+    const text = buildOrderText();
+    const tgApp = "tg://msg_url?url=&text=" + encodeURIComponent(text);
+    const tgWeb = "https://t.me/share/url?url=&text=" + encodeURIComponent(text);
+
+    const a=document.createElement("a");
+    a.href=tgApp;
+    a.style.display="none";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    setTimeout(()=>{ try{ window.open(tgWeb, "_blank"); }catch(_){ } }, 700);
+    toast("Открываю Telegram…", 1800);
+  }
+
+  function copyJSON(){
+    if(!requireCall()) return;
+    const json = JSON.stringify(store);
+    navigator.clipboard.writeText(json).then(()=>toast("✅ JSON скопирован")).catch(()=>toast("Не удалось скопировать", 2200));
+  }
+
+  function importJSON(){
+    if(!requireCall()) return;
+    const raw = ($("jsonBox").value || "").trim();
+    if(!raw){ toast("Вставь JSON в поле", 2200); return; }
+    try{
+      const obj = JSON.parse(raw);
+      if(!obj || typeof obj !== "object") throw new Error("bad");
+      store = obj;
+      // нормализуем
+      if(!store.items || typeof store.items !== "object") store.items = {};
+      for(const it of CATALOG){
+        if(!store.items[it.id] || typeof store.items[it.id] !== "object"){
+          store.items[it.id] = {have:0, need:it.need};
+        }else{
+          if(!isFinite(+store.items[it.id].have)) store.items[it.id].have = 0;
+          if(!isFinite(+store.items[it.id].need)) store.items[it.id].need = it.need;
+        }
+      }
+      if(!("updatedAt" in store)) store.updatedAt = null;
+      saveStore();
+      render();
+      toast("✅ Импортировано");
+    }catch(_){
+      toast("JSON битый / не подходит", 2600);
+    }
+  }
+
+  // === UI bindings ===
+  $("btnLogin").addEventListener("pointerdown",(e)=>{ e.preventDefault(); login($("callInput").value); });
+  $("callInput").addEventListener("keydown",(e)=>{ if(e.key==="Enter"){ e.preventDefault(); login($("callInput").value); } });
+
+  $("btnLogout").addEventListener("pointerdown",(e)=>{ e.preventDefault(); logout(); });
+  $("btnSaveAll").addEventListener("pointerdown",(e)=>{ e.preventDefault(); saveAll(); });
+  $("btnOrderTG").addEventListener("pointerdown",(e)=>{ e.preventDefault(); sendOrderTelegram(); });
+
+  $("btnHome").addEventListener("pointerdown",(e)=>{
+    e.preventDefault();
+    // домой = карта ранений
+    window.location.href = "./index.html";
+  });
+
+  $("btnCopyJSON").addEventListener("pointerdown",(e)=>{ e.preventDefault(); copyJSON(); });
+  $("btnImportJSON").addEventListener("pointerdown",(e)=>{ e.preventDefault(); importJSON(); });
+
+  bindInputs();
+
+  // === Auto-login ===
+  activeCall = loadActiveCall();
+  if(activeCall){
+    store = loadStore(activeCall);
+    $("authPanel").style.display = "none";
+    $("mainPanel").style.display = "block";
+    render();
+  }else{
+    $("authPanel").style.display = "block";
+    $("mainPanel").style.display = "none";
+  }
+})();
+</script>
 </body>
 </html>
