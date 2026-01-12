@@ -20,7 +20,7 @@
     body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text);}
     header{
       position:sticky;top:0;z-index:20;
-      background:linear-gradient(0deg, rgba(0,0,0,0.06), rgba(0,0,0,0.06)), var(--blue);
+      background:linear-gradient(0deg, rgba(0,0,0,0.06), rgba(0,0,0,0.06)), var(--green);
       color:#fff;padding:12px 14px;
       box-shadow:var(--shadow);
     }
@@ -36,39 +36,39 @@
       box-shadow:var(--shadow);
       margin-top:12px;
     }
-    .row{display:flex;gap:10px;flex-wrap:wrap}
-    .row > *{flex:1 1 160px}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .row > *{flex:1 1 220px}
 
-    label{display:block;font-size:13px;color:var(--muted);margin:10px 0 6px}
+    label{display:block;font-size:13px;color:var(--muted);margin:8px 0 6px}
     input{
       width:100%;box-sizing:border-box;
-      padding:12px 12px;font-size:16px;
-      border:1px solid var(--line);border-radius:14px;
-      background:#fff;outline:none;
+      padding:12px;font-size:16px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:#fff;
+      outline:none;
     }
-    input:focus{border-color:rgba(25,118,210,.5);box-shadow:0 0 0 3px rgba(25,118,210,.12);}
 
-    .btnRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    .btnRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
     button{
       border:none;border-radius:14px;
-      padding:14px 14px;font-weight:900;font-size:15px;
+      padding:14px 14px;
+      font-weight:900;font-size:15px;
       touch-action:manipulation;
-      box-shadow:var(--shadow);
-      cursor:pointer;
+      width:100%;
     }
     button:active{opacity:.86}
-    .bBlue{background:var(--blue);color:#fff}
     .bGreen{background:var(--green);color:#fff}
+    .bBlue{background:var(--blue);color:#fff}
     .bGray{background:#515a63;color:#fff}
     .bOutline{background:#fff;color:#111;border:1px solid var(--line)}
-    .tiny{font-size:12px;padding:10px 12px;border-radius:12px;box-shadow:none}
+    .tiny{font-size:12px;padding:10px 12px;border-radius:12px}
 
-    .metaLine{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.25}
+    .muted{color:var(--muted)}
     .badge{
-      display:inline-block;
       font-size:12px;font-weight:900;border-radius:999px;padding:6px 10px;
       background:#eef2f6;color:#223;border:1px solid var(--line);
-      white-space:nowrap
+      white-space:nowrap; display:inline-block;
     }
 
     .item{
@@ -78,102 +78,110 @@
       padding:12px;
       box-shadow:var(--shadow);
       margin-top:10px;
+      display:flex;
+      gap:12px;
+      align-items:flex-start;
+      touch-action:pan-y;
     }
-    .itemHead{
-      display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
-    }
-    .name{font-weight:900;line-height:1.2}
-    .status{
-      font-size:12px;font-weight:900;border-radius:999px;padding:6px 10px;
-      border:1px solid var(--line); background:#fff;
-      white-space:nowrap
-    }
-    .status.red{border-color:rgba(183,28,28,.4);background:rgba(183,28,28,.10);color:#7b1212}
-    .status.amb{border-color:rgba(249,168,37,.45);background:rgba(249,168,37,.14);color:#6a4b00}
-    .status.green{border-color:rgba(31,111,61,.35);background:rgba(31,111,61,.10);color:#0f4f2b}
-
-    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px}
-    @media (max-width:520px){ .grid3{grid-template-columns:1fr 1fr} }
-
-    .kpi{
+    .item.leftRed{border-left:7px solid var(--red)}
+    .item.leftAmber{border-left:7px solid var(--amber)}
+    .item.leftGreen{border-left:7px solid var(--green)}
+    .item .main{flex:1}
+    .item .name{font-weight:900;line-height:1.15}
+    .item .units{font-size:12px;color:var(--muted);margin-top:6px}
+    .item .nums{margin-top:10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+    .item .nums .box{
       border:1px solid var(--line);
       border-radius:14px;
-      padding:10px;
+      padding:8px;
       background:#f7f9fb;
     }
-    .kpi .k{font-size:12px;color:var(--muted);font-weight:800}
-    .kpi .v{font-size:16px;font-weight:900;margin-top:4px}
+    .item .nums .box .k{font-size:12px;color:var(--muted);font-weight:800}
+    .item .nums .box .v{font-size:16px;font-weight:900;margin-top:4px}
+
+    .item .nums input{
+      padding:10px;
+      font-size:16px;
+      border-radius:12px;
+    }
+    .item .need{pointer-events:none;opacity:.95}
+    .item .need input{background:#f3f5f7}
+
+    .summary{
+      margin-top:10px;
+      border-top:1px dashed var(--line);
+      padding-top:10px;
+      white-space:pre-wrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size:12px;
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+    }
 
     .toast{
       position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
       background:rgba(17,17,17,0.92);color:#fff;
       padding:10px 12px;border-radius:12px;font-size:14px;
-      max-width:92%;display:none;z-index:9999;white-space:pre-wrap
+      max-width:92%;display:none;z-index:9999;
+      white-space:pre-wrap;
     }
 
-    .reqBad{ border-color:#b71c1c !important; box-shadow:0 0 0 3px rgba(183,28,28,0.14); }
-    .hint{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.25}
-    .divider{height:1px;background:var(--line);margin:12px 0}
+    .topLine{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    }
   </style>
 </head>
-
 <body>
+
 <header>
-  <div class="t">📦 ТВОЙ СКЛАД</div>
-  <div class="sub">Один раз вводишь позывной → дальше всё хранится на планшете (без интернета).</div>
+  <div class="t">📦 СКЛАД МЕДИКАМЕНТОВ</div>
+  <div class="sub">
+    У каждого позывного свой склад (сохраняется в браузере).<br>
+    Кнопка “Сделать заказ” отправляет <b>то, чего не хватает</b> в Telegram.
+  </div>
 </header>
 
 <div class="wrap">
 
-  <div class="panel" id="authPanel">
-    <div class="row">
-      <div style="flex:2 1 220px">
-        <label>Позывной (один раз)</label>
-        <input id="callInput" placeholder="например: БАРС-12" autocomplete="off"/>
-        <div class="hint">Хранится в памяти устройства. При следующем открытии вход будет автоматический.</div>
-      </div>
-      <div style="flex:1 1 160px; display:flex; align-items:flex-end;">
-        <button class="bBlue" id="btnLogin" type="button" style="width:100%;">ВОЙТИ</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="panel" id="mainPanel" style="display:none;">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+  <div class="panel">
+    <div class="topLine">
       <div>
-        <div style="font-weight:900;font-size:16px" id="whoLine">Позывной: —</div>
-        <div class="metaLine" id="updatedLine">Последнее обновление: ещё ни разу не было.</div>
+        <div class="muted"><b>📦 Твой склад</b></div>
+        <div class="muted" id="lastUpdateLine">Последнее обновление: ещё ни разу не было.</div>
       </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-        <span class="badge" id="statsBadge">Не хватает: —</span>
-        <button class="bOutline tiny" id="btnLogout" type="button">Сменить позывной</button>
+      <div class="badge" id="csBadge">Позывной: —</div>
+    </div>
+
+    <div class="row" style="margin-top:10px">
+      <div>
+        <label>Позывной (регистрация один раз)</label>
+        <input id="callSignInput" placeholder="например: КИСЛЫЙ / БАРС-12"/>
+      </div>
+      <div class="btnRow" style="flex:1 1 220px">
+        <button class="bGreen" type="button" id="btnSaveCallsign">СОХРАНИТЬ ПОЗЫВНОЙ</button>
       </div>
     </div>
 
     <div class="btnRow">
-      <button class="bGreen" id="btnSaveAll" type="button" style="flex:2 1 240px;">💾 СОХРАНИТЬ</button>
-      <button class="bBlue" id="btnOrderTG" type="button" style="flex:2 1 240px;">📨 СДЕЛАТЬ ЗАКАЗ (Telegram)</button>
-      <button class="bGray" id="btnHome" type="button" style="flex:1 1 160px;">← ДОМОЙ</button>
+      <button class="bOutline" type="button" id="btnHome">← ДОМОЙ (Карта ранений)</button>
+      <button class="bBlue" type="button" id="btnCopyOrder">КОПИРОВАТЬ ЗАКАЗ</button>
+      <button class="bGreen" type="button" id="btnSendTG">СДЕЛАТЬ ЗАКАЗ (TELEGRAM)</button>
+      <button class="bGray" type="button" id="btnResetStock">СБРОСИТЬ СКЛАД</button>
     </div>
 
-    <div class="hint">
-      В каждой позиции вводишь “есть”. “Нужно” можно менять (по умолчанию как ты писал). “Не хватает” считается автоматически.
+    <div class="muted" style="margin-top:10px; font-size:12px; line-height:1.25">
+      Подсказка: “нужно” — это целевое количество. Меняешь “есть” → автоматически считается “не хватает”.
     </div>
+  </div>
 
-    <div id="list"></div>
+  <div class="panel">
+    <div class="muted"><b>Список</b></div>
+    <div id="items"></div>
 
-    <div class="divider"></div>
-
-    <details class="panel" style="box-shadow:none;">
-      <summary style="font-weight:900;cursor:pointer;">Экспорт / резерв</summary>
-      <div class="hint">Если надо перенести склад на другое устройство: можно скопировать JSON.</div>
-      <div class="btnRow">
-        <button class="bOutline" id="btnCopyJSON" type="button" style="flex:1 1 220px;">Копировать JSON</button>
-        <button class="bOutline" id="btnImportJSON" type="button" style="flex:1 1 220px;">Импорт JSON</button>
-      </div>
-      <label>Поле для импорта (вставь JSON и нажми “Импорт JSON”)</label>
-      <input id="jsonBox" placeholder='{"items":{...},"updatedAt":...}' />
-    </details>
+    <div class="muted" style="margin-top:12px"><b>Предпросмотр заказа</b></div>
+    <div class="summary" id="orderPreview">(пока пусто)</div>
   </div>
 
 </div>
@@ -181,264 +189,303 @@
 <div class="toast" id="toast"></div>
 
 <script>
-(() => {
-  const $ = (id)=>document.getElementById(id);
-  const toastEl = $("toast");
+(()=>{
 
-  function toast(msg, ms=2000){
+  /* ======================
+     ВАЖНОЕ ПРО КОДИРОВАНИЕ
+     - buildOrderText() возвращает ОБЫЧНЫЙ текст (без encodeURIComponent)
+     - encodeURIComponent используется ТОЛЬКО в ссылках Telegram
+     ====================== */
+
+  const toastEl = document.getElementById("toast");
+  const $ = (id)=>document.getElementById(id);
+
+  function toast(msg, ms=1800){
     toastEl.textContent = msg;
     toastEl.style.display="block";
     clearTimeout(toastEl._t);
     toastEl._t = setTimeout(()=>toastEl.style.display="none", ms);
   }
 
-  // === Keys ===
-  const ACTIVE_CALL_KEY = "medinv_active_call_v1"; // текущий позывной
-  const STORE_PREFIX = "medinv_store_v1__";        // данные по позывному
+  // --- Keys ---
+  const LS_CALLSIGN = "medinv_callsign_v1";
+  const LS_LASTUPDATE = "medinv_lastupdate_v1";
+  // per-callsign stock will be stored under: medinv_stock_v1::<CALLSIGN>
+  const STOCK_PREFIX = "medinv_stock_v1::";
 
-  // === Catalog (твои позиции) ===
+  // --- Default items (you can edit NEED values) ---
   const CATALOG = [
-    {id:"ceftriaxone", name:"Цефтриаксон", unit:"флак.", need:100},
-    {id:"lido_water", name:"Лидокаин/новокаин/вода для инъекций", unit:"амп./флак.", need:50},
-    {id:"ketorol_im", name:"Кеторол в/м 30 мг", unit:"амп.", need:20},
-    {id:"dex", name:"Дексаметазон 2–4 мг", unit:"амп.", need:20},
-    {id:"levomekol", name:"Левомеколь", unit:"тюб.", need:20},
-    {id:"syringes", name:"Шприцы 5/10 мл", unit:"шт", need:100},
-    {id:"ibuprofen", name:"Ибупрофен 400 мг", unit:"уп.", need:5},
-    {id:"ketorol_tab", name:"Кеторол табл. 10 мг", unit:"уп.", need:5},
-    {id:"theraflu", name:"Порошки ТераФлю/аналоги", unit:"пак.", need:50},
-    {id:"amoxicillin", name:"Амоксициллин (табл.)", unit:"уп.", need:5},
-    {id:"tourniquets", name:"Жгуты", unit:"шт", need:5},
-    {id:"bandage_7x14", name:"Бинты 7×14", unit:"шт", need:20},
-    {id:"omeprazole", name:"Омепразол", unit:"уп.", need:5},
-    {id:"loperamide", name:"Лоперамид", unit:"уп.", need:5},
+    { id:"cef",  name:"Цефтриаксон", units:"флак.", need:100 },
+    { id:"lido", name:"Лидокаин/новокаин/вода для инъекций", units:"амп./флак.", need:50 },
+    { id:"ket_im", name:"Кеторол в/м 30 мг", units:"амп.", need:20 },
+    { id:"dex", name:"Дексаметазон 2–4 мг", units:"амп.", need:20 },
+    { id:"levomekol", name:"Левомеколь", units:"тюб.", need:20 },
+    { id:"syr", name:"Шприцы 5/10 мл", units:"шт", need:100 },
+    { id:"ibu", name:"Ибупрофен 400 мг", units:"уп.", need:5 },
+    { id:"ket_tab", name:"Кеторол табл. 10 мг", units:"уп.", need:5 },
+    { id:"teraflu", name:"Порошки ТераФлю/аналоги", units:"пак.", need:50 },
+    { id:"amox", name:"Амоксициллин (табл.)", units:"уп.", need:5 },
+    { id:"tour", name:"Жгуты", units:"шт", need:5 },
+    { id:"band", name:"Бинты 7×14", units:"шт", need:20 },
+    { id:"omep", name:"Омепразол", units:"уп.", need:5 },
+    { id:"lop", name:"Лоперамид", units:"уп.", need:5 }
   ];
 
-  // === State ===
-  let activeCall = "";
-  let store = null; // {items:{id:{have,need}}, updatedAt:number|null}
-
-  function normCall(s){
-    return (s||"").trim().toUpperCase();
-  }
-  function storeKey(call){
-    return STORE_PREFIX + call;
-  }
-  function loadActiveCall(){
-    try{ return normCall(localStorage.getItem(ACTIVE_CALL_KEY) || ""); }catch(_){ return ""; }
-  }
-  function saveActiveCall(call){
-    localStorage.setItem(ACTIVE_CALL_KEY, call);
-  }
-  function clearActiveCall(){
-    localStorage.removeItem(ACTIVE_CALL_KEY);
-  }
-
-  function defaultStore(){
-    const items = {};
-    for(const it of CATALOG){
-      items[it.id] = {have:0, need:it.need};
-    }
-    return {items, updatedAt:null};
-  }
-
-  function loadStore(call){
-    try{
-      const raw = localStorage.getItem(storeKey(call));
-      if(!raw) return defaultStore();
-      const obj = JSON.parse(raw);
-      if(!obj || typeof obj !== "object") return defaultStore();
-      if(!obj.items || typeof obj.items !== "object") obj.items = {};
-      // гарантируем все позиции
-      for(const it of CATALOG){
-        if(!obj.items[it.id] || typeof obj.items[it.id] !== "object"){
-          obj.items[it.id] = {have:0, need:it.need};
-        }else{
-          if(!isFinite(+obj.items[it.id].have)) obj.items[it.id].have = 0;
-          if(!isFinite(+obj.items[it.id].need)) obj.items[it.id].need = it.need;
-        }
-      }
-      if(!("updatedAt" in obj)) obj.updatedAt = null;
-      return obj;
-    }catch(_){
-      return defaultStore();
-    }
-  }
-
-  function saveStore(){
-    if(!activeCall || !store) return;
-    localStorage.setItem(storeKey(activeCall), JSON.stringify(store));
-  }
-
-  function fmtDate(ts){
-    if(!ts) return "ещё ни разу не было.";
-    const d = new Date(ts);
-    const pad=(n)=>String(n).padStart(2,"0");
+  function nowNice(){
+    const d = new Date();
+    const pad = (n)=>String(n).padStart(2,"0");
     return `${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
-  function calcMissing(itId){
-    const it = store.items[itId];
-    const have = Math.max(0, parseInt(it.have,10) || 0);
-    const need = Math.max(0, parseInt(it.need,10) || 0);
-    return Math.max(0, need - have);
+  function normCallsign(s){
+    return (s||"").trim().replace(/\s+/g," ").toUpperCase();
   }
 
-  function statusClass(missing, need){
-    if(need <= 0) return "green";
-    const ratio = missing / Math.max(need,1);
-    if(missing <= 0) return "green";
-    if(ratio >= 0.5) return "red";
-    return "amb";
+  function getCallsignFromURL(){
+    try{
+      const u = new URL(location.href);
+      const q = u.searchParams.get("call") || "";
+      return normCallsign(q);
+    }catch(_){
+      return "";
+    }
   }
 
-  function render(){
-    $("whoLine").textContent = "Позывной: " + activeCall;
-    $("updatedLine").textContent = "Последнее обновление: " + fmtDate(store.updatedAt);
+  function loadCallsign(){
+    // priority: URL param ?call=, else localStorage
+    const fromUrl = getCallsignFromURL();
+    if(fromUrl) return fromUrl;
+    return normCallsign(localStorage.getItem(LS_CALLSIGN) || "");
+  }
 
-    const list = $("list");
-    list.innerHTML = "";
+  function saveCallsign(cs){
+    localStorage.setItem(LS_CALLSIGN, cs);
+  }
 
-    let totalMissing = 0;
+  function stockKey(cs){
+    return STOCK_PREFIX + cs;
+  }
 
-    for(const it of CATALOG){
-      const s = store.items[it.id];
-      const have = Math.max(0, parseInt(s.have,10) || 0);
-      const need = Math.max(0, parseInt(s.need,10) || 0);
-      const missing = Math.max(0, need - have);
-      totalMissing += missing;
+  function loadStock(cs){
+    // returns object { [id]: haveNumber }
+    try{
+      const raw = localStorage.getItem(stockKey(cs));
+      if(!raw) return {};
+      const obj = JSON.parse(raw);
+      return (obj && typeof obj==="object") ? obj : {};
+    }catch(_){
+      return {};
+    }
+  }
 
-      const cls = statusClass(missing, need);
-      const dot = cls === "red" ? "🔴" : (cls === "amb" ? "🟡" : "🟢");
+  function saveStock(cs, stock){
+    localStorage.setItem(stockKey(cs), JSON.stringify(stock || {}));
+  }
+
+  function loadLastUpdate(){
+    return localStorage.getItem(LS_LASTUPDATE) || "";
+  }
+
+  function setLastUpdate(ts){
+    localStorage.setItem(LS_LASTUPDATE, ts);
+  }
+
+  function clampNum(x){
+    const n = parseInt(String(x||"").replace(/[^\d-]/g,""),10);
+    if(!isFinite(n)) return 0;
+    return Math.max(0, n);
+  }
+
+  function statusClass(miss){
+    if(miss <= 0) return "leftGreen";
+    if(miss <= 2) return "leftAmber";
+    return "leftRed";
+  }
+
+  // --- State ---
+  let callSign = loadCallsign();              // can be ""
+  let stock = callSign ? loadStock(callSign) : {};
+
+  function ensureCallsignOrAsk(){
+    if(callSign) return true;
+    toast("Сначала сохрани позывной", 2200);
+    $("callSignInput").focus();
+    return false;
+  }
+
+  // --- Render meta ---
+  function renderHeader(){
+    $("csBadge").textContent = "Позывной: " + (callSign || "—");
+    const lu = loadLastUpdate();
+    $("lastUpdateLine").textContent = lu ? ("Последнее обновление: " + lu) : "Последнее обновление: ещё ни разу не было.";
+    $("callSignInput").value = callSign || "";
+  }
+
+  // --- Render items ---
+  function renderItems(){
+    const root = $("items");
+    root.innerHTML = "";
+
+    CATALOG.forEach(item=>{
+      const have = clampNum(stock[item.id] ?? 0);
+      const need = clampNum(item.need);
+      const miss = Math.max(0, need - have);
 
       const card = document.createElement("div");
-      card.className = "item";
+      card.className = "item " + statusClass(miss);
 
-      card.innerHTML = `
-        <div class="itemHead">
-          <div class="name">${dot} ${it.name}</div>
-          <div class="status ${cls}">не хватает: ${missing} ${it.unit}</div>
-        </div>
+      const main = document.createElement("div");
+      main.className = "main";
 
-        <div class="grid3">
-          <div class="kpi">
-            <div class="k">есть (${it.unit})</div>
-            <div class="v"><input inputmode="numeric" type="number" min="0" data-field="have" data-id="${it.id}" value="${have}"></div>
+      main.innerHTML = `
+        <div class="name">🔴 ${item.name}</div>
+        <div class="units muted">единицы: ${item.units} • нужно: ${need}</div>
+        <div class="nums">
+          <div class="box">
+            <div class="k">есть</div>
+            <input inputmode="numeric" type="number" min="0" step="1" value="${have}" data-id="${item.id}" class="haveInput">
           </div>
-          <div class="kpi">
-            <div class="k">нужно (${it.unit})</div>
-            <div class="v"><input inputmode="numeric" type="number" min="0" data-field="need" data-id="${it.id}" value="${need}"></div>
+          <div class="box need">
+            <div class="k">нужно</div>
+            <input inputmode="numeric" type="number" value="${need}" disabled>
           </div>
-          <div class="kpi">
+          <div class="box">
             <div class="k">не хватает</div>
-            <div class="v">${missing} ${it.unit}</div>
+            <div class="v" id="miss_${item.id}">${miss}</div>
           </div>
         </div>
       `;
 
-      list.appendChild(card);
-    }
+      card.appendChild(main);
+      root.appendChild(card);
+    });
 
-    $("statsBadge").textContent = "Не хватает (сумма): " + totalMissing;
-  }
+    // bind input handlers
+    root.querySelectorAll(".haveInput").forEach(inp=>{
+      inp.addEventListener("input", ()=>{
+        if(!ensureCallsignOrAsk()) { inp.value = 0; return; }
+        const id = inp.getAttribute("data-id");
+        const v = clampNum(inp.value);
+        inp.value = v;
 
-  function bindInputs(){
-    $("list").addEventListener("input", (e)=>{
-      const t = e.target;
-      if(!t || t.tagName !== "INPUT") return;
-      const id = t.getAttribute("data-id");
-      const field = t.getAttribute("data-field");
-      if(!id || !field) return;
+        stock[id] = v;
+        saveStock(callSign, stock);
+        setLastUpdate(nowNice());
+        renderHeader();
 
-      const v = Math.max(0, parseInt(t.value,10) || 0);
-      store.items[id][field] = v;
-      // без автосейва каждую секунду — но перерисуем расчёт сразу
-      render();
+        // update single miss number + preview
+        const item = CATALOG.find(x=>x.id===id);
+        const miss = Math.max(0, clampNum(item.need) - v);
+        const missEl = document.getElementById("miss_" + id);
+        if(missEl) missEl.textContent = String(miss);
+
+        // re-render cards border color cheaply by full rerender (simple & safe)
+        renderItems();
+        renderPreview();
+      });
     });
   }
 
-  function requireCall(){
-    if(!activeCall){
-      toast("Сначала введи позывной");
-      return false;
-    }
-    return true;
-  }
-
-  function login(call){
-    call = normCall(call);
-    if(!call){
-      $("callInput").classList.add("reqBad");
-      toast("Введи позывной");
-      return;
-    }
-    $("callInput").classList.remove("reqBad");
-
-    activeCall = call;
-    saveActiveCall(activeCall);
-    store = loadStore(activeCall);
-
-    $("authPanel").style.display = "none";
-    $("mainPanel").style.display = "block";
-    render();
-  }
-
-  function logout(){
-    clearActiveCall();
-    activeCall = "";
-    store = null;
-    $("mainPanel").style.display = "none";
-    $("authPanel").style.display = "block";
-    $("callInput").value = "";
-    toast("Позывной сброшен");
-  }
-
-  function saveAll(){
-    if(!requireCall()) return;
-    store.updatedAt = Date.now();
-    saveStore();
-    render();
-    toast("✅ Сохранено");
-  }
-
   function buildOrderText(){
+    const cs = callSign || "—";
+    const updated = loadLastUpdate() || nowNice();
+
     const lines = [];
     lines.push("📦 ЗАКАЗ / ПОТРЕБНОСТЬ");
-    lines.push("Позывной: " + activeCall);
-    lines.push("Обновлено: " + fmtDate(store.updatedAt));
+    lines.push("Позывной: " + cs);
+    lines.push("Обновлено: " + updated);
     lines.push("");
 
     let any = false;
-    for(const it of CATALOG){
-      const s = store.items[it.id];
-      const have = Math.max(0, parseInt(s.have,10) || 0);
-      const need = Math.max(0, parseInt(s.need,10) || 0);
-      const missing = Math.max(0, need - have);
-      if(missing > 0){
-        any = true;
-        lines.push(`🔴 ${it.name}`);
-        lines.push(`есть: ${have} ${it.unit}, нужно: ${need} ${it.unit}, не хватает: ${missing} ${it.unit}`);
-        lines.push("");
-      }
+
+    for(const item of CATALOG){
+      const have = clampNum(stock[item.id] ?? 0);
+      const need = clampNum(item.need);
+      const miss = Math.max(0, need - have);
+      if(miss <= 0) continue;
+      any = true;
+
+      lines.push("🔴 " + item.name);
+      lines.push(`есть: ${have} ${item.units}, нужно: ${need} ${item.units}, не хватает: ${miss} ${item.units}`);
+      lines.push("");
     }
+
     if(!any){
-      lines.push("🟢 По текущим нормам дефицита нет.");
+      lines.push("✅ Ничего не требуется. По всем позициям хватает.");
     }
-    return lines.join("\n");
+
+    return lines.join("\n").trim();
   }
 
-  function sendOrderTelegram(){
-    if(!requireCall()) return;
+  function renderPreview(){
+    if(!callSign){
+      $("orderPreview").textContent = "Сначала введи и сохрани позывной — тогда появится твой склад и заказ.";
+      return;
+    }
+    $("orderPreview").textContent = buildOrderText();
+  }
 
-    // перед отправкой сохраним (чтобы "обновлено" было честным)
-    store.updatedAt = Date.now();
-    saveStore();
-    render();
+  // --- Buttons ---
+  $("btnSaveCallsign").addEventListener("pointerdown",(e)=>{
+    e.preventDefault();
+    const cs = normCallsign($("callSignInput").value);
+    if(!cs){
+      toast("Введи позывной", 2000);
+      return;
+    }
+    callSign = cs;
+    saveCallsign(callSign);
 
-    const text = buildOrderText();
-    const tgApp = "tg://msg_url?url=&text=" + encodeURIComponent(text);
+    // load stock for this callsign (separate per callsign)
+    stock = loadStock(callSign);
+    renderHeader();
+    renderItems();
+    renderPreview();
+    toast("✅ Позывной сохранён");
+  });
+
+  $("btnHome").addEventListener("pointerdown",(e)=>{
+    e.preventDefault();
+    // assumes your wounds map is index.html in the same folder
+    window.location.href = "./index.html";
+  });
+
+  $("btnResetStock").addEventListener("pointerdown",(e)=>{
+    e.preventDefault();
+    if(!ensureCallsignOrAsk()) return;
+
+    // reset only for this callsign
+    stock = {};
+    saveStock(callSign, stock);
+    setLastUpdate(""); // optional: clear global last update
+    renderHeader();
+    renderItems();
+    renderPreview();
+    toast("Склад сброшен");
+  });
+
+  $("btnCopyOrder").addEventListener("pointerdown", async (e)=>{
+    e.preventDefault();
+    if(!ensureCallsignOrAsk()) return;
+
+    const text = buildOrderText(); // ✅ plain text (no encoding)
+    try{
+      await navigator.clipboard.writeText(text);
+      toast("✅ Скопировано");
+    }catch(_){
+      toast("Не удалось скопировать. Выдели вручную в блоке ниже.", 2600);
+    }
+  });
+
+  $("btnSendTG").addEventListener("pointerdown",(e)=>{
+    e.preventDefault();
+    if(!ensureCallsignOrAsk()) return;
+
+    const text = buildOrderText(); // ✅ plain text
+    const tgApp = "tg://msg_url?url=&text=" + encodeURIComponent(text); // ✅ encode ONLY here
     const tgWeb = "https://t.me/share/url?url=&text=" + encodeURIComponent(text);
 
+    // try app
     const a=document.createElement("a");
     a.href=tgApp;
     a.style.display="none";
@@ -446,74 +493,34 @@
     a.click();
     document.body.removeChild(a);
 
+    // fallback web
     setTimeout(()=>{ try{ window.open(tgWeb, "_blank"); }catch(_){ } }, 700);
     toast("Открываю Telegram…", 1800);
-  }
+  });
 
-  function copyJSON(){
-    if(!requireCall()) return;
-    const json = JSON.stringify(store);
-    navigator.clipboard.writeText(json).then(()=>toast("✅ JSON скопирован")).catch(()=>toast("Не удалось скопировать", 2200));
-  }
+  // --- Init ---
+  function init(){
+    renderHeader();
 
-  function importJSON(){
-    if(!requireCall()) return;
-    const raw = ($("jsonBox").value || "").trim();
-    if(!raw){ toast("Вставь JSON в поле", 2200); return; }
-    try{
-      const obj = JSON.parse(raw);
-      if(!obj || typeof obj !== "object") throw new Error("bad");
-      store = obj;
-      // нормализуем
-      if(!store.items || typeof store.items !== "object") store.items = {};
-      for(const it of CATALOG){
-        if(!store.items[it.id] || typeof store.items[it.id] !== "object"){
-          store.items[it.id] = {have:0, need:it.need};
-        }else{
-          if(!isFinite(+store.items[it.id].have)) store.items[it.id].have = 0;
-          if(!isFinite(+store.items[it.id].need)) store.items[it.id].need = it.need;
-        }
-      }
-      if(!("updatedAt" in store)) store.updatedAt = null;
-      saveStore();
-      render();
-      toast("✅ Импортировано");
-    }catch(_){
-      toast("JSON битый / не подходит", 2600);
+    // If callsign exists, load stock and render
+    if(callSign){
+      stock = loadStock(callSign);
+      // also persist callsign if came from URL (so “registration once” works)
+      saveCallsign(callSign);
+    }
+
+    renderItems();
+    renderPreview();
+
+    // small hint if no callsign
+    if(!callSign){
+      toast("Введи позывной и нажми “СОХРАНИТЬ”", 2600);
     }
   }
 
-  // === UI bindings ===
-  $("btnLogin").addEventListener("pointerdown",(e)=>{ e.preventDefault(); login($("callInput").value); });
-  $("callInput").addEventListener("keydown",(e)=>{ if(e.key==="Enter"){ e.preventDefault(); login($("callInput").value); } });
-
-  $("btnLogout").addEventListener("pointerdown",(e)=>{ e.preventDefault(); logout(); });
-  $("btnSaveAll").addEventListener("pointerdown",(e)=>{ e.preventDefault(); saveAll(); });
-  $("btnOrderTG").addEventListener("pointerdown",(e)=>{ e.preventDefault(); sendOrderTelegram(); });
-
-  $("btnHome").addEventListener("pointerdown",(e)=>{
-    e.preventDefault();
-    // домой = карта ранений
-    window.location.href = "./index.html";
-  });
-
-  $("btnCopyJSON").addEventListener("pointerdown",(e)=>{ e.preventDefault(); copyJSON(); });
-  $("btnImportJSON").addEventListener("pointerdown",(e)=>{ e.preventDefault(); importJSON(); });
-
-  bindInputs();
-
-  // === Auto-login ===
-  activeCall = loadActiveCall();
-  if(activeCall){
-    store = loadStore(activeCall);
-    $("authPanel").style.display = "none";
-    $("mainPanel").style.display = "block";
-    render();
-  }else{
-    $("authPanel").style.display = "block";
-    $("mainPanel").style.display = "none";
-  }
+  init();
 })();
 </script>
+
 </body>
 </html>
