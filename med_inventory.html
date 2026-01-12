@@ -62,7 +62,6 @@
     .bBlue{background:var(--blue);color:#fff}
     .bGray{background:#515a63;color:#fff}
     .bOutline{background:#fff;color:#111;border:1px solid var(--line)}
-    .tiny{font-size:12px;padding:10px 12px;border-radius:12px}
 
     .muted{color:var(--muted)}
     .badge{
@@ -98,12 +97,7 @@
     }
     .item .nums .box .k{font-size:12px;color:var(--muted);font-weight:800}
     .item .nums .box .v{font-size:16px;font-weight:900;margin-top:4px}
-
-    .item .nums input{
-      padding:10px;
-      font-size:16px;
-      border-radius:12px;
-    }
+    .item .nums input{padding:10px;font-size:16px;border-radius:12px}
     .item .need{pointer-events:none;opacity:.95}
     .item .need input{background:#f3f5f7}
 
@@ -139,7 +133,7 @@
   <div class="t">📦 СКЛАД МЕДИКАМЕНТОВ</div>
   <div class="sub">
     У каждого позывного свой склад (сохраняется в браузере).<br>
-    Кнопка “Сделать заказ” отправляет <b>то, чего не хватает</b> в Telegram.
+    “Сделать заказ” отправляет <b>то, чего не хватает</b> в Telegram.
   </div>
 </header>
 
@@ -157,7 +151,7 @@
     <div class="row" style="margin-top:10px">
       <div>
         <label>Позывной (регистрация один раз)</label>
-        <input id="callSignInput" placeholder="например: КИСЛЫЙ / БАРС-12"/>
+        <input id="callSignInput" autocomplete="off" autocapitalize="characters" placeholder="например: КИСЛЫЙ / БАРС-12"/>
       </div>
       <div class="btnRow" style="flex:1 1 220px">
         <button class="bGreen" type="button" id="btnSaveCallsign">СОХРАНИТЬ ПОЗЫВНОЙ</button>
@@ -172,7 +166,7 @@
     </div>
 
     <div class="muted" style="margin-top:10px; font-size:12px; line-height:1.25">
-      Подсказка: “нужно” — это целевое количество. Меняешь “есть” → автоматически считается “не хватает”.
+      “нужно” — целевое количество. Меняешь “есть” → автоматически считается “не хватает”.
     </div>
   </div>
 
@@ -191,12 +185,6 @@
 <script>
 (()=>{
 
-  /* ======================
-     ВАЖНОЕ ПРО КОДИРОВАНИЕ
-     - buildOrderText() возвращает ОБЫЧНЫЙ текст (без encodeURIComponent)
-     - encodeURIComponent используется ТОЛЬКО в ссылках Telegram
-     ====================== */
-
   const toastEl = document.getElementById("toast");
   const $ = (id)=>document.getElementById(id);
 
@@ -208,12 +196,11 @@
   }
 
   // --- Keys ---
-  const LS_CALLSIGN = "medinv_callsign_v1";
-  const LS_LASTUPDATE = "medinv_lastupdate_v1";
-  // per-callsign stock will be stored under: medinv_stock_v1::<CALLSIGN>
-  const STOCK_PREFIX = "medinv_stock_v1::";
+  const LS_CALLSIGN = "medinv_callsign_v2";
+  const LS_LASTUPDATE = "medinv_lastupdate_v2";
+  const STOCK_PREFIX = "medinv_stock_v2::";
 
-  // --- Default items (you can edit NEED values) ---
+  // --- Catalog ---
   const CATALOG = [
     { id:"cef",  name:"Цефтриаксон", units:"флак.", need:100 },
     { id:"lido", name:"Лидокаин/новокаин/вода для инъекций", units:"амп./флак.", need:50 },
@@ -241,45 +228,66 @@
     return (s||"").trim().replace(/\s+/g," ").toUpperCase();
   }
 
-  function getCallsignFromURL(){
+  function getURLCall(){
     try{
       const u = new URL(location.href);
-      const q = u.searchParams.get("call") || "";
-      return normCallsign(q);
+      return normCallsign(u.searchParams.get("call") || "");
     }catch(_){
       return "";
     }
   }
 
+  function removeURLCallParam(){
+    try{
+      const u = new URL(location.href);
+      if(!u.searchParams.has("call")) return;
+      u.searchParams.delete("call");
+      // убрать ?call=... чтобы больше не перезаписывал при обновлении
+      history.replaceState(null, "", u.pathname + (u.searchParams.toString() ? ("?" + u.searchParams.toString()) : "") + u.hash);
+    }catch(_){}
+  }
+
+  function stockKey(cs){ return STOCK_PREFIX + cs; }
+
+  function loadJSON(key, fallback){
+    try{
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    }catch(_){
+      return fallback;
+    }
+  }
+
+  function saveJSON(key, val){
+    localStorage.setItem(key, JSON.stringify(val));
+  }
+
   function loadCallsign(){
-    // priority: URL param ?call=, else localStorage
-    const fromUrl = getCallsignFromURL();
-    if(fromUrl) return fromUrl;
-    return normCallsign(localStorage.getItem(LS_CALLSIGN) || "");
+    // ✅ ПРИОРИТЕТ localStorage (чтобы URL не перезаписывал постоянно)
+    const ls = normCallsign(localStorage.getItem(LS_CALLSIGN) || "");
+    if(ls) return ls;
+
+    const fromUrl = getURLCall();
+    if(fromUrl){
+      // сохраним один раз и уберём из URL
+      localStorage.appendChild; // no-op guard (старые браузеры иногда чудят, оставим безопасно)
+      localStorage.setItem(LS_CALLSIGN, fromUrl);
+      removeURLCallParam();
+      return fromUrl;
+    }
+    return "";
   }
 
   function saveCallsign(cs){
     localStorage.setItem(LS_CALLSIGN, cs);
   }
 
-  function stockKey(cs){
-    return STOCK_PREFIX + cs;
-  }
-
   function loadStock(cs){
-    // returns object { [id]: haveNumber }
-    try{
-      const raw = localStorage.getItem(stockKey(cs));
-      if(!raw) return {};
-      const obj = JSON.parse(raw);
-      return (obj && typeof obj==="object") ? obj : {};
-    }catch(_){
-      return {};
-    }
+    return loadJSON(stockKey(cs), {});
   }
 
   function saveStock(cs, stock){
-    localStorage.setItem(stockKey(cs), JSON.stringify(stock || {}));
+    saveJSON(stockKey(cs), stock || {});
   }
 
   function loadLastUpdate(){
@@ -303,7 +311,7 @@
   }
 
   // --- State ---
-  let callSign = loadCallsign();              // can be ""
+  let callSign = loadCallsign();
   let stock = callSign ? loadStock(callSign) : {};
 
   function ensureCallsignOrAsk(){
@@ -313,7 +321,6 @@
     return false;
   }
 
-  // --- Render meta ---
   function renderHeader(){
     $("csBadge").textContent = "Позывной: " + (callSign || "—");
     const lu = loadLastUpdate();
@@ -321,7 +328,6 @@
     $("callSignInput").value = callSign || "";
   }
 
-  // --- Render items ---
   function renderItems(){
     const root = $("items");
     root.innerHTML = "";
@@ -360,10 +366,10 @@
       root.appendChild(card);
     });
 
-    // bind input handlers
     root.querySelectorAll(".haveInput").forEach(inp=>{
       inp.addEventListener("input", ()=>{
         if(!ensureCallsignOrAsk()) { inp.value = 0; return; }
+
         const id = inp.getAttribute("data-id");
         const v = clampNum(inp.value);
         inp.value = v;
@@ -373,13 +379,7 @@
         setLastUpdate(nowNice());
         renderHeader();
 
-        // update single miss number + preview
-        const item = CATALOG.find(x=>x.id===id);
-        const miss = Math.max(0, clampNum(item.need) - v);
-        const missEl = document.getElementById("miss_" + id);
-        if(missEl) missEl.textContent = String(miss);
-
-        // re-render cards border color cheaply by full rerender (simple & safe)
+        // безопасно: обновим UI полностью (простое и надежное)
         renderItems();
         renderPreview();
       });
@@ -426,49 +426,61 @@
   }
 
   // --- Buttons ---
-  $("btnSaveCallsign").addEventListener("pointerdown",(e)=>{
+  $("btnSaveCallsign").addEventListener("click",(e)=>{
     e.preventDefault();
+    e.stopPropagation();
+
     const cs = normCallsign($("callSignInput").value);
     if(!cs){
       toast("Введи позывной", 2000);
       return;
     }
+
     callSign = cs;
     saveCallsign(callSign);
 
-    // load stock for this callsign (separate per callsign)
     stock = loadStock(callSign);
     renderHeader();
     renderItems();
     renderPreview();
+
     toast("✅ Позывной сохранён");
   });
 
-  $("btnHome").addEventListener("pointerdown",(e)=>{
+  // чтобы Enter в поле не делал ничего странного
+  $("callSignInput").addEventListener("keydown",(e)=>{
+    if(e.key === "Enter"){
+      e.preventDefault();
+      $("btnSaveCallsign").click();
+    }
+  });
+
+  $("btnHome").addEventListener("click",(e)=>{
     e.preventDefault();
-    // assumes your wounds map is index.html in the same folder
+    e.stopPropagation();
     window.location.href = "./index.html";
   });
 
-  $("btnResetStock").addEventListener("pointerdown",(e)=>{
+  $("btnResetStock").addEventListener("click",(e)=>{
     e.preventDefault();
+    e.stopPropagation();
     if(!ensureCallsignOrAsk()) return;
 
-    // reset only for this callsign
     stock = {};
     saveStock(callSign, stock);
-    setLastUpdate(""); // optional: clear global last update
+    setLastUpdate("");
     renderHeader();
     renderItems();
     renderPreview();
     toast("Склад сброшен");
   });
 
-  $("btnCopyOrder").addEventListener("pointerdown", async (e)=>{
+  $("btnCopyOrder").addEventListener("click", async (e)=>{
     e.preventDefault();
+    e.stopPropagation();
     if(!ensureCallsignOrAsk()) return;
 
-    const text = buildOrderText(); // ✅ plain text (no encoding)
+    const text = buildOrderText(); // обычный текст
     try{
       await navigator.clipboard.writeText(text);
       toast("✅ Скопировано");
@@ -477,15 +489,15 @@
     }
   });
 
-  $("btnSendTG").addEventListener("pointerdown",(e)=>{
+  $("btnSendTG").addEventListener("click",(e)=>{
     e.preventDefault();
+    e.stopPropagation();
     if(!ensureCallsignOrAsk()) return;
 
-    const text = buildOrderText(); // ✅ plain text
-    const tgApp = "tg://msg_url?url=&text=" + encodeURIComponent(text); // ✅ encode ONLY here
+    const text = buildOrderText(); // обычный текст
+    const tgApp = "tg://msg_url?url=&text=" + encodeURIComponent(text);
     const tgWeb = "https://t.me/share/url?url=&text=" + encodeURIComponent(text);
 
-    // try app
     const a=document.createElement("a");
     a.href=tgApp;
     a.style.display="none";
@@ -493,26 +505,21 @@
     a.click();
     document.body.removeChild(a);
 
-    // fallback web
     setTimeout(()=>{ try{ window.open(tgWeb, "_blank"); }catch(_){ } }, 700);
     toast("Открываю Telegram…", 1800);
   });
 
-  // --- Init ---
   function init(){
     renderHeader();
 
-    // If callsign exists, load stock and render
     if(callSign){
+      // если уже есть — подгружаем и показываем
       stock = loadStock(callSign);
-      // also persist callsign if came from URL (so “registration once” works)
-      saveCallsign(callSign);
     }
 
     renderItems();
     renderPreview();
 
-    // small hint if no callsign
     if(!callSign){
       toast("Введи позывной и нажми “СОХРАНИТЬ”", 2600);
     }
